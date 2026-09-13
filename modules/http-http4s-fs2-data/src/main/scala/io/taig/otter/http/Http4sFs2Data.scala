@@ -7,6 +7,7 @@ import fs2.Fallible
 import fs2.Pure
 import fs2.Stream
 import fs2.data.csv.CsvRow
+import fs2.data.csv.EscapeMode
 import fs2.data.csv.Row
 import fs2.data.csv.lowlevel
 import io.taig.data.syntax.*
@@ -111,5 +112,14 @@ object Http4sFs2Data:
           )
 
     rows.flatMap: rows =>
-      val text = Stream.emits(rows).through(lowlevel.toRowStrings[Pure]()).compile.string
+      val text = Stream
+        .emits(rows)
+        .flatMap: row =>
+          // Auto escaping leaves singleton empty cells blank and treats a trailing CR as part of the line ending.
+          val escape =
+            if row == NonEmptyList.one("") || row.exists(_.contains('\r')) then EscapeMode.Always
+            else EscapeMode.Auto
+          Stream.emit(row).through(lowlevel.toRowStrings[Pure](escape = escape))
+        .compile
+        .string
       ByteVector.encodeUtf8(text).leftMap(_.getMessage)
