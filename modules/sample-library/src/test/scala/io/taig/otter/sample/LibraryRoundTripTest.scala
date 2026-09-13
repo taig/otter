@@ -9,6 +9,7 @@ import io.taig.otter.http.Http4sCirce
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
 import io.taig.otter.sample.api.books
+import io.taig.otter.sample.api.dsl
 import io.taig.otter.sample.api.loans
 import org.http4s.Uri
 import org.http4s.client.Client as Http4sClient
@@ -49,7 +50,7 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
   private val austen: Isbn = Isbn.digits("9780141439518")
 
   /** A fresh catalogue per call, so no test can see what another one wrote. */
-  private def call[A, B](endpoint: Endpoint[A, B])(value: A): Task[B] =
+  private def call[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B])(value: A): Task[B] =
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
         .flatMap: library =>
@@ -59,7 +60,10 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         .unsafeToFuture()
 
   /** Two calls against one catalogue, for the claims that need a server to remember something. */
-  private def calls[A1, B1, A2, B2](first: Endpoint[A1, B1], second: Endpoint[A2, B2])(a1: A1, a2: A2): Task[B2] =
+  private def calls[A1, B1, A2, B2](
+      first: Endpoint.Of[dsl.Payload, A1, B1],
+      second: Endpoint.Of[dsl.Payload, A2, B2]
+  )(a1: A1, a2: A2): Task[B2] =
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
         .flatMap: library =>

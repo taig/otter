@@ -4,8 +4,8 @@ import io.taig.otter.Annotated
 import io.taig.otter.Annotation
 import io.taig.otter.Metadata
 
-/** An endpoint that takes `A` and answers with `B`. */
-type Endpoint[A, B] = Endpoint.Of[Body.Payload, A, B]
+/** An endpoint with requirement `S` that takes `A` and answers with `B`. */
+type Endpoint[S[-w, +r], A, B] = Endpoint.Of[S, A, B]
 
 object Endpoint:
   /** An endpoint holding the payload `S`, taking `A` and answering with `B`. */

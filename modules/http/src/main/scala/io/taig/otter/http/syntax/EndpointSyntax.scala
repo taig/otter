@@ -114,7 +114,9 @@ trait EndpointSyntax:
 
     /** The streamed body this request carries, which changes what it describes and not what it holds. */
     @targetName("streaming")
-    def apply[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Request.Schema[S2, W1, R1] =
+    def apply[S2[-w, +r], W2, R2](
+        value: => Body.Streamed.Schema[S2, W2, R2]
+    ): Request.Schema[Body.Streamed.Requirement[S2], W1, R1] =
       Request.Schema(Request.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
   extension [S[-w, +r], W1, R1](fa: Result.Schema[S, W1, R1])
@@ -161,7 +163,9 @@ trait EndpointSyntax:
 
     /** The streamed body this result carries, which changes what it describes and not what it holds. */
     @targetName("streaming")
-    def apply[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Result.Schema[S2, W1, R1] =
+    def apply[S2[-w, +r], W2, R2](
+        value: => Body.Streamed.Schema[S2, W2, R2]
+    ): Result.Schema[Body.Streamed.Requirement[S2], W1, R1] =
       Result.Schema(Result.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
 object EndpointSyntax extends EndpointSyntax

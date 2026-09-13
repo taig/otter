@@ -13,8 +13,8 @@ import io.taig.otter.Reference
 import io.taig.otter.operation.AlternableOperation
 import io.taig.otter.operation.UnionableOperation
 
-/** One of the answers an endpoint may give, round tripping `A`. */
-type Result[A] = Result.Of[Body.Payload, A]
+/** One of the answers with requirement `S`, round tripping `A`. */
+type Result[S[-w, +r], A] = Result.Of[S, A]
 
 object Result:
   /** A result holding the payload `S` and round tripping `A`.
@@ -88,7 +88,7 @@ object Result:
 
     def bodies: Option[Reference[[w, r] =>> Bodies.Schema[S, w, r], ?, ?]]
 
-    def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], ?, ?]]
+    def streamed: Option[Reference[Body.Streamed.Node, ?, ?]]
 
   object Value:
     final case class Root(override val code: Code) extends Result.Value[Nothing, Unit, Unit]:
@@ -96,7 +96,7 @@ object Result:
 
       override def bodies: Option[Reference[[w, r] =>> Bodies.Schema[Nothing, w, r], ?, ?]] = None
 
-      override def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[Nothing, w, r], ?, ?]] = None
+      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = None
 
     final case class Headers[+S[-w, +r], W1, R1, W2, R2](
         self: Result.Value[S, W1, R1],
@@ -116,12 +116,12 @@ object Result:
 
     /** A streamed body added to a result, which changes what it describes without changing what it holds. */
     final case class Streaming[+S[-w, +r], W1, R1, W2, R2](
-        self: Result.Value[S, W1, R1],
+        self: Result.Value[Body.Streamed.Requirement[S], W1, R1],
         value: Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], W2, R2]
-    ) extends Result.Value[S, W1, R1]:
+    ) extends Result.Value[Body.Streamed.Requirement[S], W1, R1]:
       export self.{bodies, code, headers}
 
-      override def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], ?, ?]] = Some(value)
+      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = Some(value)
 
     final case class Modify[+S[-w, +r], W0, R0, -W, +R](self: Result.Value[S, W0, R0], f: R0 => R, g: W => W0)
         extends Result.Value[S, W, R]:

@@ -3,8 +3,8 @@ package io.taig.otter.http
 import cats.effect.Concurrent
 import cats.syntax.all.*
 import io.taig.otter.Violations
-import io.taig.otter.http.codec.Http4sRequestDecoder
-import io.taig.otter.http.codec.Http4sResultEncoder
+import io.taig.otter.http.codec.Http4sRequestDecoderUnchecked
+import io.taig.otter.http.codec.Http4sResultEncoderUnchecked
 import io.taig.otter.http.codec.PathTemplate
 import org.http4s.Request as Http4sRequest
 import org.http4s.Response as Http4sResponse
@@ -17,7 +17,7 @@ import scodec.bits.ByteVector
   * wrong: a status code is chosen by which branch of the result union the value took, and a handler that returns the
   * wrong shape does not compile.
   */
-final case class Route[F[_], A, B](endpoint: Endpoint.Server[Body.Payload, A, B], handler: A => F[B]):
+final case class Route[F[_], +S[-w, +r], A, B](endpoint: Endpoint.Server[S, A, B], handler: A => F[B]):
   /** Whether this route is the one an incoming method and path is addressed to.
     *
     * Arity and literals, and deliberately nothing else. [[io.taig.otter.http.codec.PathDecoder]] would answer a
@@ -34,9 +34,9 @@ final case class Route[F[_], A, B](endpoint: Endpoint.Server[Body.Payload, A, B]
         case (Right(_), _)            => true
 
   /** This route's answer to a request it has already matched. */
-  def run(
-      decoder: Http4sRequestDecoder,
-      encoder: Http4sResultEncoder,
+  private[http] def run(
+      decoder: Http4sRequestDecoderUnchecked,
+      encoder: Http4sResultEncoderUnchecked,
       malformed: Violations => Http4sWire.Response,
       request: Http4sRequest[F],
       segments: Vector[String]
@@ -64,8 +64,8 @@ object Route:
     * An endpoint with no body never touches the entity at all, which is what keeps a `GET` from paying for a stream it
     * was never going to look at.
     */
-  private def bytes[F[_]: Concurrent](
-      endpoint: Endpoint.Server[Body.Payload, ?, ?],
+  private def bytes[F[_]: Concurrent, S[-w, +r]](
+      endpoint: Endpoint.Server[S, ?, ?],
       request: Http4sRequest[F]
   ): F[ByteVector] =
     if endpoint.request.bodies.isEmpty then ByteVector.empty.pure else Http4sEnvelope.toBytes(request.entity)

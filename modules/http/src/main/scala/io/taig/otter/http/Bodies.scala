@@ -7,8 +7,8 @@ import io.taig.otter.Reference
 import io.taig.otter.Wrapper
 import io.taig.otter.operation.*
 
-/** A choice of bodies that round trips `A`. */
-type Bodies[A] = Bodies.Of[Body.Payload, A]
+/** A choice of bodies with requirement `S` that round trips `A`. */
+type Bodies[S[-w, +r], A] = Bodies.Of[S, A]
 
 object Bodies:
   /** Alternatives holding the payload `S` and round tripping `A`.

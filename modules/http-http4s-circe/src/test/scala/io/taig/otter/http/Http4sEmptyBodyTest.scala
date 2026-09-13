@@ -21,28 +21,40 @@ import zio.Task
 import zio.ZIO
 import zio.test.*
 
+import scala.compiletime.testing.typeChecks
+
 object Http4sEmptyBodyTest extends ZIOSpecDefault:
   private val Base: Uri = uri"http://otter.test"
   private val Png: MediaType = MediaType("image", "png")
   private val png: Body.Of[Body.Opaque, ByteVector] = body.binary(Png)
   private val text: Body.Of[Body.Opaque, ByteVector] = body.binary(dsl.mediaType.text)
+  private val bodyFree: Endpoint.Of[Body.Or[Nothing, Nothing], Unit, Unit] = endpoint(
+    request(method.get, __),
+    result(code.noContent).toUnion
+  )
+
+  private val binaryOnly: Endpoint.Of[Body.Or[Body.Opaque, Nothing], ByteVector, Unit] = endpoint(
+    request(method.post, __)(png),
+    result(code.noContent).toUnion
+  )
+
   private val EmptyEntities: List[(String, Entity[IO])] = List(
     "empty" -> Entity.empty,
     "strict" -> Entity.Strict(ByteVector.empty),
     "streamed" -> Entity.Streamed(Stream.empty, None)
   )
 
-  private val upload: Endpoint[Option[ByteVector], Unit] = endpoint(
+  private val upload: Endpoint.Of[dsl.Payload, Option[ByteVector], Unit] = endpoint(
     request(method.post, __)(body.optional(png)),
     result(code.noContent).toUnion
   )
 
-  private val download: Endpoint[Unit, ByteVector] = endpoint(
+  private val download: Endpoint.Of[dsl.Payload, Unit, ByteVector] = endpoint(
     request(method.get, __),
     result(code.ok)(png).toUnion
   )
 
-  private val alternatives: Endpoint[Unit, Either[ByteVector, ByteVector]] = endpoint(
+  private val alternatives: Endpoint.Of[dsl.Payload, Unit, Either[ByteVector, ByteVector]] = endpoint(
     request(method.get, __),
     result(code.ok)(png) :+ result(code.ok)(text)
   )
@@ -50,7 +62,10 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
   private def headers(contentType: Option[String]): Http4sHeaders =
     Http4sHeaders(contentType.toList.map(value => Http4sHeader.Raw(CIString("Content-Type"), value)))
 
-  private def received[A](endpoint: Endpoint[A, Unit], request: Http4sRequest[IO]): Task[(Int, Option[A])] =
+  private def received[A](
+      endpoint: Endpoint.Of[dsl.Payload, A, Unit],
+      request: Http4sRequest[IO]
+  ): Task[(Int, Option[A])] =
     ZIO.fromFuture: _ =>
       IO.ref(Option.empty[A])
         .flatMap: ref =>
@@ -61,13 +76,26 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
             .flatMap(response => ref.get.map((response.status.code, _)))
         .unsafeToFuture()
 
-  private def decoded[A](endpoint: Endpoint[Unit, A], response: Http4sResponse[IO]): Task[Either[Throwable, A]] =
+  private def decoded[A](
+      endpoint: Endpoint.Of[dsl.Payload, Unit, A],
+      response: Http4sResponse[IO]
+  ): Task[Either[Throwable, A]] =
     ZIO.fromFuture: _ =>
       val client = Http4sClient.fromHttpApp[IO](org.http4s.HttpApp[IO](_ => IO.pure(response)))
 
       Http4s.client[IO, Unit, A](Http4sCirce.Payload, Base, client)(endpoint)(()).attempt.unsafeToFuture()
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sEmptyBodyTest")(
+    test("the empty interpreter supports body-free and binary-only routes"):
+      assertTrue(typeChecks("""
+        import cats.effect.IO
+        import io.taig.otter.http.*
+        import io.taig.otter.http.codec.Http4sPayload
+        import scodec.bits.ByteVector
+        Http4s.routes[IO](Http4sPayload.Empty)(Route(Http4sEmptyBodyTest.bodyFree, (_: Unit) => IO.unit))
+        Http4s.routes[IO](Http4sPayload.Empty)(Route(Http4sEmptyBodyTest.binaryOnly, (_: ByteVector) => IO.unit))
+      """))
+    ,
     suite("raw empty messages")(
       EmptyEntities.map { (name, entity) =>
         suite(name)(

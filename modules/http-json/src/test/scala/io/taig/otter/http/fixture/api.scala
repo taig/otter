@@ -25,6 +25,8 @@ import scodec.bits.ByteVector
   * and `body.multipart` -- one namespace for every shape a body comes in, JSON included.
   */
 object dsl extends HttpComponent:
+  type Payload = Body.Or[Body.Whole[Json.Node], Body.Opaque]
+
   override val body: BodyComponent & HttpJsonSyntax = new BodyComponent with HttpJsonSyntax {}
 
 object payload extends JsonComponent
@@ -45,13 +47,14 @@ object api:
     (payload.field("title", payload.string) :* payload.field("pages", payload.int)).to
 
   /** One document. */
-  val reported: Body.Of[Json.Node, Report] = body.json(api.report)
+  val reported: Body.Of[Body.Whole[Json.Node], Report] = body.json(api.report)
 
   /** A body that may be either of two things, which is what content negotiation describes. The alternatives are written
     * in different alphabets -- one a JSON schema, the other no schema at all -- and the union of their payload types is
     * what the body's own type records.
     */
-  val negotiated: Bodies[Either[Report, ByteVector]] = body.json(api.report) :+ body.binary(mediaType.pdf)
+  val negotiated: Bodies.Of[dsl.Payload, Either[Report, ByteVector]] =
+    body.json(api.report) :+ body.binary(mediaType.pdf)
 
   /** A multipart upload: a JSON part and a file part, which is the shape neither earlier attempt could write down.
     *
@@ -63,7 +66,7 @@ object api:
       part("attachment", body.binary(mediaType.pdf)).filename("report.pdf")).to
 
   /** The same upload as a body, which is all a multipart body is: a body whose payload happens to be a set of parts. */
-  val uploaded: Body.Of[Multipart.Node, Upload] = body.multipart(api.upload)
+  val uploaded: Body.Of[Body.Whole[Multipart.Node], Upload] = body.multipart(api.upload)
 
   /** A stream of documents, one per line. The element type is on the body, so a backend handed it knows what its stream
     * yields; the body itself contributes nothing to what a request reads.
@@ -81,14 +84,14 @@ object api:
     * Read as a server sees it: the request is what this endpoint *reads* and the responses what it *writes*, which is
     * the side a document written for its callers has to describe.
     */
-  val fetch: Endpoint.Server[Body.Payload, (Int, Int), Either[Report, Unit]] =
+  val fetch: Endpoint.Server[dsl.Payload, (Int, Int), Either[Report, Unit]] =
     endpoint(
       request(method.get, api.one).queries(api.paging),
       result(code.ok)(body.json(api.report)) :+ result(code.notFound)
     )
 
   /** `POST /reports` taking a multipart upload and answering with the report it made. */
-  val create: Endpoint.Server[Body.Payload, Upload, Report] =
+  val create: Endpoint.Server[Body.Whole[Body.Or[Json.Node, Multipart.Node]], Upload, Report] =
     endpoint(
       request(method.post, __ :* segment("reports"))(api.uploaded),
       result(code.created)(body.json(api.report)).toUnion
@@ -96,7 +99,7 @@ object api:
 
   /** `GET /reports` answering with a stream of reports, which contributes nothing to what the caller is handed here.
     */
-  val stream: Endpoint.Server[Body.Payload, Unit, Unit] =
+  val stream: Endpoint.Server[Body.Streamed.Requirement[Json.Node], Unit, Unit] =
     endpoint(
       request(method.get, __ :* segment("reports")),
       result(code.ok)(api.reports).toUnion
@@ -113,7 +116,8 @@ object api:
       part("attachment", body.binary(mediaType.pdf)).filename("report.pdf").optional
 
   /** `PUT /reports/{id}` taking the partial upload and answering with the named report. */
-  val replace: Endpoint.Server[Body.Payload, (Int, (Report, Option[ByteVector])), Report] =
+  val replace
+      : Endpoint.Server[Body.Whole[Body.Or[Json.Node, Multipart.Node]], (Int, (Report, Option[ByteVector])), Report] =
     endpoint(
       request(method.put, api.one)(body.multipart(api.partial)),
       result(code.ok)(body.json(api.named)).toUnion
@@ -125,7 +129,7 @@ object api:
   val settings: Json.Record[Settings] = payload.field("theme", payload.string).optional("dark").toRecord.to
 
   /** `PUT /settings`, to be rendered from both sides and compared. */
-  val configure: Endpoint.Server[Body.Payload, Settings, Unit] =
+  val configure: Endpoint.Server[dsl.Payload, Settings, Unit] =
     endpoint(
       request(method.put, __ :* segment("settings"))(body.json(api.settings)),
       result(code.noContent).toUnion
@@ -136,7 +140,7 @@ object api:
     * The absence reaches the handler as one, which is what an `Option` on the request's own value says: a body that was
     * not sent is not a body that held the schema's defaults.
     */
-  val amend: Endpoint.Server[Body.Payload, Option[Settings], Unit] =
+  val amend: Endpoint.Server[dsl.Payload, Option[Settings], Unit] =
     endpoint(
       request(method.patch, __ :* segment("settings"))(body.optional(body.json(api.settings))),
       result(code.noContent).toUnion
@@ -149,5 +153,5 @@ object api:
       .attr(Keys.name, "Tree")
 
   /** `GET /trees` answering with one. */
-  val trees: Endpoint.Server[Body.Payload, Unit, Tree] =
+  val trees: Endpoint.Server[dsl.Payload, Unit, Tree] =
     endpoint(request(method.get, __ :* segment("trees")), result(code.ok)(body.json(api.tree)).toUnion)
