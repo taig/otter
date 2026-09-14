@@ -4,19 +4,26 @@
 
 ## Declared HTTP errors
 
-`ErrorPolicy` declares execution errors using ordinary Otter `Result` schemas. Compose the endpoint once and use its
-effective contract for clients and documentation:
+`ErrorPolicy` declares execution errors using ordinary Otter `Result` schemas. `Api` owns one complete policy and an
+ordered endpoint collection; each endpoint inherits it unless an `ErrorOverrides` value replaces a category:
 
 ```scala
-val served = ErrorPolicy.default(myEndpoint)
+val api = for
+  defaults <- Api(errors, health, create)
+  configured <- defaults.withErrors(create, ErrorOverrides(unexpected = Some(unavailable)))
+yield configured
 
-val routes = Http4s.routes[IO](Http4sCirce.Payload)(Route(served, myHandler))
-val clientEndpoint = served.effective
+val routes = api.flatMap { definition =>
+  Route(definition, health, healthHandler).map { healthRoute =>
+    Http4s.routes[IO](Http4sCirce.Payload)(definition, healthRoute)
+  }
+}
 ```
 
-The handler still returns the domain result `B`. An Otter client reading `served.effective` returns `Either[E, B]`,
-where `E` is the policy's decoded error type. Pass the same effective endpoints to the OpenAPI and TypeScript
-renderers. Plain `Route(endpoint, handler)` uses the default policy; compose explicitly when sharing its error contract.
+The handler still returns the domain result `B`. The API-aware client resolves the registered endpoint to
+`Either[E, B]`, where `E` is the policy's decoded error type, and OpenAPI and TypeScript renderers accept the API
+directly. Route construction and serving report an `ApiIssue` for unregistered endpoints; an API may contain endpoints
+the selected backend does not serve. `ErrorPolicy(endpoint)` and `ComposedEndpoint` remain available for local use.
 
 Defaults have no body and decode to their `Code`. Envelope validation and payload syntax errors return 400,
 unsupported content types return 415, and body schema validation returns 422. Entity-read, response-encoding,
@@ -30,13 +37,14 @@ Replace policy entries with schemas, using `dimap` to construct a body from `Fai
 val unavailable = result(Code(503))(body.json(problemSchema))
   .dimap[Failure, Problem](_ => Problem.unavailable)(identity)
 val errors = ErrorPolicy.default.copy(unexpected = unavailable)
-val served = errors(myEndpoint)
 ```
 
 The status, headers, and body schema are inspectable without running the mapping. A custom policy's payload
 requirements are checked along with the endpoint's. See `sample-library`'s `api.contract` for a complete JSON policy.
 Responses with identical wire representations cannot identify their originating failure category; domain alternatives
-retain priority when decoding overlaps. OpenAPI and TypeScript preserve the declared response alternatives.
+retain priority when decoding overlaps. OpenAPI and TypeScript preserve the declared response alternatives. OpenAPI
+extracts complete response objects repeated by two or more operations into `components.responses`, keeping explicit
+status codes and replacing the operation entries with `$ref` values; different overrides remain inline.
 
 `Http4s.routes[IO](payload, observe = observation => ...)` optionally observes failures, cancellation, and failures
 while producing an error response, with request and endpoint context. It defaults to a no-op. Observer failures

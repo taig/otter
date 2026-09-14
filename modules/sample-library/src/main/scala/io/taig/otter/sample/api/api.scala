@@ -52,5 +52,5 @@ object api:
     */
   val unserved: Chain[Endpoint.Node] = Chain(books.upload, books.exported, books.report)
 
-  /** Everything, for the renderers. */
-  val all: Chain[Endpoint.Node] = api.served ++ api.unserved
+  /** Everything, resolved from the API-wide policy for the renderers. */
+  val all = contract.definition.effective.toOption.get

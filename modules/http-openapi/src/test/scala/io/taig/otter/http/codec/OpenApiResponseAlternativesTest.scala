@@ -4,14 +4,18 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.taig.otter.Keys
+import io.taig.otter.http.Api
+import io.taig.otter.http.ApiIssue
 import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
+import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.ErrorPolicy
 import io.taig.otter.http.Failure
 import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
 import io.taig.otter.http.OpenApiProfile
+import io.taig.otter.http.fixture.dsl
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.fixture.payload
 import zio.Scope
@@ -174,5 +178,80 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       assertTrue(
         document.issues.isEmpty,
         response(document).hcursor.downField("headers").downField("X-Count").get[Boolean]("required") == Right(true)
+      )
+    ,
+    test("an API inherits defaults and replaces only the categories it overrides"):
+      val first: Endpoint.Server[dsl.Payload, Unit, Unit] =
+        endpoint(request(method.get, __ / "api-first"), result(code.ok).toUnion)
+      val second: Endpoint.Server[dsl.Payload, Unit, Unit] =
+        endpoint(request(method.get, __ / "api-second"), result(code.ok).toUnion)
+      val defaults: ErrorPolicy[dsl.Payload, Code] = ErrorPolicy.default
+      val syntax = result(Code(400))(body.json(payload.string)).dimap[Failure, Code](_ => "")(_ => Code(400))
+      val document = Api(defaults, first, second)
+        .flatMap(_.withErrors(second, ErrorOverrides(syntax = Some(syntax))))
+        .flatMap(renderer.render(OpenApi.Info("Alternatives", "1"), _))
+
+      val firstResponse = document.map(
+        _.value.hcursor
+          .downField("paths")
+          .downField("/api-first")
+          .downField("get")
+          .downField("responses")
+          .downField("400")
+      )
+      val secondResponse = document.map(
+        _.value.hcursor
+          .downField("paths")
+          .downField("/api-second")
+          .downField("get")
+          .downField("responses")
+          .downField("400")
+      )
+      assertTrue(
+        document.exists(_.issues == List(OpenApiIssue.ResponseAlternatives("GET /api-second", 400))),
+        firstResponse.exists(_.downField("content").focus.isEmpty),
+        secondResponse.exists(
+          _.downField("content").downField("application/json").downField("schema").get[String]("type") == Right(
+            "string"
+          )
+        )
+      )
+    ,
+    test("API composition reports duplicate and unregistered endpoint identities"):
+      val registered = endpoint(request(method.get, __ / "registered"), result(code.ok).toUnion)
+      val unregistered = endpoint(request(method.get, __ / "unregistered"), result(code.ok).toUnion)
+      val duplicate = Api(ErrorPolicy.default, registered, registered)
+      val missing = Api(ErrorPolicy.default, registered).flatMap(_.withErrors(unregistered, ErrorOverrides()))
+
+      assertTrue(
+        duplicate == Left(ApiIssue.Duplicate(registered)),
+        missing == Left(ApiIssue.Unregistered(unregistered))
+      )
+    ,
+    test("complete responses shared by operations become deterministic response components"):
+      val first = endpoint(request(method.get, __ / "first"), result(code.ok)(body.json(payload.string)).toUnion)
+      val second = endpoint(request(method.get, __ / "second"), result(code.ok)(body.json(payload.string)).toUnion)
+      val third = endpoint(request(method.get, __ / "third"), result(code.ok)(body.json(payload.int)).toUnion)
+      val fourth = endpoint(request(method.get, __ / "fourth"), result(code.ok)(body.json(payload.int)).toUnion)
+
+      val document = renderer.render(
+        OpenApi.Info("Alternatives", "1"),
+        Chain(first, second, third, fourth)
+      )
+      val responses = document.value.hcursor.downField("components").downField("responses")
+      val reference = (path: String) =>
+        document.value.hcursor
+          .downField("paths")
+          .downField(path)
+          .downField("get")
+          .downField("responses")
+          .downField("200")
+          .get[String]("$ref")
+
+      assertTrue(
+        document.issues.isEmpty,
+        responses.focus.flatMap(_.asObject).map(_.keys.toList) == Some(List("Response200", "Response200_2")),
+        reference("/first") == Right("#/components/responses/Response200"),
+        reference("/third") == Right("#/components/responses/Response200_2")
       )
   )

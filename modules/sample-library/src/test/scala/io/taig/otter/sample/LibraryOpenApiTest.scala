@@ -101,19 +101,14 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
         )
       ,
       test("are referred to by $ref from the operations that use them"):
-        val reference =
-          at(
-            server.value,
-            "paths",
-            "/books/{isbn}",
-            "get",
-            "responses",
-            "200",
-            "content",
-            "application/json",
-            "schema",
-            "$ref"
-          )
+        val response = at(server.value, "paths", "/books/{isbn}", "get", "responses", "200").flatMap: value =>
+          at(value, "$ref")
+            .flatMap(_.asString)
+            .flatMap(_.stripPrefix("#/components/responses/") match
+              case name if name.nonEmpty => at(server.value, "components", "responses", name)
+              case _                     => None)
+            .orElse(Some(value))
+        val reference = response.flatMap(at(_, "content", "application/json", "schema", "$ref"))
 
         assertTrue(reference.flatMap(_.asString).contains("#/components/schemas/Book"))
       ,

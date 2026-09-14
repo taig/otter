@@ -92,6 +92,12 @@ final case class Route[F[_], +S[-w, +r], A, B](
 
 object Route:
   def apply[F[_], S[-w, +r], A, B, E](
+      api: Api[S, E],
+      endpoint: Endpoint.Server[S, A, B],
+      handler: A => F[B]
+  ): Either[ApiIssue, Route[F, S, A, B]] = api.resolve(endpoint).map(Route(_, handler))
+
+  def apply[F[_], S[-w, +r], A, B, E](
       endpoint: ComposedEndpoint[S, Nothing, A, B, Any, E],
       handler: A => F[B]
   ): Route[F, S, A, B] = new Route(endpoint.domain, handler, endpoint.errors)

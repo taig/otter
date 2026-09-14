@@ -15,3 +15,12 @@ final case class ComposedEndpoint[+S[-w, +r], -AW, +AR, -BW, +BR, +E](
       (value: Either[Failure, BW]) => value.swap
     )
     new Endpoint.Schema(domain.self.map(_ => Endpoint.Value(domain.request, Results.Schema(union))))
+
+  /** The contract a client reads. Request writers can only produce domain values, so errors are response-only here. */
+  def client: Endpoint.Schema[S, AW, AR, Nothing, Either[E, BR]] =
+    val union = Union.Modify(
+      Union.Coproduct(domain.responses.self.self, errors.responses.self.self),
+      (value: Either[BR, E]) => value.swap,
+      (value: Nothing) => value
+    )
+    new Endpoint.Schema(domain.self.map(_ => Endpoint.Value(domain.request, Results.Schema(union))))

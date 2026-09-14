@@ -48,6 +48,13 @@ object Http4s:
   ):
     def apply(routes: Route[F, Http4sPayload.Supported[P], ?, ?]*): HttpRoutes[F] = apply(Routes(routes*))
 
+    /** A subset of an API may be served by this backend, but each supplied route must belong to that API. */
+    def apply[E](
+        api: Api[Http4sPayload.Supported[P], E],
+        routes: Route[F, Http4sPayload.Supported[P], ?, ?]*
+    ): Either[ApiIssue, HttpRoutes[F]] =
+      routes.toList.traverse(route => api.policy(route.endpoint).map(_ => route)).map(values => apply(values*))
+
     def apply(routes: Routes[F, Http4sPayload.Supported[P]]): HttpRoutes[F] =
       val decoder = Http4sRequestDecoderUnchecked(payload)
       val encoder = Http4sResultEncoderUnchecked(payload)
@@ -69,6 +76,19 @@ object Http4s:
   def client[F[_]: Concurrent, A, B]: Http4s.ClientBuilder[F, A, B] = new Http4s.ClientBuilder[F, A, B]
 
   final class ClientBuilder[F[_]: Concurrent, A, B]:
+    def apply[P[-w, +r], E](
+        payload: Http4sPayload[P],
+        base: Uri,
+        client: Http4sClient[F]
+    )(
+        api: Api[Http4sPayload.Supported[P], E],
+        endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
+    ): Either[ApiIssue, A => F[Either[E, B]]] =
+      api
+        .resolve(endpoint)
+        .map: composed =>
+          new Http4s.ClientBuilder[F, A, Either[E, B]].apply(payload, base, client)(composed.client)
+
     def apply[P[-w, +r]](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
         endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
     ): A => F[B] =

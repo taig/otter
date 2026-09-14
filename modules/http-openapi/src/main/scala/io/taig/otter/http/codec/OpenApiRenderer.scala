@@ -10,6 +10,8 @@ import io.taig.otter.Keys
 import io.taig.otter.Metadata
 import io.taig.otter.Side
 import io.taig.otter.codec.JsonSchemaAnnotation
+import io.taig.otter.http.Api
+import io.taig.otter.http.ApiIssue
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
 import io.taig.otter.http.Code
@@ -64,9 +66,16 @@ final class OpenApiRenderer(
 
     val described = info.description.map(value => "description" -> CirceJson.fromString(value)).toList
 
+    val (compactPaths, responseComponents) = this.sharedResponses(paths)
+    val componentFields = Option
+      .when(collected.definitions.nonEmpty)("schemas" -> CirceJson.obj(collected.definitions.toList*))
+      .toList ++ Option
+      .when(responseComponents.nonEmpty)("responses" -> CirceJson.obj(responseComponents.toList*))
+      .toList
     val components = Option
-      .when(collected.definitions.nonEmpty):
-        "components" -> OpenApi.obj("schemas" -> CirceJson.obj(collected.definitions.toList*))
+      .when(collected.definitions.nonEmpty || responseComponents.nonEmpty):
+        OpenApi.obj(componentFields*)
+      .map("components" -> _)
       .toList
 
     val document = JsonSchema.merge(
@@ -80,13 +89,66 @@ final class OpenApiRenderer(
           described*
         ),
         "paths" -> CirceJson.obj(
-          paths.toList.map((template, operations) => template -> CirceJson.obj(operations.toList*))*
+          compactPaths.toList.map((template, operations) => template -> CirceJson.obj(operations.toList*))*
         )
       ),
       components*
     )
 
     OpenApiDocument(document, collected.issues.toList)
+
+  /** Resolve shared error defaults before rendering the operations they govern. */
+  def render(info: OpenApi.Info, api: Api[?, ?]): Either[ApiIssue, OpenApiDocument] =
+    api.effective.map(render(info, _))
+
+  /** Reuse complete response objects only after every operation has rendered and merged its alternatives. */
+  private def sharedResponses(
+      paths: ListMap[String, ListMap[String, CirceJson]]
+  ): (ListMap[String, ListMap[String, CirceJson]], ListMap[String, CirceJson]) =
+    val occurrences = paths.toList.flatMap: (path, operations) =>
+      operations.toList.flatMap: (method, operation) =>
+        operation.hcursor
+          .downField("responses")
+          .focus
+          .flatMap(_.asObject)
+          .toList
+          .flatMap(_.toList)
+          .map: (status, response) =>
+            (path, method, status, response)
+    val shared = occurrences
+      .groupBy(value => (value._3, value._4))
+      .values
+      .filter(_.size > 1)
+      .toList
+      .sortBy: values =>
+        occurrences.indexOf(values.head)
+    val named = shared.foldLeft((Map.empty[String, Int], List.empty[((String, CirceJson), String)])):
+      case ((counts, names), values) =>
+        val status = values.head._3
+        val count = counts.getOrElse(status, 0) + 1
+        val suffix = if count == 1 then "" else s"_$count"
+        (counts.updated(status, count), names :+ ((status, values.head._4) -> s"Response$status$suffix"))
+    val references = named._2.toMap
+    val components = ListMap.from(named._2.map { case ((_, response), name) => name -> response })
+    val compact = paths.map: (path, operations) =>
+      path -> operations.map: (method, operation) =>
+        val updated = operation.asObject
+          .map: fields =>
+            val fieldsWithResponses = fields.toList.map:
+              case ("responses", response) =>
+                val compactResponses = response.asObject.map: responses =>
+                  val entries = responses.toList.map: (status, value) =>
+                    status -> references
+                      .get((status, value))
+                      .fold(value): name =>
+                        OpenApi.obj("$ref" -> CirceJson.fromString(s"#/components/responses/$name"))
+                  CirceJson.obj(entries*)
+                "responses" -> compactResponses.getOrElse(response)
+              case field => field
+            CirceJson.obj(fieldsWithResponses*)
+          .getOrElse(operation)
+        method -> updated
+    (compact, components)
 
   /** One operation, and the path and method it is filed under. */
   private def operation(endpoint: Endpoint.Node): (String, String, CirceJson, Collected) =
