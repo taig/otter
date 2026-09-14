@@ -228,8 +228,16 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
       val invalidUtf8 = ByteVector(0xff.toByte)
 
       assertTrue(
-        Http4sFs2Data.Payload.decode[Book](document, malformed).exists(_.isInvalid),
-        Http4sFs2Data.Payload.decode[Book](document, invalidUtf8).exists(_.isInvalid)
+        Http4sFs2Data.Payload
+          .decode[Book](document, malformed)
+          .exists(
+            _.swap.toOption.exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty)
+          ),
+        Http4sFs2Data.Payload
+          .decode[Book](document, invalidUtf8)
+          .exists(
+            _.swap.toOption.exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty)
+          )
       )
     ,
     test("collection row failures include their row index"):
@@ -237,7 +245,16 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
       val text = "title,pages,read\nDune,412,true\nEmma,nope,false\n"
       val result = Http4sFs2Data.Payload.decode[Vector[Book]](document, ByteVector.encodeUtf8(text).toOption.get)
 
-      assertTrue(result.exists(_.fold(error => Http4s.report(error).contains("[1]"), _ => false)))
+      assertTrue(
+        result.exists(
+          _.fold(
+            error =>
+              error.category == Failure.Category.Validation &&
+                Http4s.report(error.violations).contains("[1]"),
+            _ => false
+          )
+        )
+      )
     ,
     test("zero-column output is an encoding failure"):
       val record = CsvDocument.Record(Reference.now(emptyRecord))

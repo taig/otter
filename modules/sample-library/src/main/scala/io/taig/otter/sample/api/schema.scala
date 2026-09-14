@@ -147,12 +147,12 @@ object schema:
   val kind: Json.Enumeration[Problem.Kind] = json
     .enumeration[Json.Primitive.Text.Schema, String, Problem.Kind](json.string):
       case Problem.Kind.Malformed => "malformed"
+      case Problem.Kind.Internal  => "internal"
       case Problem.Kind.Conflict  => "conflict"
       case Problem.Kind.Missing   => "missing"
     .attr(Keys.name, "ProblemKind")
 
-  /** One error shape for the whole API, which is what makes passing it to `Http4s.routes` worth doing: a caller reads
-    * the same document whether the request broke the schema or the handler refused it.
+  /** The error shape declared by the composed contract and the domain responses.
     */
   val problem: Json.Record[Problem] = (
     json.field("kind", schema.kind) :*

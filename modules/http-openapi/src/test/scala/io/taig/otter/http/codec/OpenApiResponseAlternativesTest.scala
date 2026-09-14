@@ -1,9 +1,13 @@
 package io.taig.otter.http.codec
 
 import cats.data.Chain
+import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.taig.otter.Keys
+import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
+import io.taig.otter.http.ErrorPolicy
+import io.taig.otter.http.Failure
 import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
@@ -14,6 +18,10 @@ import zio.Scope
 import zio.test.*
 
 object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
+  /** Rendering must inspect the declaration without evaluating this deliberately failing mapping. */
+  @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
+  private def unexpectedMapping(failure: Failure): String = throw new IllegalStateException(failure.category.toString)
+
   private val renderer = OpenApiRenderer.server(OpenApiProfile.V31, OpenApiPayload.json(OpenApiProfile.V31))
   private val requestSchema = request(method.get, __ / "alternatives")
 
@@ -31,6 +39,25 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       .getOrElse(CirceJson.Null)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("OpenApiResponseAlternativesTest")(
+    test("composed errors are rendered from declarations without executing mappings"):
+      val error = result(Code(503))(body.json(payload.string))
+        .dimap[Failure, String](OpenApiResponseAlternativesTest.unexpectedMapping)(identity)
+      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, result(code.noContent)))
+      val document = render(composed.effective)
+      val responses =
+        document.value.hcursor.downField("paths").downField("/alternatives").downField("get").downField("responses")
+      assertTrue(
+        document.issues.isEmpty,
+        responses.keys.map(_.toSet).contains(Set("204", "400", "415", "422", "500", "503")),
+        responses
+          .downField("503")
+          .downField("content")
+          .downField("application/json")
+          .downField("schema")
+          .get[String]("type") == Right("string"),
+        responses.downField("400").downField("content").focus.isEmpty
+      )
+    ,
     test("one status retains every media type and description"):
       val document = render(
         endpoint(

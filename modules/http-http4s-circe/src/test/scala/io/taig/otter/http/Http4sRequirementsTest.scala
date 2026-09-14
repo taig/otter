@@ -3,10 +3,37 @@ package io.taig.otter.http
 import zio.Scope
 import zio.test.*
 
+import scala.compiletime.testing.typeCheckErrors
 import scala.compiletime.testing.typeChecks
 
 object Http4sRequirementsTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sRequirementsTest")(
+    test("error payload requirements are retained when composing a body-free endpoint") {
+      assertTrue(!typeChecks("""
+        import cats.effect.IO
+        import cats.syntax.all.*
+        import io.taig.otter.http.*
+        import io.taig.otter.http.codec.*
+        import io.taig.otter.http.fixture.dsl.*
+        import io.taig.otter.http.fixture.payload
+        val error = result(Code(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
+        val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), result(code.noContent)))
+        Http4s.routes[IO](Http4sPayload.Empty)(Route(e, (_: Unit) => IO.unit))
+      """))
+    },
+    test("composed routes keep domain handler signatures and accept error interpreters") {
+      val errors = typeCheckErrors("""
+        import cats.effect.IO
+        import cats.syntax.all.*
+        import io.taig.otter.http.*
+        import io.taig.otter.http.fixture.dsl.*
+        import io.taig.otter.http.fixture.payload
+        val error = result(Code(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
+        val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), result(code.noContent)))
+        Http4s.routes[IO](Http4sCirce.Payload)(Route(e, (_: Unit) => IO.unit))
+      """)
+      assertTrue(errors.isEmpty)
+    },
     test("client accepts its JSON interpreter") {
       assertTrue(typeChecks("""
         import cats.effect.IO

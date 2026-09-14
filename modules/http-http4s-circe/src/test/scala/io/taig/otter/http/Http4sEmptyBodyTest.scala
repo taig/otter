@@ -127,7 +127,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
               entity = entity
             )
 
-            received(upload, request).map((code, value) => assertTrue(code == 422, value.isEmpty))
+            received(upload, request).map((code, value) => assertTrue(code == 415, value.isEmpty))
           ,
           test("a typed empty response is accepted under the declared media type"):
             decoded(download, Http4sResponse[IO](headers = headers(Some("IMAGE/PNG; version=1")), entity = entity))

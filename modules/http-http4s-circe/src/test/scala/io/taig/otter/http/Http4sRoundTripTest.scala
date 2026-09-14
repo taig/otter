@@ -3,7 +3,6 @@ package io.taig.otter.http
 import cats.data.Chain
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import io.taig.otter.Violations
 import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sResultDecoder
 import io.taig.otter.http.fixture.*
@@ -34,6 +33,23 @@ import zio.test.*
   * No socket is opened, which is what lets this suite run on Scala.js as well as the JVM.
   */
 object Http4sRoundTripTest extends ZIOSpecDefault:
+  private val errors: ErrorPolicy[dsl.Payload, Any] =
+    def response(status: Int): io.taig.otter.http.Result.Schema[dsl.Payload, Failure, Any] =
+      result(Code(status))(body.binary(dsl.mediaType.text)).contramap[Failure](failure =>
+        ByteVector.encodeUtf8(failure.violations.fold("")(Http4s.report)).getOrElse(ByteVector.empty)
+      )
+    ErrorPolicy(
+      response(400),
+      response(400),
+      response(415),
+      response(422),
+      response(500),
+      response(500),
+      response(500),
+      response(500),
+      response(500)
+    )
+
   private val Base: Uri = uri"http://otter.test"
 
   /** `GET /reports/{id}?page`, answering with a report or saying there is none. */
@@ -115,12 +131,12 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
     )
 
   /** The whole answer, so a malformed request can be asked about its status and its body at once. */
-  private def answer[A](endpoint: Endpoint.Of[dsl.Payload, A, Unit], malformed: Violations => Http4sWire.Response)(
+  private def answer[A](endpoint: Endpoint.Of[dsl.Payload, A, Unit], errors: ErrorPolicy[dsl.Payload, Any])(
       request: Http4sRequest[IO]
   ): Task[(Int, String)] =
     ZIO.fromFuture: _ =>
       Http4s
-        .routes[IO](Http4sCirce.Payload, malformed)(Route(endpoint, (_: A) => IO.unit))
+        .routes[IO](Http4sCirce.Payload)(Route(errors(endpoint), (_: A) => IO.unit))
         .orNotFound
         .run(request)
         .flatMap(response =>
@@ -268,29 +284,36 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
     ),
     suite("a request that does not hold what the endpoint describes")(
       test("a body that parses and breaks the schema is unprocessable, not malformed"):
-        answer(configure, Http4s.malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}"""))
+        answer(configure, Http4sRoundTripTest.errors)(
+          sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}""")
+        )
           .map((code, body) => assertTrue(code == 422, body.contains("$.body.theme")))
       ,
-      test("a body that is not a document at all is unprocessable too, because it is still the content"):
-        answer(configure, Http4s.malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", "not json"))
-          .map((code, _) => assertTrue(code == 422))
+      test("a body that is not a document is a syntax failure"):
+        answer(configure, Http4sRoundTripTest.errors)(
+          sent(Http4sMethod.PUT, uri"http://otter.test/settings", "not json")
+        )
+          .map((code, _) => assertTrue(code == 400))
       ,
       test("a query alongside a body drops the answer back to a bad request"):
-        answer(amend, Http4s.malformed)(
+        answer(amend, Http4sRoundTripTest.errors)(
           sent(Http4sMethod.PUT, uri"http://otter.test/reports/42?page=soon", """{"theme":42}""")
         ).map((code, body) => assertTrue(code == 400, body.contains("$.query.page"), body.contains("$.body.theme")))
       ,
       test("a path alone is a bad request, since there is no content to be unprocessable"):
-        answer(ping, Http4s.malformed)(Http4sRequest[IO](uri = uri"http://otter.test/reports/nope"))
+        answer(ping, Http4sRoundTripTest.errors)(Http4sRequest[IO](uri = uri"http://otter.test/reports/nope"))
           .map((code, _) => assertTrue(code == 400))
       ,
       test("what the answer looks like is the caller's, and the violations reach it whole"):
-        val malformed = (violations: Violations) =>
-          Http4sWire.Response(
-            Code(418),
-            Chain.one(("X-Violations", Http4s.report(violations).linesIterator.size.toString)),
-            Some((dsl.mediaType.json, ByteVector.encodeUtf8("""{"error":"invalid"}""").getOrElse(ByteVector.empty)))
+        val response = result(Code(418))
+          .headers(header("X-Violations", int).toRecord)(body.binary(dsl.mediaType.json))
+          .contramap[Failure](failure =>
+            (
+              failure.violations.map(Http4s.report).fold(0)(_.linesIterator.size),
+              ByteVector.encodeUtf8("""{"error":"invalid"}""").getOrElse(ByteVector.empty)
+            )
           )
+        val malformed = Http4sRoundTripTest.errors.copy(validation = response)
 
         answer(configure, malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}"""))
           .map((code, body) => assertTrue(code == 418, body == """{"error":"invalid"}"""))
@@ -303,11 +326,11 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         received(amendable, ())(None).map(seen => assertTrue(seen == None))
       ,
       test("an empty entity announced as JSON must contain a JSON document"):
-        answer(amendable, Http4s.malformed)(sent(Http4sMethod.PATCH, uri"http://otter.test/settings", ""))
-          .map((code, body) => assertTrue(code == 422, body.contains("$.body")))
+        answer(amendable, Http4sRoundTripTest.errors)(sent(Http4sMethod.PATCH, uri"http://otter.test/settings", ""))
+          .map((code, body) => assertTrue(code == 400, body.contains("$.body")))
       ,
       test("a body that was sent is still held to the schema"):
-        answer(amendable, Http4s.malformed)(
+        answer(amendable, Http4sRoundTripTest.errors)(
           sent(Http4sMethod.PATCH, uri"http://otter.test/settings", """{"theme":42}""")
         ).map((code, body) => assertTrue(code == 422, body.contains("$.body.theme")))
     )

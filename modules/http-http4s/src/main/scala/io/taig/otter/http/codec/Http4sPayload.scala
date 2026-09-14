@@ -3,6 +3,8 @@ package io.taig.otter.http.codec
 import cats.data.Validated
 import io.taig.otter.Violations
 import io.taig.otter.http.Body
+import io.taig.otter.http.DecodingFailure
+import io.taig.otter.http.Failure
 import scodec.bits.ByteVector
 
 /** Interpreters covering every payload in `P`.
@@ -13,14 +15,14 @@ import scodec.bits.ByteVector
   * existential after a schema is stored in a union.
   */
 sealed abstract class Http4sPayload[-P[-w, +r]]:
-  private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[Violations, R]]
+  private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[DecodingFailure, R]]
 
   private[http] def encode[W](payload: Any, value: W): Option[Either[String, ByteVector]]
 
   /** The first interpreter recognizing the schema owns both successes and failures. */
   final def orElse[Q[-w, +r]](that: Http4sPayload[Q]): Http4sPayload[Body.Or[P, Q]] =
     new Http4sPayload[Body.Or[P, Q]]:
-      override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[Violations, R]] =
+      override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[DecodingFailure, R]] =
         Http4sPayload.this.decode(payload, bytes).orElse(that.decode(payload, bytes))
 
       override private[http] def encode[W](payload: Any, value: W): Option[Either[String, ByteVector]] =
@@ -34,6 +36,10 @@ object Http4sPayload:
   trait Codec[-P[-w, +r]]:
     def decode[R](payload: P[Nothing, R], bytes: ByteVector): Validated[Violations, R]
 
+    /** Override when the parser can distinguish malformed bytes from schema violations. */
+    def decodeDetailed[R](payload: P[Nothing, R], bytes: ByteVector): Validated[DecodingFailure, R] =
+      decode(payload, bytes).leftMap(violations => DecodingFailure(Failure.Category.Validation, violations))
+
     def encode[W](payload: P[W, Any], value: W): Either[String, ByteVector]
 
   /** `recognize` must accept every schema in `P`, preserving its write/read types. The registry only supplies schemas
@@ -41,13 +47,13 @@ object Http4sPayload:
     */
   def apply[P[-w, +r]](recognize: [w, r] => Any => Option[P[w, r]])(codec: Http4sPayload.Codec[P]): Http4sPayload[P] =
     new Http4sPayload[P]:
-      override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[Violations, R]] =
-        recognize[Nothing, R](payload).map(codec.decode(_, bytes))
+      override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[DecodingFailure, R]] =
+        recognize[Nothing, R](payload).map(codec.decodeDetailed(_, bytes))
 
       override private[http] def encode[W](payload: Any, value: W): Option[Either[String, ByteVector]] =
         recognize[W, Any](payload).map(codec.encode(_, value))
 
   val Empty: Http4sPayload[Nothing] = new Http4sPayload[Nothing]:
-    override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[Violations, R]] = None
+    override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[DecodingFailure, R]] = None
 
     override private[http] def encode[W](payload: Any, value: W): Option[Either[String, ByteVector]] = None

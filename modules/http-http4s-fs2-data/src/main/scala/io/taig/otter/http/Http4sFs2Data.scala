@@ -33,6 +33,11 @@ object Http4sFs2Data:
         case _                                 => None
   )(new Http4sPayload.Codec[CsvDocument]:
     override def decode[R](payload: CsvDocument[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
+      decodeDetailed(payload, bytes).leftMap(
+        _.violations
+      )
+
+    override def decodeDetailed[R](payload: CsvDocument[Nothing, R], bytes: ByteVector): Validated[DecodingFailure, R] =
       payload match
         case CsvDocument.Rows(schema)         => Http4sFs2Data.decodeRows(schema.value, bytes, indexed = true)
         case row: CsvDocument.Row[Nothing, R] =>
@@ -40,7 +45,11 @@ object Http4sFs2Data:
             .decodeRows(row, bytes, indexed = false)
             .andThen:
               case Vector(value) => value.valid
-              case values        => Http4sFs2Data.violation("Exactly one CSV data row", values.length.toString).invalid
+              case values        =>
+                Http4sFs2Data
+                  .violation("Exactly one CSV data row", values.length.toString)
+                  .invalid
+                  .leftMap(Http4sFs2Data.validation)
 
     override def encode[W](payload: CsvDocument[W, Any], value: W): Either[String, ByteVector] =
       payload match
@@ -50,9 +59,11 @@ object Http4sFs2Data:
   private def violation(expected: String, actual: String): Violations =
     Violations(Violation(constraint = Constraint.Generic.Type(expected), actual = actual.asData, hint = none))
 
-  private def parse(bytes: ByteVector): Validated[Violations, Vector[Row]] =
+  private def parse(bytes: ByteVector): Validated[DecodingFailure, Vector[Row]] =
     bytes.decodeUtf8
-      .leftMap(error => Http4sFs2Data.violation("UTF-8", error.getMessage))
+      .leftMap(error =>
+        DecodingFailure(Failure.Category.Syntax, Http4sFs2Data.violation("UTF-8", error.getMessage), Some(error))
+      )
       .toValidated
       .andThen: text =>
         Stream
@@ -60,32 +71,44 @@ object Http4sFs2Data:
           .through(lowlevel.rows[Fallible, String]())
           .compile
           .toVector
-          .leftMap(error => Http4sFs2Data.violation("CSV", error.getMessage))
+          .leftMap(error =>
+            DecodingFailure(Failure.Category.Syntax, Http4sFs2Data.violation("CSV", error.getMessage), Some(error))
+          )
           .toValidated
+
+  private def validation(violations: Violations): DecodingFailure =
+    DecodingFailure(Failure.Category.Validation, violations)
 
   private def decodeRows[R](
       schema: CsvDocument.Row[Nothing, R],
       bytes: ByteVector,
       indexed: Boolean
-  ): Validated[Violations, Vector[R]] =
+  ): Validated[DecodingFailure, Vector[R]] =
     Http4sFs2Data
       .parse(bytes)
       .andThen: rows =>
-        schema match
-          case CsvDocument.Record(reference) =>
-            rows.headOption
-              .toValid(Http4sFs2Data.violation("CSV header", "empty document"))
-              .andThen: header =>
-                rows.tail.zipWithIndex.traverse: (row, index) =>
-                  val decoded = CsvRow(row.values, header.values)
-                    .leftMap(error => Http4sFs2Data.violation("CSV row matching its header", error.getMessage))
-                    .toValidated
-                    .andThen(CsvKeyedRowDecoder.decode(reference.value, _))
-                  if indexed then decoded.leftMap(index /: _) else decoded
-          case CsvDocument.Tuple(reference) =>
-            rows.zipWithIndex.traverse: (row, index) =>
-              val decoded = CsvRowDecoder.decode(reference.value, row)
+        Http4sFs2Data.decodeParsedRows(schema, rows, indexed).leftMap(Http4sFs2Data.validation)
+
+  private def decodeParsedRows[R](
+      schema: CsvDocument.Row[Nothing, R],
+      rows: Vector[Row],
+      indexed: Boolean
+  ): Validated[Violations, Vector[R]] =
+    schema match
+      case CsvDocument.Record(reference) =>
+        rows.headOption
+          .toValid(Http4sFs2Data.violation("CSV header", "empty document"))
+          .andThen: header =>
+            rows.tail.zipWithIndex.traverse: (row, index) =>
+              val decoded = CsvRow(row.values, header.values)
+                .leftMap(error => Http4sFs2Data.violation("CSV row matching its header", error.getMessage))
+                .toValidated
+                .andThen(CsvKeyedRowDecoder.decode(reference.value, _))
               if indexed then decoded.leftMap(index /: _) else decoded
+      case CsvDocument.Tuple(reference) =>
+        rows.zipWithIndex.traverse: (row, index) =>
+          val decoded = CsvRowDecoder.decode(reference.value, row)
+          if indexed then decoded.leftMap(index /: _) else decoded
 
   private def encodeRows[W](schema: CsvDocument.Row[W, Any], values: Vector[W]): Either[String, ByteVector] =
     val rows: Either[String, Vector[NonEmptyList[String]]] = schema match

@@ -1,8 +1,12 @@
 package io.taig.otter.http.codec
 
 import cats.data.Chain
+import cats.syntax.all.*
 import io.taig.otter.Keys
+import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
+import io.taig.otter.http.ErrorPolicy
+import io.taig.otter.http.Failure
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
 import io.taig.otter.http.fixture.dsl.*
@@ -11,6 +15,10 @@ import zio.Scope
 import zio.test.*
 
 object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
+  /** Rendering must inspect the declaration without evaluating this deliberately failing mapping. */
+  @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
+  private def unexpectedMapping(failure: Failure): String = throw new IllegalStateException(failure.category.toString)
+
   private val renderer = TypescriptEndpointRenderer.client(TypescriptEffectPayload.json)
   private val requestSchema = request(method.get, __ / "alternatives")
   private val integer = payload.int.attr(Keys.name, "Integer")
@@ -21,6 +29,22 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
   private def render(value: Endpoint.Node): TypescriptModule = renderer.render(Chain.one(value))
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TypescriptResponseAlternativesTest")(
+    test("composed errors contribute encoded and decoded types without executing mappings"):
+      val error = result(Code(503))(body.json(payload.string.attr(Keys.name, "ErrorText")))
+        .dimap[Failure, String](TypescriptResponseAlternativesTest.unexpectedMapping)(identity)
+      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, result(code.noContent)))
+      val module = render(composed.effective)
+      val source = module.render
+      assertTrue(
+        module.issues.isEmpty,
+        source.contains("\"503\":"),
+        source.contains("\"400\":"),
+        source.contains("\"415\":"),
+        source.contains("Schema.Schema.Type<typeof ErrorText>"),
+        source.contains("Schema.Schema.Encoded<typeof ErrorText>"),
+        !source.contains("fetch(")
+      )
+    ,
     test("one status retains all media types"):
       val module = render(
         endpoint(

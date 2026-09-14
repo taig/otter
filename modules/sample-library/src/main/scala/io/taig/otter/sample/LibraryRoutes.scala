@@ -1,19 +1,11 @@
 package io.taig.otter.sample
 
-import cats.data.Chain
 import cats.effect.Concurrent
-import io.taig.otter.Violations
-import io.taig.otter.codec.JsonCirceEncoder
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
-import io.taig.otter.http.Http4sWire
 import io.taig.otter.http.Route
-import io.taig.otter.sample.api.books
-import io.taig.otter.sample.api.dsl
-import io.taig.otter.sample.api.loans
-import io.taig.otter.sample.api.schema
+import io.taig.otter.sample.api.contract
 import org.http4s.HttpRoutes
-import scodec.bits.ByteVector
 
 /** The endpoints of [[io.taig.otter.sample.api.api.served]], each paired with what answers it.
   *
@@ -34,32 +26,18 @@ import scodec.bits.ByteVector
   * records rather than leaves to be discovered.
   */
 object LibraryRoutes:
-  /** What a request that this API described but did not hold is answered with.
-    *
-    * [[Http4s.routes]] takes this as a parameter precisely so an API's errors stay its own vocabulary, and passing one
-    * is the difference between a caller reading plain text from the framework and reading the same [[Problem]] document
-    * it gets from every handler. The 400/422 split is [[Http4s.code]]'s and is kept: violations found only under the
-    * body mean the content was understood and wrong, and anything in the envelope means the request was.
-    */
-  val malformed: Violations => Http4sWire.Response = violations =>
-    val problem = Problem.malformed(Http4s.report(violations).linesIterator.toList)
-    val document = JsonCirceEncoder.encode(schema.problem, problem).noSpaces
-    val bytes = ByteVector.encodeUtf8(document).getOrElse(ByteVector.empty)
-
-    Http4sWire.Response(Http4s.code(violations), Chain.empty, Some((dsl.mediaType.json, bytes)))
-
   /** Every served endpoint, answered by `library`. */
   def apply[F[_]: Concurrent](library: Library[F]): HttpRoutes[F] =
-    Http4s.routes[F](Http4sCirce.Payload, LibraryRoutes.malformed)(
-      Route(loans.health, (_: Unit) => library.health),
-      Route(books.list, (page, size, genres, available, _) => library.list(page, size, genres, available)),
-      Route(books.create, library.create),
-      Route(books.fetch, library.fetch),
-      Route(books.patch, library.patch.tupled),
-      Route(books.delete, library.delete),
-      Route(books.scan, library.scan.tupled),
-      Route(books.intake, library.intake),
-      Route(books.catalogue, (_: Unit) => library.catalogue),
-      Route(loans.fetch, library.member),
-      Route(loans.borrow, library.borrow.tupled)
+    Http4s.routes[F](Http4sCirce.Payload)(
+      Route(contract.health, (_: Unit) => library.health),
+      Route(contract.listBooks, input => library.list(input._1, input._2, input._3, input._4)),
+      Route(contract.createBook, library.create),
+      Route(contract.fetchBook, library.fetch),
+      Route(contract.patchBook, library.patch.tupled),
+      Route(contract.deleteBook, library.delete),
+      Route(contract.scanBooks, library.scan.tupled),
+      Route(contract.intakeBooks, library.intake),
+      Route(contract.catalogue, (_: Unit) => library.catalogue),
+      Route(contract.fetchLoans, library.member),
+      Route(contract.borrow, library.borrow.tupled)
     )

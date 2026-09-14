@@ -102,9 +102,9 @@ object LibraryRoutesTest extends ZIOSpecDefault:
           )
         ).map((code, body) => assertTrue(code == 422, body.contains("$.body.genres")))
       ,
-      test("a body that is not a document at all is still the content, so still unprocessable"):
+      test("a body that is not a document is a syntax failure"):
         answer(json(Http4sMethod.POST, uri"http://library.test/books", "not json"))
-          .map((code, _) => assertTrue(code == 422))
+          .map((code, _) => assertTrue(code == 400))
       ,
       test("a violation in the envelope alongside one in the body drops the answer back to a bad request"):
         answer(json(Http4sMethod.PATCH, uri"http://library.test/books/nope", """{"pages":0}"""))

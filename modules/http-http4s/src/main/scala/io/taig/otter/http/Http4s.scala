@@ -11,7 +11,6 @@ import io.taig.otter.http.codec.Http4sRequestDecoderUnchecked
 import io.taig.otter.http.codec.Http4sRequestEncoder
 import io.taig.otter.http.codec.Http4sResultDecoder
 import io.taig.otter.http.codec.Http4sResultEncoderUnchecked
-import io.taig.otter.http.component.HttpComponent
 import io.taig.otter.http.component.MediaTypeComponent
 import org.http4s.Entity
 import org.http4s.HttpRoutes
@@ -25,8 +24,7 @@ import scodec.bits.ByteVector
   *
   * The bridge object, on the pattern [[io.taig.otter.JsonCirce]] and [[io.taig.otter.JsonBorer]] set: the codecs are
   * the interpreter, and this is where they become the thing a caller actually wanted -- an `HttpRoutes`, a function --
-  * and where `Violations` stops being a value and becomes an HTTP fact. Both translations live here and nowhere else,
-  * so what a malformed request looks like is one decision recorded in one place.
+  * and where failures become the responses declared by each route's error policy.
   */
 object Http4s:
   /** A set of routes, tried in the order they are given.
@@ -34,22 +32,19 @@ object Http4s:
     * `HttpRoutes` and not `HttpApp`, because falling through is the honest answer to a path none of these describe:
     * composing with `<+>` is then somebody else's decision, and so is what a `404` looks like.
     *
-    * `malformed` is what a request that this set described but did not hold is answered with, and it is a parameter
-    * because that answer is an API's own vocabulary rather than this module's. [[Http4s.malformed]] is the default and
-    * says the true thing in plain text; an API whose errors have a schema passes a function that renders one, and keeps
-    * its callers reading a single error shape.
+    * Each route carries its declared error policy. `observe` receives diagnostics without choosing responses.
     */
   def routes[F[_]: Concurrent]: Http4s.RoutesBuilder[F] = new Http4s.RoutesBuilder[F]
 
   final class RoutesBuilder[F[_]: Concurrent]:
     def apply[P[-w, +r]](
         payload: Http4sPayload[P],
-        malformed: Violations => Http4sWire.Response = Http4s.malformed
-    ): Http4s.RoutesWithPayload[F, P] = new Http4s.RoutesWithPayload(payload, malformed)
+        observe: Http4sObservation[F] => F[Unit] = (_: Http4sObservation[F]) => Concurrent[F].unit
+    ): Http4s.RoutesWithPayload[F, P] = new Http4s.RoutesWithPayload(payload, observe)
 
   final class RoutesWithPayload[F[_]: Concurrent, P[-w, +r]](
       payload: Http4sPayload[P],
-      malformed: Violations => Http4sWire.Response
+      observe: Http4sObservation[F] => F[Unit]
   ):
     def apply(routes: Route[F, Http4sPayload.Supported[P], ?, ?]*): HttpRoutes[F] = apply(Routes(routes*))
 
@@ -63,7 +58,7 @@ object Http4s:
 
         OptionT
           .fromOption[F](routes.values.find(_.matches(method, segments)))
-          .semiflatMap(_.run(decoder, encoder, malformed, request, segments))
+          .semiflatMap(_.run(decoder, encoder, observe, request, segments))
 
   /** An endpoint, as a function that calls it.
     *
@@ -95,37 +90,6 @@ object Http4s:
             .leftMap(Http4sFailure.Response.apply)
             .liftTo[F]
         yield decoded
-
-  /** The status a violation report goes out under.
-    *
-    * RFC 9110 draws the line by what failed rather than by how badly. `400` is a request whose *syntax* the server will
-    * not process; `422` is one whose content type is understood and whose content parses, but whose instructions cannot
-    * be carried out. A body that is JSON and breaks the schema is squarely the second, and a path segment or a query
-    * parameter that will not parse is squarely the first -- there is no content there to be unprocessable, the request
-    * line itself is wrong.
-    *
-    * So the position decides, and the position is already in the tree:
-    * [[io.taig.otter.http.codec.Http4sRequestDecoder]] labels each half it reads, and accumulates them, so a request
-    * may hold violations under several at once. `422` only when every one of them is under `body`, because a report
-    * that also names a query parameter is not describing a request whose syntax was correct.
-    */
-  def code(violations: Violations): Code = violations match
-    case Violations.Namespace(values) if values.keys.forall(_ == Step.Field("body")) =>
-      HttpComponent.code.unprocessableEntity
-    case _ => HttpComponent.code.badRequest
-
-  /** What a request that this endpoint described, but that did not hold what it described, is answered with.
-    *
-    * [[Http4s.code]] and a plain text report. Plain text because a violation report is not a payload the endpoint
-    * declared, so answering in the endpoint's own alphabet would be describing something the document does not mention;
-    * and because a module that renders JSON would need a JSON interpreter, which is exactly the dependency the payload
-    * trait was made open to avoid. A caller that wants its own vocabulary passes one to [[Http4s.routes]] rather than
-    * being given a second interpreter here.
-    */
-  def malformed(violations: Violations): Http4sWire.Response =
-    val bytes = ByteVector.encodeUtf8(Http4s.report(violations)).getOrElse(ByteVector.empty)
-
-    Http4sWire.Response(Http4s.code(violations), Chain.empty, Some((MediaTypeComponent.text, bytes)))
 
   /** A violation tree, one line per violation, each named by where it was found and by what was found there.
     *

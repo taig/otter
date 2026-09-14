@@ -63,8 +63,11 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
       /** `books.fetch` converts its union to an `Option[Book]`, which is a decision about what the handler holds. The
         * document is the place that would show it if it were anything more than that.
         */
-      test("an answer converted to another type still renders every status the union named"):
-        assertTrue(keys(server.value, "paths", "/books/{isbn}", "get", "responses") == List("200", "404"))
+      test("a converted domain answer retains its statuses alongside the declared execution errors"):
+        assertTrue(
+          keys(server.value, "paths", "/books/{isbn}", "get", "responses") ==
+            List("200", "404", "400", "415", "422", "500")
+        )
     ),
     suite("parameters")(
       test("are named by position, and a defaulted one is not required"):
