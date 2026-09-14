@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import io.taig.otter.Violations
 import io.taig.otter.http.codec.Http4sRequestDecoderUnchecked
 import io.taig.otter.http.codec.Http4sResultEncoderUnchecked
 import io.taig.otter.http.codec.PathTemplate
@@ -17,7 +16,11 @@ import scodec.bits.ByteVector
   * wrong: a status code is chosen by which branch of the result union the value took, and a handler that returns the
   * wrong shape does not compile.
   */
-final case class Route[F[_], +S[-w, +r], A, B](endpoint: Endpoint.Server[S, A, B], handler: A => F[B]):
+final case class Route[F[_], +S[-w, +r], A, B](
+    endpoint: Endpoint.Server[S, A, B],
+    handler: A => F[B],
+    errors: ErrorPolicy[S, Any] = ErrorPolicy.default
+):
   /** Whether this route is the one an incoming method and path is addressed to.
     *
     * Arity and literals, and deliberately nothing else. [[io.taig.otter.http.codec.PathDecoder]] would answer a
@@ -37,28 +40,68 @@ final case class Route[F[_], +S[-w, +r], A, B](endpoint: Endpoint.Server[S, A, B
   private[http] def run(
       decoder: Http4sRequestDecoderUnchecked,
       encoder: Http4sResultEncoderUnchecked,
-      malformed: Violations => Http4sWire.Response,
+      observe: Http4sObservation[F] => F[Unit],
       request: Http4sRequest[F],
       segments: Vector[String]
-  )(using
-      F: Concurrent[F]
-  ): F[Http4sResponse[F]] =
-    Route
-      .bytes(endpoint, request)
-      .flatMap: bytes =>
-        val wire = Http4sWire.Request(
-          path = segments,
-          queries = Http4sEnvelope.toQueries(request.uri.query),
-          headers = Http4sEnvelope.toHeaders(request.headers),
-          body = (Http4sEnvelope.toMediaType(request.headers), bytes)
-        )
+  )(using F: Concurrent[F]): F[Http4sResponse[F]] =
+    def evaluate[T](value: => T): F[T] = F.unit.flatMap(_ => F.catchNonFatal(value))
+    def notify(event: Http4sObservation.Event): F[Unit] =
+      evaluate(observe(Http4sObservation(request, endpoint, event))).flatten
+    def failure(cause: Throwable): Failure = cause match
+      case Http4sFailure.Execution(refused)                   => refused
+      case Http4sFailure.Interpreter(_: Http4sIssue.Encoding) => Failure(Failure.Category.Encoding, cause = Some(cause))
+      case Http4sFailure.Interpreter(_) => Failure(Failure.Category.Interpreter, cause = Some(cause))
+      case _: Http4sFailure.Code        => Failure(Failure.Category.Status, cause = Some(cause))
+      case _                            => Failure(Failure.Category.Unexpected, cause = Some(cause))
 
-        decoder.decode(endpoint.request, wire) match
-          case cats.data.Validated.Valid(value)        => handler(value).map(encoder.encode(endpoint.responses, _))
-          case cats.data.Validated.Invalid(violations) => F.pure(Right(malformed(violations)))
-      .flatMap(Http4s.respond[F])
+    val execute = evaluate(Route.bytes(endpoint, request)).flatten.attempt.flatMap:
+      case Left(cause)  => F.pure(Left(Failure(Failure.Category.EntityRead, cause = Some(cause))))
+      case Right(bytes) =>
+        evaluate:
+          val wire = Http4sWire.Request(
+            path = segments,
+            queries = Http4sEnvelope.toQueries(request.uri.query),
+            headers = Http4sEnvelope.toHeaders(request.headers),
+            body = (Http4sEnvelope.toMediaType(request.headers), bytes)
+          )
+          decoder.decodeDetailed(endpoint.request, wire)
+        .flatMap:
+          case cats.data.Validated.Invalid(refused) => F.pure(Left(refused.failure))
+          case cats.data.Validated.Valid(value)     =>
+            evaluate(handler(value)).flatten
+              .flatMap(value =>
+                evaluate(encoder.encode(endpoint.responses, value)).handleErrorWith(cause =>
+                  F.raiseError(Http4sFailure.Execution(Failure(Failure.Category.Encoding, cause = Some(cause))))
+                )
+              )
+              .flatMap(Http4s.respond[F])
+              .map(Right(_))
+
+    val respond = execute
+      .handleError(cause => Left(failure(cause)))
+      .flatMap:
+        case Right(response) => F.pure(response)
+        case Left(refused)   =>
+          val render = evaluate(encoder.encode(errors.responses, refused))
+            .flatMap(Http4s.respond[F])
+            .handleErrorWith: cause =>
+              notify(Http4sObservation.Event.ErrorResponseFailed(cause)).attempt *> F.raiseError(cause)
+          notify(Http4sObservation.Event.Failed(refused)) *> render
+
+    F.onCancel(respond, notify(Http4sObservation.Event.Cancelled))
 
 object Route:
+  def apply[F[_], S[-w, +r], A, B, E](
+      api: Api[S, E],
+      endpoint: Endpoint.Server[S, A, B],
+      handler: A => F[B]
+  ): Either[ApiIssue, Route[F, S, A, B]] = api.resolve(endpoint).map(Route(_, handler))
+
+  def apply[F[_], S[-w, +r], A, B, E](
+      endpoint: ComposedEndpoint[S, Nothing, A, B, Any, E],
+      handler: A => F[B]
+  ): Route[F, S, A, B] = new Route(endpoint.domain, handler, endpoint.errors)
+
   /** The request's bytes, read only if the endpoint describes something to read them as.
     *
     * An endpoint with no body never touches the entity at all, which is what keeps a `GET` from paying for a stream it

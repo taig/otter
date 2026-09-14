@@ -31,6 +31,15 @@ object Http4sCirce:
     override def decode[R](payload: Json.Node[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
       Http4sCirce.parse(bytes).andThen(JsonCirceDecoder.decode[R](payload, _))
 
+    override def decodeDetailed[R](payload: Json.Node[Nothing, R], bytes: ByteVector): Validated[DecodingFailure, R] =
+      Http4sCirce
+        .parseDetailed(bytes)
+        .andThen(document =>
+          JsonCirceDecoder
+            .decode[R](payload, document)
+            .leftMap(violations => DecodingFailure(Failure.Category.Validation, violations))
+        )
+
     override def encode[W](payload: Json.Node[W, Any], value: W): Either[String, ByteVector] =
       ByteVector.encodeUtf8(JsonCirceEncoder.encode[W](payload, value).noSpaces).leftMap(_.getMessage))
 
@@ -41,10 +50,20 @@ object Http4sCirce:
     * supplies, so a caller sees `$$.body` and not a bare parse error.
     */
   private def parse(bytes: ByteVector): Validated[Violations, CirceJson] =
-    bytes.decodeUtf8.toOption
-      .flatMap(io.circe.parser.parse(_).toOption)
-      .toValid(
-        Violations(
-          Violation(constraint = Constraint.Generic.Type("json"), actual = bytes.size.toInt.asData, hint = none)
+    Http4sCirce
+      .parseDetailed(bytes)
+      .leftMap(_.violations)
+
+  private def parseDetailed(bytes: ByteVector): Validated[DecodingFailure, CirceJson] =
+    bytes.decodeUtf8
+      .flatMap(io.circe.parser.parse(_))
+      .leftMap(cause =>
+        DecodingFailure(
+          Failure.Category.Syntax,
+          Violations(
+            Violation(constraint = Constraint.Generic.Type("json"), actual = bytes.size.toInt.asData, hint = none)
+          ),
+          Some(cause)
         )
       )
+      .toValidated

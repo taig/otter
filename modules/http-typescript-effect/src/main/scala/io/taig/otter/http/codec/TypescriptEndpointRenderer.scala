@@ -10,6 +10,8 @@ import io.taig.otter.Typescript
 import io.taig.otter.TypescriptEffect
 import io.taig.otter.codec.JsonTypescriptContext
 import io.taig.otter.codec.JsonTypescriptDefinition
+import io.taig.otter.http.Api
+import io.taig.otter.http.ApiIssue
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
 import io.taig.otter.http.Code
@@ -73,6 +75,9 @@ final class TypescriptEndpointRenderer(
       TypescriptEndpointRenderer.Import :: context.declarations ++ statements.toList,
       issues.toList
     )
+
+  /** Resolve shared error defaults before generating the endpoint descriptors. */
+  def render(api: Api[?, ?]): Either[ApiIssue, TypescriptModule] = api.effective.map(render)
 
   /** One endpoint: the type of its input, the two types of its answer, and the descriptor itself. */
   private def endpoint(

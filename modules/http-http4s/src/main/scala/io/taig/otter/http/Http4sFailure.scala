@@ -16,6 +16,8 @@ import scala.util.control.NoStackTrace
 sealed abstract class Http4sFailure(message: String) extends Exception(message) with NoStackTrace
 
 object Http4sFailure:
+  final private[http] case class Execution(failure: Failure) extends Http4sFailure("HTTP execution failure")
+
   /** The response did not hold what the endpoint said it would. */
   final case class Response(violations: Violations)
       extends Http4sFailure(show"Response does not match the endpoint:\n${Http4s.report(violations)}")

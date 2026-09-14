@@ -63,8 +63,11 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
       /** `books.fetch` converts its union to an `Option[Book]`, which is a decision about what the handler holds. The
         * document is the place that would show it if it were anything more than that.
         */
-      test("an answer converted to another type still renders every status the union named"):
-        assertTrue(keys(server.value, "paths", "/books/{isbn}", "get", "responses") == List("200", "404"))
+      test("a converted domain answer retains its statuses alongside the declared execution errors"):
+        assertTrue(
+          keys(server.value, "paths", "/books/{isbn}", "get", "responses") ==
+            List("200", "404", "400", "415", "422", "500")
+        )
     ),
     suite("parameters")(
       test("are named by position, and a defaulted one is not required"):
@@ -98,19 +101,14 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
         )
       ,
       test("are referred to by $ref from the operations that use them"):
-        val reference =
-          at(
-            server.value,
-            "paths",
-            "/books/{isbn}",
-            "get",
-            "responses",
-            "200",
-            "content",
-            "application/json",
-            "schema",
-            "$ref"
-          )
+        val response = at(server.value, "paths", "/books/{isbn}", "get", "responses", "200").flatMap: value =>
+          at(value, "$ref")
+            .flatMap(_.asString)
+            .flatMap(_.stripPrefix("#/components/responses/") match
+              case name if name.nonEmpty => at(server.value, "components", "responses", name)
+              case _                     => None)
+            .orElse(Some(value))
+        val reference = response.flatMap(at(_, "content", "application/json", "schema", "$ref"))
 
         assertTrue(reference.flatMap(_.asString).contains("#/components/schemas/Book"))
       ,

@@ -8,6 +8,10 @@ import io.taig.otter.Constraint
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Body
+import io.taig.otter.http.DecodingFailure
+import io.taig.otter.http.Failure
+import io.taig.otter.http.Http4sFailure
+import io.taig.otter.http.Http4sIssue
 import io.taig.otter.http.MediaType
 import io.taig.validation.Violation
 import scodec.bits.ByteVector
@@ -27,12 +31,19 @@ final private[http] class Http4sBodyDecoderUnchecked(payload: Http4sPayload[?])
   override def decode[R](
       body: Body.Node[Nothing, R],
       value: (Option[MediaType], ByteVector)
-  ): Validated[Violations, R] = decode(body.self.self, value)
+  ): Validated[Violations, R] = decodeDetailed(body, value).leftMap(
+    _.violations
+  )
+
+  private[http] def decodeDetailed[R](
+      body: Body.Node[Nothing, R],
+      value: (Option[MediaType], ByteVector)
+  ): Validated[DecodingFailure, R] = decode(body.self.self, value)
 
   private def decode[R](
       body: Body.Value[Body.Payload, Nothing, R],
       value: (Option[MediaType], ByteVector)
-  ): Validated[Violations, R] =
+  ): Validated[DecodingFailure, R] =
     val (mediaType, bytes) = value
 
     body match
@@ -43,17 +54,25 @@ final private[http] class Http4sBodyDecoderUnchecked(payload: Http4sPayload[?])
           .andThen: _ =>
             payload.decode[R](reference.value, bytes) match
               case Some(decoded) => decoded
-              case None          => Http4sBodyDecoderUnchecked.uninterpreted(declared)
+              case None => Http4sBodyDecoderUnchecked.unsupported(declared, Http4sIssue.Uninterpreted(declared))
       case Body.Value.Binary(declared) => Http4sBodyDecoderUnchecked.matches(declared, mediaType).map(_ => bytes)
-      case Body.Value.Streamed(declared, _, _) => Http4sBodyDecoderUnchecked.streamed(declared)
+      case Body.Value.Streamed(declared, _, _) =>
+        Http4sBodyDecoderUnchecked.unsupported(declared, Http4sIssue.Streamed(declared))
 
 private[http] object Http4sBodyDecoderUnchecked:
+  private def unsupported[R](mediaType: MediaType, issue: Http4sIssue): Validated[DecodingFailure, R] =
+    DecodingFailure(
+      Failure.Category.Interpreter,
+      Violations(Violation(Constraint.Generic.Type(mediaType.render), Data.Null, none)),
+      Some(Http4sFailure.Interpreter(issue))
+    ).invalid
+
   /** Whether bytes announced as `actual` may be read as `declared`.
     *
     * On `essence`, so that `application/json; charset=utf-8` is `application/json`. The parameters a media type keeps
     * say how bytes became text and where a part ends, which is not what tells two bodies apart.
     */
-  private def matches(declared: MediaType, actual: Option[MediaType]): Validated[Violations, Unit] =
+  private def matches(declared: MediaType, actual: Option[MediaType]): Validated[DecodingFailure, Unit] =
     if actual.forall(_.essence == declared.essence) then ().valid
     else
       Violations(
@@ -62,12 +81,4 @@ private[http] object Http4sBodyDecoderUnchecked:
           actual = actual.fold(Data.Null)(mediaType => mediaType.render.asData),
           hint = none
         )
-      ).invalid
-
-  private def uninterpreted[R](mediaType: MediaType): Validated[Violations, R] =
-    Violations(
-      Violation(constraint = Constraint.Generic.Type(mediaType.render), actual = Data.Null, hint = none)
-    ).invalid
-
-  private def streamed[R](mediaType: MediaType): Validated[Violations, R] =
-    Http4sBodyDecoderUnchecked.uninterpreted(mediaType)
+      ).invalid.leftMap(violations => DecodingFailure(Failure.Category.ContentType, violations))

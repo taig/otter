@@ -20,17 +20,17 @@ object api:
 
   /** The endpoints [[io.taig.otter.sample.LibraryRoutes]] answers. */
   val served: Chain[Endpoint.Node] = Chain(
-    loans.health,
-    books.list,
-    books.create,
-    books.fetch,
-    books.patch,
-    books.delete,
-    books.scan,
-    books.intake,
-    books.catalogue,
-    loans.fetch,
-    loans.borrow
+    contract.health.effective,
+    contract.listBooks.effective,
+    contract.createBook.effective,
+    contract.fetchBook.effective,
+    contract.patchBook.effective,
+    contract.deleteBook.effective,
+    contract.scanBooks.effective,
+    contract.intakeBooks.effective,
+    contract.catalogue.effective,
+    contract.fetchLoans.effective,
+    contract.borrow.effective
   )
 
   /** The endpoints nothing here answers, and why each one cannot be.
@@ -52,5 +52,5 @@ object api:
     */
   val unserved: Chain[Endpoint.Node] = Chain(books.upload, books.exported, books.report)
 
-  /** Everything, for the renderers. */
-  val all: Chain[Endpoint.Node] = api.served ++ api.unserved
+  /** Everything, resolved from the API-wide policy for the renderers. */
+  val all = contract.checked(contract.definition.effective)

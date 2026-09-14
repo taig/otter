@@ -6,9 +6,7 @@ package io.taig.otter.sample
   * matching on prose. The three cases are the three genuinely different things that go wrong here, and each carries
   * what a caller would otherwise have to parse back out of a sentence.
   *
-  * It is also what a *malformed* request is answered with. [[io.taig.otter.http.Http4s.routes]] takes the renderer for
-  * that as a parameter precisely so an API's errors stay its own vocabulary, and passing this one is what keeps a
-  * caller reading a single error shape whether the request broke the schema or the handler refused it.
+  * The composed API contract also uses this schema for execution failures.
   */
 final case class Problem(kind: Problem.Kind, title: String, detail: List[String])
 
@@ -23,9 +21,14 @@ object Problem:
     /** The request named something that is not there. */
     case Missing
 
+    /** An internal execution failure, without diagnostic details. */
+    case Internal
+
   def malformed(detail: List[String]): Problem =
     Problem(Problem.Kind.Malformed, "The request does not hold what this endpoint describes", detail)
 
   def conflict(title: String): Problem = Problem(Problem.Kind.Conflict, title, Nil)
 
   def missing(title: String): Problem = Problem(Problem.Kind.Missing, title, Nil)
+
+  val internal: Problem = Problem(Problem.Kind.Internal, "Internal server error", Nil)

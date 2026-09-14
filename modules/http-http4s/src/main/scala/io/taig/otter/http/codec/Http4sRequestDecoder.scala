@@ -16,3 +16,9 @@ final class Http4sRequestDecoder[P[-w, +r]](payload: Http4sPayload[P])
       value: Http4sWire.Request
   ): Validated[Violations, R] =
     underlying.decode(schema, value)
+
+  /** Retains the error category as well as its structured violations. */
+  def decodeDetailed[R](
+      schema: Request.Schema[Http4sPayload.Supported[P], Nothing, R],
+      value: Http4sWire.Request
+  ): Validated[io.taig.otter.http.DecodingFailure, R] = underlying.decodeDetailed(schema, value)
