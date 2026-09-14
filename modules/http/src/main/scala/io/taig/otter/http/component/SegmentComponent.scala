@@ -18,7 +18,7 @@ import io.taig.validation.Validation
   */
 trait SegmentComponent(using
     C: ConstantOperation[
-      [w, r] =>> Segment.Static.Schema[Parameter.Primitive.Text.Node, w, r],
+      Segment.Static.Schema[Parameter.Primitive.Text.Node, *, *],
       Parameter.Primitive.Text.Node
     ],
     T: PrimitiveOperation.Text[Parameter.Primitive.Text.Schema]
@@ -37,5 +37,5 @@ trait SegmentComponent(using
 
   /** A named segment holding whatever stands in that position. */
   def apply[S[-w, +r] <: Parameter.Value.Node[w, r], W, R](name: String, parameter: => S[W, R])(using
-      B: BranchOperation[[w, r] =>> Segment.Dynamic.Schema[S, w, r], S]
+      B: BranchOperation[Segment.Dynamic.Schema[S, *, *], S]
   ): Segment.Dynamic.Schema[S, W, R] = B.lift(name, Reference.later(parameter))

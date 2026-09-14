@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
 /** The error declarations an endpoint replaces; every missing entry inherits the API policy. */
-final case class ErrorOverrides[+S[-w, +r], +E](
+final case class ErrorOverrides[+S[-_, +_], +E](
     envelope: Option[Response.Schema[S, Failure, E]] = None,
     syntax: Option[Response.Schema[S, Failure, E]] = None,
     contentType: Option[Response.Schema[S, Failure, E]] = None,

@@ -57,7 +57,7 @@ object IronComponentTest extends ZIOSpecDefault, IronComponent.Unrefined:
         print: W => String
     ): Primitive.Text[W, R] = Primitive.Text.Format(name, parse, print)
 
-  private given [S[-w, +r] <: Primitive.Text[w, r]] => CollectionOperation[[w, r] =>> Collection[S, w, r], S]:
+  private given [S[-w, +r] <: Primitive.Text[w, r]] => CollectionOperation[Collection[S, *, *], S]:
     override def chained[W, R](
         schema: Reference[S, W, R],
         validation: Validation[Constraint.Collection, Chain[R]]

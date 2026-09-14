@@ -71,11 +71,11 @@ object DirectionTest extends ZIOSpecDefault:
         JsonCirceDecoder.decode(string.contramap[Book](_.title), io.circe.Json.Null).getOrElse(???)"""))
     ,
     test("a reader is a Functor"):
-      val schema = Functor[[a] =>> Json.Primitive.Text.Schema[Nothing, a]].map(json.isbn)(_.value)
+      val schema = Functor[Json.Primitive.Text.Schema[Nothing, *]].map(json.isbn)(_.value)
       assertTrue(JsonCirceDecoder.decode(schema, CirceJson.fromString("978")) == Validated.valid("978"))
     ,
     test("a writer is a Contravariant"):
-      val schema = Contravariant[[a] =>> Json.Primitive.Text.Schema[a, Any]]
+      val schema = Contravariant[Json.Primitive.Text.Schema[*, Any]]
         .contramap(json.title)((isbn: Isbn) => Book(isbn.value, 1, true))
       assertTrue(JsonCirceEncoder.encode(schema, Isbn("978")) == CirceJson.fromString("978"))
     ,

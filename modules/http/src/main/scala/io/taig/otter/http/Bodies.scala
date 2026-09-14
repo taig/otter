@@ -52,28 +52,28 @@ object Bodies:
     * It holds a [[Reference]] rather than the schema, which is what lets the position that takes one take it strictly:
     * the suspension every child position in this library needs is already here.
     */
-  final case class Optional[+S[-w, +r], -W, +R](self: Reference[[w, r] =>> Bodies.Schema[S, w, r], W, R])
+  final case class Optional[+S[-_, +_], -W, +R](self: Reference[Bodies.Schema[S, *, *], W, R])
 
-  final case class Schema[+S[-w, +r], -W, +R](
-      self: Annotation[Self.Union[[w, r] =>> Body.Schema[S, w, r], W, R]]
+  final case class Schema[+S[-_, +_], -W, +R](
+      self: Annotation[Self.Union[Body.Schema[S, *, *], W, R]]
   )
 
   object Schema
       extends Wrapper.Union[Body.Payload, Bodies.Schema, Body.Schema](
         [s[-w, +r], w, r] =>
-          (annotation: Annotation[Self.Union[[a, b] =>> Body.Schema[s, a, b], w, r]]) => new Bodies.Schema(annotation),
+          (annotation: Annotation[Self.Union[Body.Schema[s, *, *], w, r]]) => new Bodies.Schema(annotation),
         [s[-w, +r], w, r] => (bodies: Bodies.Schema[s, w, r]) => bodies.self
       ):
     given unionable: [S[-w, +r]]
-      => UnionableOperation[[w, r] =>> Bodies.Schema[S, w, r], [w, r] =>> Bodies.Schema[S, w, r]] =
+      => UnionableOperation[Bodies.Schema[S, *, *], Bodies.Schema[S, *, *]] =
       UnionableOperation.identity
 
     /** `bodies :+ body`. */
     given alternable: [S1[-w, +r], S2[-w, +r]]
         => AlternableOperation[
-          [w, r] =>> Bodies.Schema[S1, w, r],
-          [w, r] =>> Bodies.Schema[Body.Or[S1, S2], w, r],
-          [w, r] =>> Body.Schema[S2, w, r]
+          Bodies.Schema[S1, *, *],
+          Bodies.Schema[Body.Or[S1, S2], *, *],
+          Body.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Bodies.Schema[S1, W, R]): Bodies.Schema[Body.Or[S1, S2], W, R] = fa
 

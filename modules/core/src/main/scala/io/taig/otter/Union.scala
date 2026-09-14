@@ -19,11 +19,11 @@ object Union:
       extends Union[F, W, R]:
     export self.branches
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Union[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Union[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Union[F, W0, R0])(f: W => W0)(g: R0 => R): Union[F, W, R] =
       Union.Modify(self, g, f)
 
-  given [F[-_, +_]] => Alt[[w, r] =>> Union[F, w, r]]:
+  given [F[-_, +_]] => Alt[Union[F, *, *]]:
     override def alt[W1, R1, W2, R2](
         left: Union[F, W1, R1],
         right: Union[F, W2, R2]

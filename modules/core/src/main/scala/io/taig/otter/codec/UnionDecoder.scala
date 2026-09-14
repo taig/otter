@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.Union
 import io.taig.otter.Violations
 
-final class UnionDecoder[F[-_, +_], T](decoder: Decoder[F, T]) extends Decoder[[w, r] =>> Union[F, w, r], T]:
+final class UnionDecoder[F[-_, +_], T](decoder: Decoder[F, T]) extends Decoder[Union[F, *, *], T]:
   override def decode[R](schema: Union[F, Nothing, R], value: T): Validated[Violations, R] = schema match
     case Union.Coproduct(left, right) => either(left, right, value)
     case Union.Modify(self, f, _)     => decode(self, value).map(f)

@@ -32,7 +32,7 @@ object Endpoint:
   type Node = Endpoint.Schema[Body.Payload, Nothing, Any, Nothing, Any]
 
   /** A domain endpoint with optional error declarations, composed only by its consumer. */
-  sealed trait Declaration[+S[-w, +r], -AW, +AR, -BW, +BR, +E]:
+  sealed trait Declaration[+S[-_, +_], -AW, +AR, -BW, +BR, +E]:
     def domain: Endpoint.Schema[S, AW, AR, BW, BR]
     def overrides: ErrorOverrides[S, E]
 
@@ -47,7 +47,7 @@ object Endpoint:
   object Declaration:
     type Node = Endpoint.Declaration[Body.Payload, Nothing, Any, Nothing, Any, Any]
 
-  final case class WithErrors[+S[-w, +r], -AW, +AR, -BW, +BR, +E](
+  final case class WithErrors[+S[-_, +_], -AW, +AR, -BW, +BR, +E](
       override val domain: Endpoint.Schema[S, AW, AR, BW, BR],
       override val overrides: ErrorOverrides[S, E]
   ) extends Endpoint.Declaration[S, AW, AR, BW, BR, E]:
@@ -63,7 +63,7 @@ object Endpoint:
             metadata => self.copy(domain = new Endpoint.Schema(self.domain.self.copy(metadata = metadata)))
           )
 
-  final case class Schema[+S[-w, +r], -AW, +AR, -BW, +BR](self: Annotation[Endpoint.Value[S, AW, AR, BW, BR]])
+  final case class Schema[+S[-_, +_], -AW, +AR, -BW, +BR](self: Annotation[Endpoint.Value[S, AW, AR, BW, BR]])
       extends Endpoint.Declaration[S, AW, AR, BW, BR, Nothing]:
     override def domain: Endpoint.Schema[S, AW, AR, BW, BR] = this
     override def effective: Endpoint.Schema[S, AW, AR, BW, BR] = this
@@ -76,7 +76,7 @@ object Endpoint:
     export self.self.{request, responses}
 
   object Schema:
-    def apply[S[-w, +r], AW, AR, BW, BR](
+    def apply[S[-_, +_], AW, AR, BW, BR](
         self: Endpoint.Value[S, AW, AR, BW, BR]
     ): Endpoint.Schema[S, AW, AR, BW, BR] = new Endpoint.Schema(Annotation(self))
 
@@ -85,7 +85,7 @@ object Endpoint:
         override def lens: (Metadata, Metadata => Endpoint.Schema[S, AW, AR, BW, BR]) =
           (self.self.metadata, metadata => new Endpoint.Schema(self.self.copy(metadata = metadata)))
 
-  final case class Value[+S[-w, +r], -AW, +AR, -BW, +BR](
+  final case class Value[+S[-_, +_], -AW, +AR, -BW, +BR](
       request: Request.Schema[S, AW, AR],
       responses: Responses.Schema[S, BW, BR]
   )

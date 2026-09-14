@@ -27,7 +27,7 @@ import scala.annotation.targetName
   */
 trait BodyComponent:
   /** One document, read and written whole. */
-  def apply[S[-w, +r], W, R](mediaType: MediaType, payload: => S[W, R]): Body.Schema[Body.Whole[S], W, R] =
+  def apply[S[-_, +_], W, R](mediaType: MediaType, payload: => S[W, R]): Body.Schema[Body.Whole[S], W, R] =
     Body.Schema(Body.Value.Whole(mediaType, Reference.later(payload)))
 
   /** Bytes, with no schema to describe them. */
@@ -42,7 +42,7 @@ trait BodyComponent:
     * The result carries the element type so that a backend can pin it; `.body` is the same body as the request holds
     * it, which is as something contributing nothing to what the request reads.
     */
-  def streamed[S[-w, +r], W, R](
+  def streamed[S[-_, +_], W, R](
       mediaType: MediaType,
       frame: Frame,
       element: => S[W, R]
@@ -50,7 +50,7 @@ trait BodyComponent:
     new Body.Streamed.Schema(Annotation(Body.Value.Streamed(mediaType, frame, Reference.later(element))))
 
   /** Newline delimited JSON, which is what a streamed sequence of documents is written as by default. */
-  def streamed[S[-w, +r], W, R](element: => S[W, R]): Body.Streamed.Schema[S, W, R] =
+  def streamed[S[-_, +_], W, R](element: => S[W, R]): Body.Streamed.Schema[S, W, R] =
     streamed(MediaTypeComponent.ndJson, Frame.Lines, element)
 
   /** A body whose content is a set of parts.
@@ -59,17 +59,17 @@ trait BodyComponent:
     * boundary is not named here: it is generated per request, so a schema that fixed one would be describing a
     * different upload every time it was sent.
     */
-  def multipart[B[-w, +r], W, R](
+  def multipart[B[-_, +_], W, R](
       parts: => Multipart.Schema[B, W, R]
-  ): Body.Schema[Body.Whole[[w, r] =>> Multipart.Schema[B, w, r]], W, R] =
+  ): Body.Schema[Body.Whole[Multipart.Schema[B, *, *]], W, R] =
     apply(MediaTypeComponent.multipartFormData, parts)
 
   /** A body that need not be sent at all. */
   @targetName("body")
-  def optional[S[-w, +r], W, R](value: => Body.Schema[S, W, R]): Bodies.Optional[S, W, R] =
+  def optional[S[-_, +_], W, R](value: => Body.Schema[S, W, R]): Bodies.Optional[S, W, R] =
     optional(Bodies.Schema.apply[S, W, R](Self.Union.Root(Reference.later(value))))
 
   /** A choice of bodies, none of which need be sent at all. */
   @targetName("bodies")
-  def optional[S[-w, +r], W, R](values: => Bodies.Schema[S, W, R]): Bodies.Optional[S, W, R] =
+  def optional[S[-_, +_], W, R](values: => Bodies.Schema[S, W, R]): Bodies.Optional[S, W, R] =
     Bodies.Optional(Reference.later(values))

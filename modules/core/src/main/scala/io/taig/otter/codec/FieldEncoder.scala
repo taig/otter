@@ -14,7 +14,7 @@ import io.taig.otter.Field
   * writing into an output hands over a write that writes the key and then the value, and no pair is built.
   */
 final class FieldEncoder[F[-_, +_], T, M: Monoid](encoder: Encoder[F, T], absent: Option[T], member: (String, T) => M)
-    extends Encoder[[w, r] =>> Field[F, w, r], M]:
+    extends Encoder[Field[F, *, *], M]:
   override def encode[W](field: Field[F, W, Any], w: W): M = field match
     case Field.Default(self, _)   => encode(self, w)
     case Field.Modify(self, _, g) => encode(self, g(w))

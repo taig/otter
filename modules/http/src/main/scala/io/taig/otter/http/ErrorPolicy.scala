@@ -4,7 +4,7 @@ import io.taig.otter.Reference
 import io.taig.otter.Union
 
 /** Statically declared answers for every recoverable execution failure. */
-final case class ErrorPolicy[+S[-w, +r], +E](
+final case class ErrorPolicy[+S[-_, +_], +E](
     envelope: Response.Schema[S, Failure, E],
     syntax: Response.Schema[S, Failure, E],
     contentType: Response.Schema[S, Failure, E],
@@ -17,13 +17,13 @@ final case class ErrorPolicy[+S[-w, +r], +E](
 ):
   /** Selection is encoded into the schema, so the wire encoder needs no response-producing callback. */
   val responses: Responses.Schema[S, Failure, E] =
-    def leaf(value: Response.Schema[S, Failure, E]): Union[[w, r] =>> Response.Schema[S, w, r], Failure, E] =
+    def leaf(value: Response.Schema[S, Failure, E]): Union[Response.Schema[S, *, *], Failure, E] =
       Union.Root(Reference.now(value))
     def append(
-        left: Union[[w, r] =>> Response.Schema[S, w, r], Failure, E],
+        left: Union[Response.Schema[S, *, *], Failure, E],
         category: Failure.Category,
         right: Response.Schema[S, Failure, E]
-    ): Union[[w, r] =>> Response.Schema[S, w, r], Failure, E] =
+    ): Union[Response.Schema[S, *, *], Failure, E] =
       Union.Modify(
         Union.Coproduct(left, leaf(right)),
         _.fold(identity, identity),

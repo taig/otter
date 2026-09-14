@@ -22,11 +22,11 @@ object Record:
       extends Record[F, W, R]:
     export self.fields
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Record[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Record[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Record[F, W0, R0])(f: W => W0)(g: R0 => R): Record[F, W, R] =
       Record.Modify(self, g, f)
 
-  given [F[-_, +_]] => Zip[[w, r] =>> Record[F, w, r]]:
+  given [F[-_, +_]] => Zip[Record[F, *, *]]:
     override def zip[W1, R1, W2, R2](
         left: Record[F, W1, R1],
         right: Record[F, W2, R2]

@@ -8,8 +8,8 @@ import io.taig.otter.http.MediaType
 import scodec.bits.ByteVector
 
 /** Interprets only body requirements covered by the supplied payloads. */
-final class Http4sBodyDecoder[P[-w, +r]](payload: Http4sPayload[P])
-    extends Decoder[[w, r] =>> Body.Schema[Http4sPayload.Supported[P], w, r], (Option[MediaType], ByteVector)]:
+final class Http4sBodyDecoder[P[-_, +_]](payload: Http4sPayload[P])
+    extends Decoder[Body.Schema[Http4sPayload.Supported[P], *, *], (Option[MediaType], ByteVector)]:
   private val underlying = Http4sBodyDecoderUnchecked(payload)
 
   override def decode[R](

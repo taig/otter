@@ -7,8 +7,8 @@ import io.taig.otter.http.Http4sWire
 import io.taig.otter.http.Responses
 
 /** Interprets only body requirements covered by the supplied payloads. */
-final class Http4sResponseDecoder[P[-w, +r]](payload: Http4sPayload[P])
-    extends Decoder[[w, r] =>> Responses.Schema[Http4sPayload.Supported[P], w, r], Http4sWire.Response]:
+final class Http4sResponseDecoder[P[-_, +_]](payload: Http4sPayload[P])
+    extends Decoder[Responses.Schema[Http4sPayload.Supported[P], *, *], Http4sWire.Response]:
   private val underlying = Http4sResponseDecoderUnchecked(payload)
 
   override def decode[R](

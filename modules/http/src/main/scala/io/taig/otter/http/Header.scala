@@ -40,15 +40,15 @@ object Header:
         [s[-w, +r] <: Parameter.Node[w, r], w, r] => (header: Header.Schema[s, w, r]) => header.self
       ):
     given recordable: [S[-w, +r] <: Parameter.Node[w, r]]
-      => RecordableOperation[[w, r] =>> Header.Schema[S, w, r], [w, r] =>> Headers.Schema[S, w, r]] =
+      => RecordableOperation[Header.Schema[S, *, *], Headers.Schema[S, *, *]] =
       RecordableOperation.derived
 
     /** `header :* header`. */
     given appendable: [S1[-w, +r] <: Parameter.Node[w, r], S2[-w, +r] <: Parameter.Node[w, r]]
         => AppendableOperation[
-          [w, r] =>> Header.Schema[S1, w, r],
-          [w, r] =>> Headers.Schema[Parameter.Or[S1, S2], w, r],
-          [w, r] =>> Header.Schema[S2, w, r]
+          Header.Schema[S1, *, *],
+          Headers.Schema[Parameter.Or[S1, S2], *, *],
+          Header.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Header.Schema[S1, W, R]): Headers.Schema[Parameter.Or[S1, S2], W, R] =
         Headers.Schema.apply[Parameter.Or[S1, S2], W, R](Self.Record.Root(Reference.now(fa)))

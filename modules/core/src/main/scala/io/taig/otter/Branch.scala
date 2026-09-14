@@ -16,6 +16,6 @@ object Branch:
       extends Branch[F, W, R]:
     export self.{name, schema}
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Branch[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Branch[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Branch[F, W0, R0])(f: W => W0)(g: R0 => R): Branch[F, W, R] =
       Branch.Modify(self, g, f)

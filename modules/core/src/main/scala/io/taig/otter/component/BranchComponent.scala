@@ -13,7 +13,7 @@ import io.taig.otter.operation.BranchOperation
   */
 trait BranchComponent[Bound[-_, +_], K[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, +_]](using key: Encoder[K, String]):
   def apply[S[-w, +r] <: Bound[w, r], W, R](name: String, schema: => S[W, R])(using
-      F: BranchOperation[[w, r] =>> F[S, w, r], S]
+      F: BranchOperation[F[S, *, *], S]
   ): F[S, W, R] = F.lift(name, Reference.later(schema))
 
   /** The name's schema is only ever written, so its read side is left open and a [[PrimitiveComponent.Text.printer]]
@@ -21,5 +21,5 @@ trait BranchComponent[Bound[-_, +_], K[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, 
     * unlike the schema the branch holds, it is forced immediately and can never be recursive.
     */
   def apply[S[-w, +r] <: Bound[w, r], N, W, R](name: N, tpe: K[N, Any], schema: => S[W, R])(using
-      F: BranchOperation[[w, r] =>> F[S, w, r], S]
+      F: BranchOperation[F[S, *, *], S]
   ): F[S, W, R] = F.lift(key.encode(tpe, name), Reference.later(schema))

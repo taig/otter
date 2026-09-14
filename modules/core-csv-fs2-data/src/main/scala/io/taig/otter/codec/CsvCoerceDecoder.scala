@@ -11,7 +11,7 @@ import io.taig.otter.Violations
   * spellings a spreadsheet writes a boolean as. Trimming has to be asked for rather than assumed, because a quoted cell
   * can mean its spaces.
   */
-object CsvCoerceDecoder extends Decoder[[w, r] =>> Coerce[Csv.Primitive.Node, w, r], String]:
+object CsvCoerceDecoder extends Decoder[Coerce[Csv.Primitive.Node, *, *], String]:
   override def decode[R](schema: Coerce[Csv.Primitive.Node, Nothing, R], value: String): Validated[Violations, R] =
     schema match
       case Coerce.Modify(self, f, _) => decode(self, value).map(f)

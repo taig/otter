@@ -88,7 +88,7 @@ object IronComponent:
     final class chain[A]:
       @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
       def apply[S[-w, +r] <: Bound[w, r], W, R](schema: => S[W, R])(using
-          F: CollectionOperation[[w, r] =>> F[S, w, r], S],
+          F: CollectionOperation[F[S, *, *], S],
           validation: DerivedValidation[Constraint.Collection, Chain[R], A]
       ): F[S, Chain[W] :| A, Chain[R] :| A] =
         F.chained(Reference.later(schema), validation).asInstanceOf[F[S, Chain[W] :| A, Chain[R] :| A]]
@@ -99,7 +99,7 @@ object IronComponent:
     final class vector[A]:
       @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
       def apply[S[-w, +r] <: Bound[w, r], W, R](schema: => S[W, R])(using
-          F: CollectionOperation[[w, r] =>> F[S, w, r], S],
+          F: CollectionOperation[F[S, *, *], S],
           validation: DerivedValidation[Constraint.Collection, Vector[R], A]
       ): F[S, Vector[W] :| A, Vector[R] :| A] =
         F.indexed(Reference.later(schema), validation).asInstanceOf[F[S, Vector[W] :| A, Vector[R] :| A]]
@@ -110,7 +110,7 @@ object IronComponent:
     final class list[A]:
       @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
       def apply[S[-w, +r] <: Bound[w, r], W, R](schema: => S[W, R])(using
-          F: CollectionOperation[[w, r] =>> F[S, w, r], S],
+          F: CollectionOperation[F[S, *, *], S],
           validation: DerivedValidation[Constraint.Collection, List[R], A]
       ): F[S, List[W] :| A, List[R] :| A] =
         F.linked(Reference.later(schema), validation).asInstanceOf[F[S, List[W] :| A, List[R] :| A]]

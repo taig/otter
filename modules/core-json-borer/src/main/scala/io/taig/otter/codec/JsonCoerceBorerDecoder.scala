@@ -17,7 +17,7 @@ import scala.util.matching.Regex
   * `1.50` coerces to `"1.50"`; borer's parser has already turned it into a `DoubleElem`, so it coerces to `"1.5"`. The
   * value is the same and the text is not.
   */
-object JsonCoerceBorerDecoder extends Decoder[[w, r] =>> Coerce[Json.Primitive.Node, w, r], Dom.Element]:
+object JsonCoerceBorerDecoder extends Decoder[Coerce[Json.Primitive.Node, *, *], Dom.Element]:
   /** JSON's number grammar. Unlike circe's coercion parser, it refuses `01` and `.1`; neither is a JSON number. */
   private val Number: Regex = """-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?""".r
 

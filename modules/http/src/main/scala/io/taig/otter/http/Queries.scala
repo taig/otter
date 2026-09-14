@@ -45,26 +45,26 @@ object Queries:
     case Self.Record.Root(field)          => Chain.one(field.value.self.self)
 
   final case class Schema[+S[-w, +r] <: Parameter.Schema[?, w, r], -W, +R](
-      self: Annotation[Self.Record[[w, r] =>> Query.Schema[S, w, r], W, R]]
+      self: Annotation[Self.Record[Query.Schema[S, *, *], W, R]]
   )
 
   object Schema
       extends Wrapper.Record[Parameter.Node, Queries.Schema, Query.Schema](
         [s[-w, +r] <: Parameter.Node[w, r], w, r] =>
-          (annotation: Annotation[Self.Record[[a, b] =>> Query.Schema[s, a, b], w, r]]) =>
+          (annotation: Annotation[Self.Record[Query.Schema[s, *, *], w, r]]) =>
             new Queries.Schema(annotation),
         [s[-w, +r] <: Parameter.Node[w, r], w, r] => (querys: Queries.Schema[s, w, r]) => querys.self
       ):
     given recordable: [S[-w, +r] <: Parameter.Node[w, r]]
-      => RecordableOperation[[w, r] =>> Queries.Schema[S, w, r], [w, r] =>> Queries.Schema[S, w, r]] =
+      => RecordableOperation[Queries.Schema[S, *, *], Queries.Schema[S, *, *]] =
       RecordableOperation.identity
 
     /** `querys :* query`. The result carries both children's `S`, so the union accumulates down the chain. */
     given appendable: [S1[-w, +r] <: Parameter.Node[w, r], S2[-w, +r] <: Parameter.Node[w, r]]
         => AppendableOperation[
-          [w, r] =>> Queries.Schema[S1, w, r],
-          [w, r] =>> Queries.Schema[Parameter.Or[S1, S2], w, r],
-          [w, r] =>> Query.Schema[S2, w, r]
+          Queries.Schema[S1, *, *],
+          Queries.Schema[Parameter.Or[S1, S2], *, *],
+          Query.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Queries.Schema[S1, W, R]): Queries.Schema[Parameter.Or[S1, S2], W, R] = fa
 

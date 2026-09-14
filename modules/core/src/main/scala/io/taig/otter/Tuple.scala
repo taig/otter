@@ -29,10 +29,10 @@ object Tuple:
       extends Tuple[F, W, R]:
     export self.schemas
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Tuple[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Tuple[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Tuple[F, W0, R0])(f: W => W0)(g: R0 => R): Tuple[F, W, R] =
       Tuple.Modify(self, g, f)
 
-  given [F[-_, +_]] => Zip[[w, r] =>> Tuple[F, w, r]]:
+  given [F[-_, +_]] => Zip[Tuple[F, *, *]]:
     override def zip[W1, R1, W2, R2](left: Tuple[F, W1, R1], right: Tuple[F, W2, R2]): Tuple[F, (W1, W2), (R1, R2)] =
       Tuple.Product(left, right)

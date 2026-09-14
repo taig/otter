@@ -41,7 +41,7 @@ object Dictionary:
       extends Dictionary[K, F, W, R]:
     export self.{key, schema}
 
-  given [K[-_, +_], F[-_, +_]] => Profunctor[[w, r] =>> Dictionary[K, F, w, r]]:
+  given [K[-_, +_], F[-_, +_]] => Profunctor[Dictionary[K, F, *, *]]:
     override def dimap[W0, R0, W, R](
         self: Dictionary[K, F, W0, R0]
     )(f: W => W0)(g: R0 => R): Dictionary[K, F, W, R] = Dictionary.Modify(self, g, f)

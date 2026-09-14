@@ -12,7 +12,7 @@ trait RecordComponent[Bound[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, +_], G[_[-w
     * the same record.
     */
   def RNil(using
-      F: RecordOperation[[w, r] =>> F[Nothing, w, r], [w, r] =>> G[Nothing, w, r]]
+      F: RecordOperation[F[Nothing, *, *], G[Nothing, *, *]]
   ): F[Nothing, Unit, Unit] = F.empty
 
 object RecordComponent:
@@ -22,7 +22,7 @@ object RecordComponent:
     */
   trait Field[Bound[-_, +_], K[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, +_]](using key: Encoder[K, String]):
     def apply[S[-w, +r] <: Bound[w, r], W, R](name: String, schema: => S[W, R])(using
-        F: FieldOperation[[w, r] =>> F[S, w, r], S]
+        F: FieldOperation[F[S, *, *], S]
     ): F[S, W, R] = F.lift(name, Reference.later(schema))
 
     /** The name's schema is only ever written, so its read side is left open and a [[PrimitiveComponent.Text.printer]]
@@ -30,5 +30,5 @@ object RecordComponent:
       * unlike the schema the field holds, it is forced immediately and can never be recursive.
       */
     def apply[S[-w, +r] <: Bound[w, r], N, W, R](name: N, tpe: K[N, Any], schema: => S[W, R])(using
-        F: FieldOperation[[w, r] =>> F[S, w, r], S]
+        F: FieldOperation[F[S, *, *], S]
     ): F[S, W, R] = F.lift(key.encode(tpe, name), Reference.later(schema))

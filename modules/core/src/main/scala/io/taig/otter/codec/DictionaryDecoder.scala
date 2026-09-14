@@ -10,7 +10,7 @@ import io.taig.validation.Validation
 import scala.collection.immutable.SortedMap
 
 final class DictionaryDecoder[K[-_, +_], F[-_, +_], T](key: Decoder[K, String], decoder: Decoder[F, T])
-    extends Decoder[[w, r] =>> Dictionary[K, F, w, r], List[(String, T)]]:
+    extends Decoder[Dictionary[K, F, *, *], List[(String, T)]]:
   override def decode[R](
       schema: Dictionary[K, F, Nothing, R],
       values: List[(String, T)]

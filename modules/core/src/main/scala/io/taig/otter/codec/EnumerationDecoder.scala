@@ -9,7 +9,7 @@ import io.taig.otter.Violations
 import io.taig.validation.Violation
 
 final class EnumerationDecoder[F[-_, +_], T](decoder: Decoder[F, T], encoder: Encoder[F, T], render: T => Data)
-    extends Decoder[[w, r] =>> Enumeration[F, w, r], T]:
+    extends Decoder[Enumeration[F, *, *], T]:
   override def decode[R](schema: Enumeration[F, Nothing, R], value: T): Validated[Violations, R] =
     schema match
       case Enumeration.Modify(self, f, _)       => decode(self, value).map(f)

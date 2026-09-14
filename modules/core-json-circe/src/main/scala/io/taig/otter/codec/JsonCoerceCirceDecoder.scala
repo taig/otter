@@ -9,7 +9,7 @@ import io.taig.otter.Violations
 /** Normalises a laxer wire representation before handing it to the primitive decoder: a quoted boolean or number is
   * accepted where one is expected, and a boolean or number is accepted where a string is expected.
   */
-object JsonCoerceCirceDecoder extends Decoder[[w, r] =>> Coerce[Json.Primitive.Node, w, r], CirceJson]:
+object JsonCoerceCirceDecoder extends Decoder[Coerce[Json.Primitive.Node, *, *], CirceJson]:
   override def decode[R](schema: Coerce[Json.Primitive.Node, Nothing, R], json: CirceJson): Validated[Violations, R] =
     schema match
       case Coerce.Modify(self, f, _) => decode(self, json).map(f)

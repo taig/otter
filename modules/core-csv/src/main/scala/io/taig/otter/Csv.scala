@@ -98,7 +98,7 @@ object Csv:
       */
     sealed abstract class Schema[+S[-w, +r] <: Csv.Schema[?, w, r], -W, +R] extends Csv.Schema[S, W, R]
 
-    given profunctor: [S[-w, +r] <: Csv.Node[w, r]] => Profunctor[[w, r] =>> Csv.Cell.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r] <: Csv.Node[w, r]] => Profunctor[Csv.Cell.Schema[S, *, *]]:
       override def dimap[W0, R0, W, R](
           self: Csv.Cell.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Csv.Cell.Schema[S, W, R] = self match
@@ -110,14 +110,14 @@ object Csv:
         case self @ Csv.Primitive.Number.Schema(_)  => Csv.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
         case self @ Csv.Primitive.Text.Schema(_)    => Csv.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
-    given functor: [S[-w, +r] <: Csv.Node[w, r]] => Functor[[a] =>> Csv.Cell.Schema[S, Nothing, a]] =
-      Direction.functor[[w, r] =>> Csv.Cell.Schema[S, w, r]]
+    given functor: [S[-w, +r] <: Csv.Node[w, r]] => Functor[Csv.Cell.Schema[S, Nothing, *]] =
+      Direction.functor[Csv.Cell.Schema[S, *, *]]
 
-    given contravariant: [S[-w, +r] <: Csv.Node[w, r]] => Contravariant[[a] =>> Csv.Cell.Schema[S, a, Any]] =
-      Direction.contravariant[[w, r] =>> Csv.Cell.Schema[S, w, r]]
+    given contravariant: [S[-w, +r] <: Csv.Node[w, r]] => Contravariant[Csv.Cell.Schema[S, *, Any]] =
+      Direction.contravariant[Csv.Cell.Schema[S, *, *]]
 
     given invariant: [S[-w, +r] <: Csv.Node[w, r]] => Invariant[[a] =>> Csv.Cell.Schema[S, a, a]] =
-      Direction.invariant[[w, r] =>> Csv.Cell.Schema[S, w, r]]
+      Direction.invariant[Csv.Cell.Schema[S, *, *]]
 
   type Primitive[A] = Csv.Primitive.Of[Csv.Node, A]
 
@@ -199,7 +199,7 @@ object Csv:
             [w, r] => (csv: Csv.Primitive.Text.Schema[w, r]) => csv.self
           )
 
-    given profunctor: [S[-w, +r] <: Csv.Node[w, r]] => Profunctor[[w, r] =>> Csv.Primitive.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r] <: Csv.Node[w, r]] => Profunctor[Csv.Primitive.Schema[S, *, *]]:
       override def dimap[W0, R0, W, R](
           self: Csv.Primitive.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Csv.Primitive.Schema[S, W, R] = self match
@@ -207,14 +207,14 @@ object Csv:
         case self @ Csv.Primitive.Number.Schema(_)  => Csv.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
         case self @ Csv.Primitive.Text.Schema(_)    => Csv.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
-    given functor: [S[-w, +r] <: Csv.Node[w, r]] => Functor[[a] =>> Csv.Primitive.Schema[S, Nothing, a]] =
-      Direction.functor[[w, r] =>> Csv.Primitive.Schema[S, w, r]]
+    given functor: [S[-w, +r] <: Csv.Node[w, r]] => Functor[Csv.Primitive.Schema[S, Nothing, *]] =
+      Direction.functor[Csv.Primitive.Schema[S, *, *]]
 
-    given contravariant: [S[-w, +r] <: Csv.Node[w, r]] => Contravariant[[a] =>> Csv.Primitive.Schema[S, a, Any]] =
-      Direction.contravariant[[w, r] =>> Csv.Primitive.Schema[S, w, r]]
+    given contravariant: [S[-w, +r] <: Csv.Node[w, r]] => Contravariant[Csv.Primitive.Schema[S, *, Any]] =
+      Direction.contravariant[Csv.Primitive.Schema[S, *, *]]
 
     given invariant: [S[-w, +r] <: Csv.Node[w, r]] => Invariant[[a] =>> Csv.Primitive.Schema[S, a, a]] =
-      Direction.invariant[[w, r] =>> Csv.Primitive.Schema[S, w, r]]
+      Direction.invariant[Csv.Primitive.Schema[S, *, *]]
 
   type Coerce[A] = Csv.Coerce.Of[Csv.Primitive.Node, A]
 
@@ -355,26 +355,26 @@ object Csv:
       type Of[S[-w, +r] <: Csv.Cell.Node[w, r], -A] = Csv.Record.Schema[S, A, Any]
 
     final case class Schema[+S[-w, +r] <: Csv.Cell.Schema[?, w, r], -W, +R](
-        self: Annotation[Self.Record[[w, r] =>> Csv.Field.Schema[S, w, r], W, R]]
+        self: Annotation[Self.Record[Csv.Field.Schema[S, *, *], W, R]]
     ) extends Csv.Schema[S, W, R]
 
     object Schema
         extends Wrapper.Record[Csv.Cell.Node, Csv.Record.Schema, Csv.Field.Schema](
           [s[-w, +r] <: Csv.Cell.Node[w, r], w, r] =>
-            (annotation: Annotation[Self.Record[[a, b] =>> Csv.Field.Schema[s, a, b], w, r]]) =>
+            (annotation: Annotation[Self.Record[Csv.Field.Schema[s, *, *], w, r]]) =>
               new Csv.Record.Schema(annotation),
           [s[-w, +r] <: Csv.Cell.Node[w, r], w, r] => (csv: Csv.Record.Schema[s, w, r]) => csv.self
         ):
       given recordable: [S[-w, +r] <: Csv.Cell.Node[w, r]]
-        => RecordableOperation[[w, r] =>> Csv.Record.Schema[S, w, r], [w, r] =>> Csv.Record.Schema[S, w, r]] =
+        => RecordableOperation[Csv.Record.Schema[S, *, *], Csv.Record.Schema[S, *, *]] =
         RecordableOperation.identity
 
       /** `record :* field`. The result carries both children's `S`, so the union accumulates down the chain. */
       given appendable: [S1[-w, +r] <: Csv.Cell.Node[w, r], S2[-w, +r] <: Csv.Cell.Node[w, r]]
           => AppendableOperation[
-            [w, r] =>> Csv.Record.Schema[S1, w, r],
-            [w, r] =>> Csv.Record.Schema[Csv.Or[S1, S2], w, r],
-            [w, r] =>> Csv.Field.Schema[S2, w, r]
+            Csv.Record.Schema[S1, *, *],
+            Csv.Record.Schema[Csv.Or[S1, S2], *, *],
+            Csv.Field.Schema[S2, *, *]
           ]:
         override def lift[W, R](fa: Csv.Record.Schema[S1, W, R]): Csv.Record.Schema[Csv.Or[S1, S2], W, R] = fa
 
@@ -412,14 +412,14 @@ object Csv:
           [s[-w, +r] <: Csv.Cell.Node[w, r], w, r] => (csv: Csv.Tuple.Schema[s, w, r]) => csv.self
         ):
       given tupleable: [S[-w, +r] <: Csv.Cell.Node[w, r]]
-        => TupleableOperation[[w, r] =>> Csv.Tuple.Schema[S, w, r], [w, r] =>> Csv.Tuple.Schema[S, w, r]] =
+        => TupleableOperation[Csv.Tuple.Schema[S, *, *], Csv.Tuple.Schema[S, *, *]] =
         TupleableOperation.identity
 
       /** `tuple :* cell`. A tuple's members are cells themselves, not fields, so nothing names them. */
       given appendable: [S1[-w, +r] <: Csv.Cell.Node[w, r], S2[-w, +r] <: Csv.Cell.Node[w, r]]
           => AppendableOperation[
-            [w, r] =>> Csv.Tuple.Schema[S1, w, r],
-            [w, r] =>> Csv.Tuple.Schema[Csv.Or[S1, S2], w, r],
+            Csv.Tuple.Schema[S1, *, *],
+            Csv.Tuple.Schema[Csv.Or[S1, S2], *, *],
             S2
           ]:
         override def lift[W, R](fa: Csv.Tuple.Schema[S1, W, R]): Csv.Tuple.Schema[Csv.Or[S1, S2], W, R] = fa
@@ -455,15 +455,15 @@ object Csv:
           [s[-w, +r] <: Csv.Cell.Node[w, r], w, r] => (csv: Csv.Field.Schema[s, w, r]) => csv.self
         ):
       given recordable: [S[-w, +r] <: Csv.Cell.Node[w, r]]
-        => RecordableOperation[[w, r] =>> Csv.Field.Schema[S, w, r], [w, r] =>> Csv.Record.Schema[S, w, r]] =
+        => RecordableOperation[Csv.Field.Schema[S, *, *], Csv.Record.Schema[S, *, *]] =
         RecordableOperation.derived
 
       /** `field :* field`. */
       given appendable: [S1[-w, +r] <: Csv.Cell.Node[w, r], S2[-w, +r] <: Csv.Cell.Node[w, r]]
           => AppendableOperation[
-            [w, r] =>> Csv.Field.Schema[S1, w, r],
-            [w, r] =>> Csv.Record.Schema[Csv.Or[S1, S2], w, r],
-            [w, r] =>> Csv.Field.Schema[S2, w, r]
+            Csv.Field.Schema[S1, *, *],
+            Csv.Record.Schema[Csv.Or[S1, S2], *, *],
+            Csv.Field.Schema[S2, *, *]
           ]:
         override def lift[W, R](fa: Csv.Field.Schema[S1, W, R]): Csv.Record.Schema[Csv.Or[S1, S2], W, R] =
           Csv.Record.Schema.apply[Csv.Or[S1, S2], W, R](Self.Record.Root(Reference.now(fa)))
@@ -471,7 +471,7 @@ object Csv:
         override def element[W, R](fb: => Csv.Field.Schema[S2, W, R]): Csv.Record.Schema[Csv.Or[S1, S2], W, R] =
           Csv.Record.Schema.apply[Csv.Or[S1, S2], W, R](Self.Record.Root(Reference.later(fb)))
 
-  given profunctor: [S[-w, +r] <: Csv.Node[w, r]] => Profunctor[[w, r] =>> Csv.Schema[S, w, r]]:
+  given profunctor: [S[-w, +r] <: Csv.Node[w, r]] => Profunctor[Csv.Schema[S, *, *]]:
     override def dimap[W0, R0, W, R](self: Csv.Schema[S, W0, R0])(f: W => W0)(g: R0 => R): Csv.Schema[S, W, R] =
       self match
         case self @ Csv.Coerce.Schema(_)            => Csv.Coerce.Schema.profunctor.dimap(self)(f)(g)
@@ -484,24 +484,24 @@ object Csv:
         case self @ Csv.Record.Schema(_)            => Csv.Record.Schema.profunctor.dimap(self)(f)(g)
         case self @ Csv.Tuple.Schema(_)             => Csv.Tuple.Schema.profunctor.dimap(self)(f)(g)
 
-  given functor: [S[-w, +r] <: Csv.Node[w, r]] => Functor[[a] =>> Csv.Schema[S, Nothing, a]] =
-    Direction.functor[[w, r] =>> Csv.Schema[S, w, r]]
+  given functor: [S[-w, +r] <: Csv.Node[w, r]] => Functor[Csv.Schema[S, Nothing, *]] =
+    Direction.functor[Csv.Schema[S, *, *]]
 
-  given contravariant: [S[-w, +r] <: Csv.Node[w, r]] => Contravariant[[a] =>> Csv.Schema[S, a, Any]] =
-    Direction.contravariant[[w, r] =>> Csv.Schema[S, w, r]]
+  given contravariant: [S[-w, +r] <: Csv.Node[w, r]] => Contravariant[Csv.Schema[S, *, Any]] =
+    Direction.contravariant[Csv.Schema[S, *, *]]
 
   given invariant: [S[-w, +r] <: Csv.Node[w, r]] => Invariant[[a] =>> Csv.Schema[S, a, a]] =
-    Direction.invariant[[w, r] =>> Csv.Schema[S, w, r]]
+    Direction.invariant[Csv.Schema[S, *, *]]
 
   /** `S` is bounded to a cell rather than to a schema, so that these are not also offered on a row. A row is not
     * something a cell can hold, so neither an optional row nor a row lifted into a positional one means anything; a
     * field is not a schema at all and carries its own `optional` from [[Wrapper.Field]].
     */
   given optionalable: [S[-w, +r] <: Csv.Cell.Node[w, r]]
-    => OptionalableOperation[S, [w, r] =>> Csv.Optional.Schema[S, w, r]] = OptionalableOperation.derived
+    => OptionalableOperation[S, Csv.Optional.Schema[S, *, *]] = OptionalableOperation.derived
 
   given tupleable: [S[-w, +r] <: Csv.Cell.Node[w, r]]
-    => TupleableOperation[S, [w, r] =>> Csv.Tuple.Schema[S, w, r]] = TupleableOperation.derived
+    => TupleableOperation[S, Csv.Tuple.Schema[S, *, *]] = TupleableOperation.derived
 
   /** `cell :* cell`, and `cell *: cell`: two cells beside each other are the positional row that holds them, which is
     * what [[io.taig.otter.component.TupleComponent.TNil]] would otherwise have to be named for.
@@ -510,7 +510,7 @@ object Csv:
     * outside this instance's bound and keeps appending into itself through [[Csv.Tuple.Schema.appendable]].
     */
   given appendable: [S1[-w, +r] <: Csv.Cell.Node[w, r], S2[-w, +r] <: Csv.Cell.Node[w, r]]
-      => AppendableOperation[S1, [w, r] =>> Csv.Tuple.Schema[Csv.Or[S1, S2], w, r], S2]:
+      => AppendableOperation[S1, Csv.Tuple.Schema[Csv.Or[S1, S2], *, *], S2]:
     override def lift[W, R](fa: S1[W, R]): Csv.Tuple.Schema[Csv.Or[S1, S2], W, R] =
       Csv.Tuple.Schema.apply[Csv.Or[S1, S2], W, R](Self.Tuple.Root(Reference.now(fa)))
 

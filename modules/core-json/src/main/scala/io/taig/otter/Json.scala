@@ -379,26 +379,26 @@ object Json:
       type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Record.Schema[S, A, Any]
 
     final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](
-        self: Annotation[Self.Record[[w, r] =>> Json.Field.Schema[S, w, r], W, R]]
+        self: Annotation[Self.Record[Json.Field.Schema[S, *, *], W, R]]
     ) extends Json.Schema[S, W, R]
 
     object Schema
         extends Wrapper.Record[Json.Node, Json.Record.Schema, Json.Field.Schema](
           [s[-w, +r] <: Json.Node[w, r], w, r] =>
-            (annotation: Annotation[Self.Record[[a, b] =>> Json.Field.Schema[s, a, b], w, r]]) =>
+            (annotation: Annotation[Self.Record[Json.Field.Schema[s, *, *], w, r]]) =>
               new Json.Record.Schema(annotation),
           [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Record.Schema[s, w, r]) => json.self
         ):
       given recordable: [S[-w, +r] <: Json.Node[w, r]]
-        => RecordableOperation[[w, r] =>> Json.Record.Schema[S, w, r], [w, r] =>> Json.Record.Schema[S, w, r]] =
+        => RecordableOperation[Json.Record.Schema[S, *, *], Json.Record.Schema[S, *, *]] =
         RecordableOperation.identity
 
       /** `record :* field`. The result carries both children's `S`, so the union accumulates down the chain. */
       given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AppendableOperation[
-            [w, r] =>> Json.Record.Schema[S1, w, r],
-            [w, r] =>> Json.Record.Schema[Json.Or[S1, S2], w, r],
-            [w, r] =>> Json.Field.Schema[S2, w, r]
+            Json.Record.Schema[S1, *, *],
+            Json.Record.Schema[Json.Or[S1, S2], *, *],
+            Json.Field.Schema[S2, *, *]
           ]:
         override def lift[W, R](fa: Json.Record.Schema[S1, W, R]): Json.Record.Schema[Json.Or[S1, S2], W, R] = fa
 
@@ -437,14 +437,14 @@ object Json:
         * from one that has to be lifted first, so it is load bearing rather than a convenience.
         */
       given tupleable: [S[-w, +r] <: Json.Node[w, r]]
-        => TupleableOperation[[w, r] =>> Json.Tuple.Schema[S, w, r], [w, r] =>> Json.Tuple.Schema[S, w, r]] =
+        => TupleableOperation[Json.Tuple.Schema[S, *, *], Json.Tuple.Schema[S, *, *]] =
         TupleableOperation.identity
 
       /** `tuple :* schema`. */
       given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AppendableOperation[
-            [w, r] =>> Json.Tuple.Schema[S1, w, r],
-            [w, r] =>> Json.Tuple.Schema[Json.Or[S1, S2], w, r],
+            Json.Tuple.Schema[S1, *, *],
+            Json.Tuple.Schema[Json.Or[S1, S2], *, *],
             S2
           ]:
         override def lift[W, R](fa: Json.Tuple.Schema[S1, W, R]): Json.Tuple.Schema[Json.Or[S1, S2], W, R] = fa
@@ -478,26 +478,26 @@ object Json:
       type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Union.Schema[S, A, Any]
 
     final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](
-        self: Annotation[Self.Union[[w, r] =>> Json.Branch.Schema[S, w, r], W, R]]
+        self: Annotation[Self.Union[Json.Branch.Schema[S, *, *], W, R]]
     ) extends Json.Schema[S, W, R]
 
     object Schema
         extends Wrapper.Union[Json.Node, Json.Union.Schema, Json.Branch.Schema](
           [s[-w, +r] <: Json.Node[w, r], w, r] =>
-            (annotation: Annotation[Self.Union[[a, b] =>> Json.Branch.Schema[s, a, b], w, r]]) =>
+            (annotation: Annotation[Self.Union[Json.Branch.Schema[s, *, *], w, r]]) =>
               new Json.Union.Schema(annotation),
           [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Union.Schema[s, w, r]) => json.self
         ):
       given unionable: [S[-w, +r] <: Json.Node[w, r]]
-        => UnionableOperation[[w, r] =>> Json.Union.Schema[S, w, r], [w, r] =>> Json.Union.Schema[S, w, r]] =
+        => UnionableOperation[Json.Union.Schema[S, *, *], Json.Union.Schema[S, *, *]] =
         UnionableOperation.identity
 
       /** `union :+ branch`. */
       given alternable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AlternableOperation[
-            [w, r] =>> Json.Union.Schema[S1, w, r],
-            [w, r] =>> Json.Union.Schema[Json.Or[S1, S2], w, r],
-            [w, r] =>> Json.Branch.Schema[S2, w, r]
+            Json.Union.Schema[S1, *, *],
+            Json.Union.Schema[Json.Or[S1, S2], *, *],
+            Json.Branch.Schema[S2, *, *]
           ]:
         override def lift[W, R](fa: Json.Union.Schema[S1, W, R]): Json.Union.Schema[Json.Or[S1, S2], W, R] = fa
 
@@ -584,7 +584,7 @@ object Json:
             [w, r] => (json: Json.Primitive.Text.Schema[w, r]) => json.self
           )
 
-    given profunctor: [S[-w, +r] <: Json.Node[w, r]] => Profunctor[[w, r] =>> Json.Primitive.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r] <: Json.Node[w, r]] => Profunctor[Json.Primitive.Schema[S, *, *]]:
       override def dimap[W0, R0, W, R](
           self: Json.Primitive.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Json.Primitive.Schema[S, W, R] = self match
@@ -592,14 +592,14 @@ object Json:
         case self @ Json.Primitive.Number.Schema(_)  => Json.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Primitive.Text.Schema(_)    => Json.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
-    given functor: [S[-w, +r] <: Json.Node[w, r]] => Functor[[a] =>> Json.Primitive.Schema[S, Nothing, a]] =
-      Direction.functor[[w, r] =>> Json.Primitive.Schema[S, w, r]]
+    given functor: [S[-w, +r] <: Json.Node[w, r]] => Functor[Json.Primitive.Schema[S, Nothing, *]] =
+      Direction.functor[Json.Primitive.Schema[S, *, *]]
 
-    given contravariant: [S[-w, +r] <: Json.Node[w, r]] => Contravariant[[a] =>> Json.Primitive.Schema[S, a, Any]] =
-      Direction.contravariant[[w, r] =>> Json.Primitive.Schema[S, w, r]]
+    given contravariant: [S[-w, +r] <: Json.Node[w, r]] => Contravariant[Json.Primitive.Schema[S, *, Any]] =
+      Direction.contravariant[Json.Primitive.Schema[S, *, *]]
 
     given invariant: [S[-w, +r] <: Json.Node[w, r]] => Invariant[[a] =>> Json.Primitive.Schema[S, a, a]] =
-      Direction.invariant[[w, r] =>> Json.Primitive.Schema[S, w, r]]
+      Direction.invariant[Json.Primitive.Schema[S, *, *]]
 
   type Field[A] = Json.Field.Of[Json.Node, A]
 
@@ -629,15 +629,15 @@ object Json:
           [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Field.Schema[s, w, r]) => json.self
         ):
       given recordable: [S[-w, +r] <: Json.Node[w, r]]
-        => RecordableOperation[[w, r] =>> Json.Field.Schema[S, w, r], [w, r] =>> Json.Record.Schema[S, w, r]] =
+        => RecordableOperation[Json.Field.Schema[S, *, *], Json.Record.Schema[S, *, *]] =
         RecordableOperation.derived
 
       /** `field :* field`. */
       given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AppendableOperation[
-            [w, r] =>> Json.Field.Schema[S1, w, r],
-            [w, r] =>> Json.Record.Schema[Json.Or[S1, S2], w, r],
-            [w, r] =>> Json.Field.Schema[S2, w, r]
+            Json.Field.Schema[S1, *, *],
+            Json.Record.Schema[Json.Or[S1, S2], *, *],
+            Json.Field.Schema[S2, *, *]
           ]:
         override def lift[W, R](fa: Json.Field.Schema[S1, W, R]): Json.Record.Schema[Json.Or[S1, S2], W, R] =
           Json.Record.Schema.apply[Json.Or[S1, S2], W, R](Self.Record.Root(Reference.now(fa)))
@@ -673,15 +673,15 @@ object Json:
           [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Branch.Schema[s, w, r]) => json.self
         ):
       given unionable: [S[-w, +r] <: Json.Node[w, r]]
-        => UnionableOperation[[w, r] =>> Json.Branch.Schema[S, w, r], [w, r] =>> Json.Union.Schema[S, w, r]] =
+        => UnionableOperation[Json.Branch.Schema[S, *, *], Json.Union.Schema[S, *, *]] =
         UnionableOperation.derived
 
       /** `branch :+ branch`. */
       given alternable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AlternableOperation[
-            [w, r] =>> Json.Branch.Schema[S1, w, r],
-            [w, r] =>> Json.Union.Schema[Json.Or[S1, S2], w, r],
-            [w, r] =>> Json.Branch.Schema[S2, w, r]
+            Json.Branch.Schema[S1, *, *],
+            Json.Union.Schema[Json.Or[S1, S2], *, *],
+            Json.Branch.Schema[S2, *, *]
           ]:
         override def lift[W, R](fa: Json.Branch.Schema[S1, W, R]): Json.Union.Schema[Json.Or[S1, S2], W, R] =
           Json.Union.Schema.apply[Json.Or[S1, S2], W, R](Self.Union.Root(Reference.now(fa)))
@@ -689,7 +689,7 @@ object Json:
         override def element[W, R](fb: => Json.Branch.Schema[S2, W, R]): Json.Union.Schema[Json.Or[S1, S2], W, R] =
           Json.Union.Schema.apply[Json.Or[S1, S2], W, R](Self.Union.Root(Reference.later(fb)))
 
-  given profunctor: [S[-w, +r] <: Json.Node[w, r]] => Profunctor[[w, r] =>> Json.Schema[S, w, r]]:
+  given profunctor: [S[-w, +r] <: Json.Node[w, r]] => Profunctor[Json.Schema[S, *, *]]:
     override def dimap[W0, R0, W, R](self: Json.Schema[S, W0, R0])(f: W => W0)(g: R0 => R): Json.Schema[S, W, R] =
       self match
         case self @ Json.Coerce.Schema(_)            => Json.Coerce.Schema.profunctor.dimap(self)(f)(g)
@@ -705,22 +705,22 @@ object Json:
         case self @ Json.Tuple.Schema(_)             => Json.Tuple.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Union.Schema(_)             => Json.Union.Schema.profunctor.dimap(self)(f)(g)
 
-  given functor: [S[-w, +r] <: Json.Node[w, r]] => Functor[[a] =>> Json.Schema[S, Nothing, a]] =
-    Direction.functor[[w, r] =>> Json.Schema[S, w, r]]
+  given functor: [S[-w, +r] <: Json.Node[w, r]] => Functor[Json.Schema[S, Nothing, *]] =
+    Direction.functor[Json.Schema[S, *, *]]
 
-  given contravariant: [S[-w, +r] <: Json.Node[w, r]] => Contravariant[[a] =>> Json.Schema[S, a, Any]] =
-    Direction.contravariant[[w, r] =>> Json.Schema[S, w, r]]
+  given contravariant: [S[-w, +r] <: Json.Node[w, r]] => Contravariant[Json.Schema[S, *, Any]] =
+    Direction.contravariant[Json.Schema[S, *, *]]
 
   given invariant: [S[-w, +r] <: Json.Node[w, r]] => Invariant[[a] =>> Json.Schema[S, a, a]] =
-    Direction.invariant[[w, r] =>> Json.Schema[S, w, r]]
+    Direction.invariant[Json.Schema[S, *, *]]
 
   /** `S` is bounded to a schema so that these do not also offer `.optional` and `.toTuple` on a field or a branch,
     * which are not schemas and already carry their own `optional`.
     */
   given optionalable: [S[-w, +r] <: Json.Node[w, r]]
-    => OptionalableOperation[S, [w, r] =>> Json.Optional.Schema[S, w, r]] = OptionalableOperation.derived
+    => OptionalableOperation[S, Json.Optional.Schema[S, *, *]] = OptionalableOperation.derived
 
-  given tupleable: [S[-w, +r] <: Json.Node[w, r]] => TupleableOperation[S, [w, r] =>> Json.Tuple.Schema[S, w, r]] =
+  given tupleable: [S[-w, +r] <: Json.Node[w, r]] => TupleableOperation[S, Json.Tuple.Schema[S, *, *]] =
     TupleableOperation.derived
 
   /** `schema :* schema`, and `schema *: schema`: two schemas beside each other are the tuple that holds them, which is
@@ -733,7 +733,7 @@ object Json:
     */
   given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
     => NotGiven[TupleableOperation[S1, S1]]
-      => AppendableOperation[S1, [w, r] =>> Json.Tuple.Schema[Json.Or[S1, S2], w, r], S2]:
+      => AppendableOperation[S1, Json.Tuple.Schema[Json.Or[S1, S2], *, *], S2]:
     override def lift[W, R](fa: S1[W, R]): Json.Tuple.Schema[Json.Or[S1, S2], W, R] =
       Json.Tuple.Schema.apply[Json.Or[S1, S2], W, R](Self.Tuple.Root(Reference.now(fa)))
 

@@ -11,7 +11,7 @@ import io.taig.otter.Tuple
   * that tuple holds, so that the positions after it still line up.
   */
 final class TupleEncoder[F[-_, +_], T, M: Monoid](encoder: Encoder[F, T], empty: T, element: T => M)
-    extends Encoder[[w, r] =>> Tuple[F, w, r], M]:
+    extends Encoder[Tuple[F, *, *], M]:
   override def encode[W](schema: Tuple[F, W, Any], w: W): M = schema match
     case Tuple.Empty              => Monoid[M].empty
     case Tuple.Default(self, _)   => encode(self, w)

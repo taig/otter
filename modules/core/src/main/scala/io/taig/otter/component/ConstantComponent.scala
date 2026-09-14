@@ -8,5 +8,5 @@ import io.taig.otter.operation.ConstantOperation
 trait ConstantComponent[Bound[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, +_]]:
   def apply[S[-w, +r] <: Bound[w, r], A](schema: => S[A, A], value: => A)(using
       A: Eq[A],
-      F: ConstantOperation[[w, r] =>> F[S, w, r], S]
+      F: ConstantOperation[F[S, *, *], S]
   ): F[S, Unit, Unit] = F.lift(Reference.later(schema), Eval.later(value), A)

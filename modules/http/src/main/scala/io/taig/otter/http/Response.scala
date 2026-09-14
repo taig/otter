@@ -37,11 +37,11 @@ object Response:
   object Writer:
     type Of[S[-w, +r], -A] = Response.Schema[S, A, Any]
 
-  final case class Schema[+S[-w, +r], -W, +R](self: Annotation[Response.Value[S, W, R]]):
+  final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Response.Value[S, W, R]]):
     export self.self.{bodies, headers, status, streamed}
 
   object Schema:
-    def apply[S[-w, +r], W, R](self: Response.Value[S, W, R]): Response.Schema[S, W, R] =
+    def apply[S[-_, +_], W, R](self: Response.Value[S, W, R]): Response.Schema[S, W, R] =
       new Response.Schema(Annotation(self))
 
     given annotated: [S[-w, +r], W, R] => Annotated[Response.Schema[S, W, R]]:
@@ -49,31 +49,31 @@ object Response:
         override def lens: (Metadata, Metadata => Response.Schema[S, W, R]) =
           (self.self.metadata, metadata => new Response.Schema(self.self.copy(metadata = metadata)))
 
-    given profunctor: [S[-w, +r]] => Profunctor[[w, r] =>> Response.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r]] => Profunctor[Response.Schema[S, *, *]]:
       override def dimap[W0, R0, W, R](
           self: Response.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Response.Schema[S, W, R] =
         new Response.Schema(self.self.map(Response.Value.Modify(_, g, f)))
 
-    given functor: [S[-w, +r]] => Functor[[a] =>> Response.Schema[S, Nothing, a]] =
-      Direction.functor[[w, r] =>> Response.Schema[S, w, r]]
+    given functor: [S[-w, +r]] => Functor[Response.Schema[S, Nothing, *]] =
+      Direction.functor[Response.Schema[S, *, *]]
 
-    given contravariant: [S[-w, +r]] => Contravariant[[a] =>> Response.Schema[S, a, Any]] =
-      Direction.contravariant[[w, r] =>> Response.Schema[S, w, r]]
+    given contravariant: [S[-w, +r]] => Contravariant[Response.Schema[S, *, Any]] =
+      Direction.contravariant[Response.Schema[S, *, *]]
 
     given invariant: [S[-w, +r]] => Invariant[[a] =>> Response.Schema[S, a, a]] =
-      Direction.invariant[[w, r] =>> Response.Schema[S, w, r]]
+      Direction.invariant[Response.Schema[S, *, *]]
 
     given unionable: [S[-w, +r]]
-      => UnionableOperation[[w, r] =>> Response.Schema[S, w, r], [w, r] =>> Responses.Schema[S, w, r]] =
+      => UnionableOperation[Response.Schema[S, *, *], Responses.Schema[S, *, *]] =
       UnionableOperation.derived
 
     /** `response :+ response`. */
     given alternable: [S1[-w, +r], S2[-w, +r]]
         => AlternableOperation[
-          [w, r] =>> Response.Schema[S1, w, r],
-          [w, r] =>> Responses.Schema[Body.Or[S1, S2], w, r],
-          [w, r] =>> Response.Schema[S2, w, r]
+          Response.Schema[S1, *, *],
+          Responses.Schema[Body.Or[S1, S2], *, *],
+          Response.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Response.Schema[S1, W, R]): Responses.Schema[Body.Or[S1, S2], W, R] =
         Responses.Schema.apply[Body.Or[S1, S2], W, R](Self.Union.Root(Reference.now(fa)))
@@ -81,12 +81,12 @@ object Response:
       override def element[W, R](fb: => Response.Schema[S2, W, R]): Responses.Schema[Body.Or[S1, S2], W, R] =
         Responses.Schema.apply[Body.Or[S1, S2], W, R](Self.Union.Root(Reference.later(fb)))
 
-  sealed abstract class Value[+S[-w, +r], -W, +R]:
+  sealed abstract class Value[+S[-_, +_], -W, +R]:
     def status: Status
 
     def headers: Option[Reference[Headers.Node, ?, ?]]
 
-    def bodies: Option[Reference[[w, r] =>> Bodies.Schema[S, w, r], ?, ?]]
+    def bodies: Option[Reference[Bodies.Schema[S, *, *], ?, ?]]
 
     def streamed: Option[Reference[Body.Streamed.Node, ?, ?]]
 
@@ -94,11 +94,11 @@ object Response:
     final case class Root(override val status: Status) extends Response.Value[Nothing, Unit, Unit]:
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = None
 
-      override def bodies: Option[Reference[[w, r] =>> Bodies.Schema[Nothing, w, r], ?, ?]] = None
+      override def bodies: Option[Reference[Bodies.Schema[Nothing, *, *], ?, ?]] = None
 
       override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = None
 
-    final case class Headers[+S[-w, +r], W1, R1, W2, R2](
+    final case class Headers[+S[-_, +_], W1, R1, W2, R2](
         self: Response.Value[S, W1, R1],
         values: Reference[io.taig.otter.http.Headers.Node, W2, R2]
     ) extends Response.Value[S, (W1, W2), (R1, R2)]:
@@ -106,23 +106,23 @@ object Response:
 
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = Some(values)
 
-    final case class Entity[+S[-w, +r], W1, R1, W2, R2](
+    final case class Entity[+S[-_, +_], W1, R1, W2, R2](
         self: Response.Value[S, W1, R1],
-        values: Reference[[w, r] =>> Bodies.Schema[S, w, r], W2, R2]
+        values: Reference[Bodies.Schema[S, *, *], W2, R2]
     ) extends Response.Value[S, (W1, W2), (R1, R2)]:
       export self.{headers, status, streamed}
 
-      override def bodies: Option[Reference[[w, r] =>> Bodies.Schema[S, w, r], ?, ?]] = Some(values)
+      override def bodies: Option[Reference[Bodies.Schema[S, *, *], ?, ?]] = Some(values)
 
     /** A streamed body added to a response, which changes what it describes without changing what it holds. */
-    final case class Streamed[+S[-w, +r], W1, R1, W2, R2](
+    final case class Streamed[+S[-_, +_], W1, R1, W2, R2](
         self: Response.Value[Body.Streamed.Requirement[S], W1, R1],
-        value: Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], W2, R2]
+        value: Reference[Body.Streamed.Schema[S, *, *], W2, R2]
     ) extends Response.Value[Body.Streamed.Requirement[S], W1, R1]:
       export self.{bodies, headers, status}
 
       override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = Some(value)
 
-    final case class Modify[+S[-w, +r], W0, R0, -W, +R](self: Response.Value[S, W0, R0], f: R0 => R, g: W => W0)
+    final case class Modify[+S[-_, +_], W0, R0, -W, +R](self: Response.Value[S, W0, R0], f: R0 => R, g: W => W0)
         extends Response.Value[S, W, R]:
       export self.{bodies, headers, status, streamed}

@@ -9,7 +9,7 @@ import io.taig.otter.Collection
   * [[RecordEncoder]].
   */
 final class CollectionEncoder[F[-_, +_], T, M: Monoid](encoder: Encoder[F, T], element: T => M)
-    extends Encoder[[w, r] =>> Collection[F, w, r], M]:
+    extends Encoder[Collection[F, *, *], M]:
   override def encode[W](schema: Collection[F, W, Any], w: W): M = schema match
     case Collection.Chained(reference, _) =>
       Monoid[M].combineAll(w.iterator.map(value => element(encoder.encode(reference.value, value))))

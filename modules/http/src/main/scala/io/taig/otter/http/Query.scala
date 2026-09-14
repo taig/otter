@@ -41,15 +41,15 @@ object Query:
         [s[-w, +r] <: Parameter.Node[w, r], w, r] => (query: Query.Schema[s, w, r]) => query.self
       ):
     given recordable: [S[-w, +r] <: Parameter.Node[w, r]]
-      => RecordableOperation[[w, r] =>> Query.Schema[S, w, r], [w, r] =>> Queries.Schema[S, w, r]] =
+      => RecordableOperation[Query.Schema[S, *, *], Queries.Schema[S, *, *]] =
       RecordableOperation.derived
 
     /** `query :* query`. */
     given appendable: [S1[-w, +r] <: Parameter.Node[w, r], S2[-w, +r] <: Parameter.Node[w, r]]
         => AppendableOperation[
-          [w, r] =>> Query.Schema[S1, w, r],
-          [w, r] =>> Queries.Schema[Parameter.Or[S1, S2], w, r],
-          [w, r] =>> Query.Schema[S2, w, r]
+          Query.Schema[S1, *, *],
+          Queries.Schema[Parameter.Or[S1, S2], *, *],
+          Query.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Query.Schema[S1, W, R]): Queries.Schema[Parameter.Or[S1, S2], W, R] =
         Queries.Schema.apply[Parameter.Or[S1, S2], W, R](Self.Record.Root(Reference.now(fa)))

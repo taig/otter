@@ -55,27 +55,27 @@ object Multipart:
       case Self.Record.Product(left, right) => Multipart.walk(left) ++ Multipart.walk(right)
       case Self.Record.Root(field)          => Chain.one((field.value.self.self, field.value.self.metadata))
 
-  final case class Schema[+B[-w, +r], -W, +R](
-      self: Annotation[Self.Record[[w, r] =>> Part.Schema[B, w, r], W, R]]
+  final case class Schema[+B[-_, +_], -W, +R](
+      self: Annotation[Self.Record[Part.Schema[B, *, *], W, R]]
   )
 
   object Schema
       extends Wrapper.Record[Body.Node, Multipart.Schema, Part.Schema](
         [b[-w, +r] <: Body.Node[w, r], w, r] =>
-          (annotation: Annotation[Self.Record[[a, c] =>> Part.Schema[b, a, c], w, r]]) =>
+          (annotation: Annotation[Self.Record[Part.Schema[b, *, *], w, r]]) =>
             new Multipart.Schema(annotation),
         [b[-w, +r] <: Body.Node[w, r], w, r] => (multipart: Multipart.Schema[b, w, r]) => multipart.self
       ):
     given recordable: [B[-w, +r] <: Body.Node[w, r]]
-      => RecordableOperation[[w, r] =>> Multipart.Schema[B, w, r], [w, r] =>> Multipart.Schema[B, w, r]] =
+      => RecordableOperation[Multipart.Schema[B, *, *], Multipart.Schema[B, *, *]] =
       RecordableOperation.identity
 
     /** `parts :* part`. */
     given appendable: [B1[-w, +r] <: Body.Node[w, r], B2[-w, +r] <: Body.Node[w, r]]
         => AppendableOperation[
-          [w, r] =>> Multipart.Schema[B1, w, r],
-          [w, r] =>> Multipart.Schema[Multipart.Or[B1, B2], w, r],
-          [w, r] =>> Part.Schema[B2, w, r]
+          Multipart.Schema[B1, *, *],
+          Multipart.Schema[Multipart.Or[B1, B2], *, *],
+          Part.Schema[B2, *, *]
         ]:
       override def lift[W, R](fa: Multipart.Schema[B1, W, R]): Multipart.Schema[Multipart.Or[B1, B2], W, R] = fa
 

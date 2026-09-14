@@ -11,28 +11,28 @@ trait CollectionComponent[Bound[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, +_]]:
       schema: => S[W, R],
       validation: Validation[Constraint.Collection, Chain[R]]
   )(using
-      F: CollectionOperation[[w, r] =>> F[S, w, r], S]
+      F: CollectionOperation[F[S, *, *], S]
   ): F[S, Chain[W], Chain[R]] = F.chained(Reference.later(schema), validation)
 
   def chain[S[-w, +r] <: Bound[w, r], W, R](schema: => S[W, R])(using
-      CollectionOperation[[w, r] =>> F[S, w, r], S]
+      CollectionOperation[F[S, *, *], S]
   ): F[S, Chain[W], Chain[R]] = chain(schema, Validation.valid)
 
   def vector[S[-w, +r] <: Bound[w, r], W, R](
       schema: => S[W, R],
       validation: Validation[Constraint.Collection, Vector[R]]
   )(using
-      F: CollectionOperation[[w, r] =>> F[S, w, r], S]
+      F: CollectionOperation[F[S, *, *], S]
   ): F[S, Vector[W], Vector[R]] = F.indexed(Reference.later(schema), validation)
 
   def vector[S[-w, +r] <: Bound[w, r], W, R](schema: => S[W, R])(using
-      CollectionOperation[[w, r] =>> F[S, w, r], S]
+      CollectionOperation[F[S, *, *], S]
   ): F[S, Vector[W], Vector[R]] = vector(schema, Validation.valid)
 
   def list[S[-w, +r] <: Bound[w, r], W, R](schema: => S[W, R], validation: Validation[Constraint.Collection, List[R]])(
-      using F: CollectionOperation[[w, r] =>> F[S, w, r], S]
+      using F: CollectionOperation[F[S, *, *], S]
   ): F[S, List[W], List[R]] = F.linked(Reference.later(schema), validation)
 
   def list[S[-w, +r] <: Bound[w, r], W, R](schema: => S[W, R])(using
-      CollectionOperation[[w, r] =>> F[S, w, r], S]
+      CollectionOperation[F[S, *, *], S]
   ): F[S, List[W], List[R]] = list(schema, Validation.valid)

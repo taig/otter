@@ -3,7 +3,7 @@ package io.taig.otter.http
 import io.taig.otter.Union
 
 /** The endpoint served by a domain handler and the complete contract seen by its callers. */
-final case class ComposedEndpoint[+S[-w, +r], -AW, +AR, -BW, +BR, +E](
+final case class ComposedEndpoint[+S[-_, +_], -AW, +AR, -BW, +BR, +E](
     domain: Endpoint.Schema[S, AW, AR, BW, BR],
     errors: ErrorPolicy[S, E]
 ):

@@ -15,5 +15,5 @@ object CsvDocument:
   /** Positional columns, without a header. */
   final case class Tuple[-W, +R](schema: Reference[Csv.Tuple.Node, W, R]) extends CsvDocument.Row[W, R]
 
-  final case class Rows[-W, +R](schema: Reference[[w, r] =>> CsvDocument.Row[w, r], W, R])
+  final case class Rows[-W, +R](schema: Reference[CsvDocument.Row[*, *], W, R])
       extends CsvDocument[Vector[W], Vector[R]]

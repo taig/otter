@@ -60,12 +60,12 @@ trait HttpComponent
 
   /** The empty query string, which asks for nothing. */
   def QNil(using
-      F: RecordOperation[[w, r] =>> Queries.Schema[Nothing, w, r], [w, r] =>> Query.Schema[Nothing, w, r]]
+      F: RecordOperation[Queries.Schema[Nothing, *, *], Query.Schema[Nothing, *, *]]
   ): Queries.Schema[Nothing, Unit, Unit] = F.empty
 
   /** The empty header set, which asks for nothing. */
   def HNil(using
-      F: RecordOperation[[w, r] =>> Headers.Schema[Nothing, w, r], [w, r] =>> Header.Schema[Nothing, w, r]]
+      F: RecordOperation[Headers.Schema[Nothing, *, *], Header.Schema[Nothing, *, *]]
   ): Headers.Schema[Nothing, Unit, Unit] = F.empty
 
   /** A request with nothing but a method and a path. Its parts are added from there. */
@@ -80,7 +80,7 @@ trait HttpComponent
     * The payload types of the request and the responses are unioned rather than forced to agree, so an endpoint taking
     * a multipart upload and answering with JSON is one endpoint and its type says both.
     */
-  def endpoint[S1[-w, +r], S2[-w, +r], AW, AR, BW, BR](
+  def endpoint[S1[-_, +_], S2[-_, +_], AW, AR, BW, BR](
       request: Request.Schema[S1, AW, AR],
       responses: Responses.Schema[S2, BW, BR]
   ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
@@ -91,7 +91,7 @@ trait HttpComponent
     * The lone response is lifted into the union that holds it, so that the common case is not made to spell out the
     * union it is a branch of -- the same courtesy `:+` does for the first branch of a chain.
     */
-  def endpoint[S1[-w, +r], S2[-w, +r], AW, AR, BW, BR](
+  def endpoint[S1[-_, +_], S2[-_, +_], AW, AR, BW, BR](
       request: Request.Schema[S1, AW, AR],
       response: Response.Schema[S2, BW, BR]
   ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =

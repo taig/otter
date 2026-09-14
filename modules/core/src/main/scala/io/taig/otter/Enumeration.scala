@@ -16,6 +16,6 @@ object Enumeration:
       extends Enumeration[F, W, R]:
     export self.schema
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Enumeration[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Enumeration[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Enumeration[F, W0, R0])(f: W => W0)(g: R0 => R): Enumeration[F, W, R] =
       Enumeration.Modify(self, g, f)

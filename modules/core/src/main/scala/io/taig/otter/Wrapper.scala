@@ -48,9 +48,9 @@ abstract class Wrapper[Outer[-_, +_], Inner[-_, +_]](
     override def dimap[W0, R0, W, R](self: Outer[W0, R0])(f: W => W0)(g: R0 => R): Outer[W, R] =
       wrap(unwrap(self).map(P.dimap(_)(f)(g)))
 
-  given functor: (P: Profunctor[Inner]) => Functor[[a] =>> Outer[Nothing, a]] = Direction.functor[Outer]
+  given functor: (P: Profunctor[Inner]) => Functor[Outer[Nothing, *]] = Direction.functor[Outer]
 
-  given contravariant: (P: Profunctor[Inner]) => Contravariant[[a] =>> Outer[a, Any]] = Direction.contravariant[Outer]
+  given contravariant: (P: Profunctor[Inner]) => Contravariant[Outer[*, Any]] = Direction.contravariant[Outer]
 
   given invariant: (P: Profunctor[Inner]) => Invariant[[a] =>> Outer[a, a]] = Direction.invariant[Outer]
 
@@ -110,27 +110,27 @@ object Wrapper:
           (annotation.metadata, metadata => wrap(annotation.copy(metadata = metadata)))
 
     given profunctor: [S[-w, +r] <: Bound[w, r]]
-      => (P: Profunctor[[w, r] =>> Inner[S, w, r]]) => Profunctor[[w, r] =>> Outer[S, w, r]]:
+      => (P: Profunctor[Inner[S, *, *]]) => Profunctor[Outer[S, *, *]]:
       override def dimap[W0, R0, W, R](self: Outer[S, W0, R0])(f: W => W0)(g: R0 => R): Outer[S, W, R] =
         wrap(unwrap(self).map(P.dimap(_)(f)(g)))
 
-    given functor: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[[w, r] =>> Inner[S, w, r]])
-      => Functor[[a] =>> Outer[S, Nothing, a]] = Direction.functor[[w, r] =>> Outer[S, w, r]]
+    given functor: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[Inner[S, *, *]])
+      => Functor[Outer[S, Nothing, *]] = Direction.functor[Outer[S, *, *]]
 
-    given contravariant: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[[w, r] =>> Inner[S, w, r]])
-      => Contravariant[[a] =>> Outer[S, a, Any]] = Direction.contravariant[[w, r] =>> Outer[S, w, r]]
+    given contravariant: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[Inner[S, *, *]])
+      => Contravariant[Outer[S, *, Any]] = Direction.contravariant[Outer[S, *, *]]
 
-    given invariant: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[[w, r] =>> Inner[S, w, r]])
-      => Invariant[[a] =>> Outer[S, a, a]] = Direction.invariant[[w, r] =>> Outer[S, w, r]]
+    given invariant: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[Inner[S, *, *]])
+      => Invariant[[a] =>> Outer[S, a, a]] = Direction.invariant[Outer[S, *, *]]
 
-    given zip: [S[-w, +r] <: Bound[w, r]] => (Z: Zip[[w, r] =>> Inner[S, w, r]]) => Zip[[w, r] =>> Outer[S, w, r]]:
+    given zip: [S[-w, +r] <: Bound[w, r]] => (Z: Zip[Inner[S, *, *]]) => Zip[Outer[S, *, *]]:
       override def zip[W1, R1, W2, R2](
           left: Outer[S, W1, R1],
           right: Outer[S, W2, R2]
       ): Outer[S, (W1, W2), (R1, R2)] =
         wrap(Wrapper.combined(unwrap(left), unwrap(right), Z.zip(unwrap(left).self, unwrap(right).self)))
 
-    given alt: [S[-w, +r] <: Bound[w, r]] => (A: Alt[[w, r] =>> Inner[S, w, r]]) => Alt[[w, r] =>> Outer[S, w, r]]:
+    given alt: [S[-w, +r] <: Bound[w, r]] => (A: Alt[Inner[S, *, *]]) => Alt[Outer[S, *, *]]:
       override def alt[W1, R1, W2, R2](
           left: Outer[S, W1, R1],
           right: Outer[S, W2, R2]
@@ -141,7 +141,7 @@ object Wrapper:
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Field[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Field[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Field[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => FieldOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => FieldOperation[Outer[S, *, *], S]:
       override def lift[W, R](name: String, schema: Reference[S, W, R]): Outer[S, W, R] =
         Field.this.apply[S, W, R](Self.Field.Root(name, schema))
 
@@ -155,26 +155,26 @@ object Wrapper:
         override def schema: Reference[S, ?, ?] = node(fa).schema
 
   abstract class Record[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_], G[_[-w, +r] <: Bound[w, r], -_, +_]](
-      wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Record[[a, b] =>> G[s, a, b], w, r]] => Outer[s, w, r],
-      unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Record[[a, b] =>> G[s, a, b], w, r]]
-  ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Record[[a, b] =>> G[s, a, b], w, r]](
+      wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Record[G[s, *, *], w, r]] => Outer[s, w, r],
+      unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Record[G[s, *, *], w, r]]
+  ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Record[G[s, *, *], w, r]](
         wrap,
         unwrap
       ):
-    given operation: [S[-w, +r] <: Bound[w, r]] => RecordOperation[[w, r] =>> Outer[S, w, r], [w, r] =>> G[S, w, r]]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => RecordOperation[Outer[S, *, *], G[S, *, *]]:
       override def empty: Outer[S, Unit, Unit] = Record.this.apply[S, Unit, Unit](Self.Record.Empty)
 
-      override def lift[W, R](field: Reference[[w, r] =>> G[S, w, r], W, R]): Outer[S, W, R] =
+      override def lift[W, R](field: Reference[G[S, *, *], W, R]): Outer[S, W, R] =
         Record.this.apply[S, W, R](Self.Record.Root(field))
 
       extension [W, R](fa: Outer[S, W, R])
-        override def fields: Chain[Reference[[w, r] =>> G[S, w, r], ?, ?]] = node(fa).fields
+        override def fields: Chain[Reference[G[S, *, *], ?, ?]] = node(fa).fields
 
   abstract class Branch[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_]](
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Branch[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Branch[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Branch[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => BranchOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => BranchOperation[Outer[S, *, *], S]:
       override def lift[W, R](name: String, schema: Reference[S, W, R]): Outer[S, W, R] =
         Branch.this.apply[S, W, R](Self.Branch.Root(name, schema))
 
@@ -183,24 +183,24 @@ object Wrapper:
         override def schema: Reference[S, ?, ?] = node(fa).schema
 
   abstract class Union[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_], G[_[-w, +r] <: Bound[w, r], -_, +_]](
-      wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Union[[a, b] =>> G[s, a, b], w, r]] => Outer[s, w, r],
-      unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Union[[a, b] =>> G[s, a, b], w, r]]
-  ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Union[[a, b] =>> G[s, a, b], w, r]](
+      wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Union[G[s, *, *], w, r]] => Outer[s, w, r],
+      unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Union[G[s, *, *], w, r]]
+  ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Union[G[s, *, *], w, r]](
         wrap,
         unwrap
       ):
-    given operation: [S[-w, +r] <: Bound[w, r]] => UnionOperation[[w, r] =>> Outer[S, w, r], [w, r] =>> G[S, w, r]]:
-      override def lift[W, R](branch: Reference[[w, r] =>> G[S, w, r], W, R]): Outer[S, W, R] =
+    given operation: [S[-w, +r] <: Bound[w, r]] => UnionOperation[Outer[S, *, *], G[S, *, *]]:
+      override def lift[W, R](branch: Reference[G[S, *, *], W, R]): Outer[S, W, R] =
         Union.this.apply[S, W, R](Self.Union.Root(branch))
 
       extension [W, R](fa: Outer[S, W, R])
-        override def branches: NonEmptyChain[Reference[[w, r] =>> G[S, w, r], ?, ?]] = node(fa).branches
+        override def branches: NonEmptyChain[Reference[G[S, *, *], ?, ?]] = node(fa).branches
 
   abstract class Collection[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_]](
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Collection[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Collection[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Collection[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => CollectionOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => CollectionOperation[Outer[S, *, *], S]:
       override def chained[W, R](
           schema: Reference[S, W, R],
           validation: Validation[Constraint.Collection, Chain[R]]
@@ -228,7 +228,7 @@ object Wrapper:
         wrap,
         unwrap
       ):
-    given operation: [S[-w, +r] <: Bound[w, r]] => DictionaryOperation[[w, r] =>> Outer[S, w, r], K, S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => DictionaryOperation[Outer[S, *, *], K, S]:
       override def hashed[KW, KR, W, R](
           key: Reference[K, KW, KR],
           schema: Reference[S, W, R],
@@ -254,7 +254,7 @@ object Wrapper:
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Optional[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Optional[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Optional[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => OptionalOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => OptionalOperation[Outer[S, *, *], S]:
       override def lift[W, R](schema: => Reference[S, W, R]): Outer[S, Option[W], Option[R]] =
         Optional.this.apply[S, Option[W], Option[R]](Self.Optional.Root(schema))
 
@@ -267,7 +267,7 @@ object Wrapper:
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Tuple[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Tuple[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Tuple[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => TupleOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => TupleOperation[Outer[S, *, *], S]:
       override def empty: Outer[S, Unit, Unit] = Tuple.this.apply[S, Unit, Unit](Self.Tuple.Empty)
 
       override def lift[W, R](schema: Reference[S, W, R]): Outer[S, W, R] =
@@ -279,7 +279,7 @@ object Wrapper:
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Enumeration[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Enumeration[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Enumeration[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => EnumerationOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => EnumerationOperation[Outer[S, *, *], S]:
       override def lift[A, B](schema: Reference[S, A, A], mapping: Mapping[B, A]): Outer[S, B, B] =
         Enumeration.this.apply[S, B, B](Self.Enumeration.Root(schema, mapping))
 
@@ -289,7 +289,7 @@ object Wrapper:
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Coerce[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Coerce[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Coerce[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => CoerceOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => CoerceOperation[Outer[S, *, *], S]:
       override def lift[W, R](schema: Reference[S, W, R]): Outer[S, W, R] =
         Coerce.this.apply[S, W, R](Self.Coerce.Root(schema))
 
@@ -299,7 +299,7 @@ object Wrapper:
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Constant[s, w, r]] => Outer[s, w, r],
       unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Constant[s, w, r]]
   ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Constant[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => ConstantOperation[[w, r] =>> Outer[S, w, r], S]:
+    given operation: [S[-w, +r] <: Bound[w, r]] => ConstantOperation[Outer[S, *, *], S]:
       override def lift[A](schema: Reference[S, A, A], value: Eval[A], eq: Eq[A]): Outer[S, Unit, Unit] =
         Constant.this.apply[S, Unit, Unit](Self.Constant.Root(schema, value, eq))
 

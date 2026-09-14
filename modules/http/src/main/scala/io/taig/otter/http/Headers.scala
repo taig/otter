@@ -41,26 +41,26 @@ object Headers:
     case Self.Record.Root(field)          => Chain.one(field.value.self.self)
 
   final case class Schema[+S[-w, +r] <: Parameter.Schema[?, w, r], -W, +R](
-      self: Annotation[Self.Record[[w, r] =>> Header.Schema[S, w, r], W, R]]
+      self: Annotation[Self.Record[Header.Schema[S, *, *], W, R]]
   )
 
   object Schema
       extends Wrapper.Record[Parameter.Node, Headers.Schema, Header.Schema](
         [s[-w, +r] <: Parameter.Node[w, r], w, r] =>
-          (annotation: Annotation[Self.Record[[a, b] =>> Header.Schema[s, a, b], w, r]]) =>
+          (annotation: Annotation[Self.Record[Header.Schema[s, *, *], w, r]]) =>
             new Headers.Schema(annotation),
         [s[-w, +r] <: Parameter.Node[w, r], w, r] => (headers: Headers.Schema[s, w, r]) => headers.self
       ):
     given recordable: [S[-w, +r] <: Parameter.Node[w, r]]
-      => RecordableOperation[[w, r] =>> Headers.Schema[S, w, r], [w, r] =>> Headers.Schema[S, w, r]] =
+      => RecordableOperation[Headers.Schema[S, *, *], Headers.Schema[S, *, *]] =
       RecordableOperation.identity
 
     /** `headers :* header`. The result carries both children's `S`, so the union accumulates down the chain. */
     given appendable: [S1[-w, +r] <: Parameter.Node[w, r], S2[-w, +r] <: Parameter.Node[w, r]]
         => AppendableOperation[
-          [w, r] =>> Headers.Schema[S1, w, r],
-          [w, r] =>> Headers.Schema[Parameter.Or[S1, S2], w, r],
-          [w, r] =>> Header.Schema[S2, w, r]
+          Headers.Schema[S1, *, *],
+          Headers.Schema[Parameter.Or[S1, S2], *, *],
+          Header.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Headers.Schema[S1, W, R]): Headers.Schema[Parameter.Or[S1, S2], W, R] = fa
 

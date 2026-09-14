@@ -68,14 +68,14 @@ object Path:
         [s[-w, +r] <: Segment.Node[w, r], w, r] => (path: Path.Schema[s, w, r]) => path.self
       ):
     given tupleable: [S[-w, +r] <: Segment.Node[w, r]]
-      => TupleableOperation[[w, r] =>> Path.Schema[S, w, r], [w, r] =>> Path.Schema[S, w, r]] =
+      => TupleableOperation[Path.Schema[S, *, *], Path.Schema[S, *, *]] =
       TupleableOperation.identity
 
     /** `path :* segment`. */
     given appendable: [S1[-w, +r] <: Segment.Node[w, r], S2[-w, +r] <: Segment.Node[w, r]]
         => AppendableOperation[
-          [w, r] =>> Path.Schema[S1, w, r],
-          [w, r] =>> Path.Schema[Path.Or[S1, S2], w, r],
+          Path.Schema[S1, *, *],
+          Path.Schema[Path.Or[S1, S2], *, *],
           S2
         ]:
       override def lift[W, R](fa: Path.Schema[S1, W, R]): Path.Schema[Path.Or[S1, S2], W, R] = fa

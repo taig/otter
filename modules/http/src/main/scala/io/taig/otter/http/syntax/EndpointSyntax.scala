@@ -32,7 +32,7 @@ import scala.annotation.targetName
   * name its method used to have, which is also what a stack trace and a binary compatibility report will say.
   */
 trait EndpointSyntax:
-  extension [S[-w, +r], W1, R1](fa: Request.Schema[S, W1, R1])
+  extension [S[-_, +_], W1, R1](fa: Request.Schema[S, W1, R1])
     /** The query string this request reads. */
     def queries[W2, R2](values: => Queries.Node[W2, R2])(using
         W: Append.Shape[W1, W2],
@@ -69,7 +69,7 @@ trait EndpointSyntax:
   extension [W1, R1](fa: Request.Schema[Nothing, W1, R1])
     /** The one body this request carries. */
     @targetName("body")
-    def apply[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
+    def apply[S2[-_, +_], W2, R2](value: => Body.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Request.Schema[S2, Append[W1, W2], Append[R1, R2]] =
@@ -77,7 +77,7 @@ trait EndpointSyntax:
 
     /** The body this request carries, as a choice between alternatives. */
     @targetName("bodies")
-    def apply[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
+    def apply[S2[-_, +_], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Request.Schema[S2, Append[W1, W2], Append[R1, R2]] =
@@ -97,7 +97,7 @@ trait EndpointSyntax:
       * `W3` and `R3` are the body's own halves under an `Option`, named by [[Request.Optionality]] rather than written
       * as one here, which is what keeps the append reducible.
       */
-    def apply[S2[-w, +r], W2, R2, W3, R3](value: Bodies.Optional[S2, W2, R2])(using
+    def apply[S2[-_, +_], W2, R2, W3, R3](value: Bodies.Optional[S2, W2, R2])(using
         O: Request.Optionality[W2, R2, W3, R3],
         W: Append.Shape[W1, W3],
         R: Append.Shape[R1, R3]
@@ -114,12 +114,12 @@ trait EndpointSyntax:
 
     /** The streamed body this request carries, which changes what it describes and not what it holds. */
     @targetName("streaming")
-    def apply[S2[-w, +r], W2, R2](
+    def apply[S2[-_, +_], W2, R2](
         value: => Body.Streamed.Schema[S2, W2, R2]
     ): Request.Schema[Body.Streamed.Requirement[S2], W1, R1] =
       Request.Schema(Request.Value.Streamed[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
-  extension [S[-w, +r], W1, R1](fa: Response.Schema[S, W1, R1])
+  extension [S[-_, +_], W1, R1](fa: Response.Schema[S, W1, R1])
     /** The headers this response writes. */
     def headers[W2, R2](values: => Headers.Node[W2, R2])(using
         W: Append.Shape[W1, W2],
@@ -141,7 +141,7 @@ trait EndpointSyntax:
   extension [W1, R1](fa: Response.Schema[Nothing, W1, R1])
     /** The one body this response carries. */
     @targetName("body")
-    def apply[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
+    def apply[S2[-_, +_], W2, R2](value: => Body.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Response.Schema[S2, Append[W1, W2], Append[R1, R2]] =
@@ -149,7 +149,7 @@ trait EndpointSyntax:
 
     /** The body this response carries, as a choice between alternatives. */
     @targetName("bodies")
-    def apply[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
+    def apply[S2[-_, +_], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Response.Schema[S2, Append[W1, W2], Append[R1, R2]] =
@@ -163,7 +163,7 @@ trait EndpointSyntax:
 
     /** The streamed body this response carries, which changes what it describes and not what it holds. */
     @targetName("streaming")
-    def apply[S2[-w, +r], W2, R2](
+    def apply[S2[-_, +_], W2, R2](
         value: => Body.Streamed.Schema[S2, W2, R2]
     ): Response.Schema[Body.Streamed.Requirement[S2], W1, R1] =
       Response.Schema(Response.Value.Streamed[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))

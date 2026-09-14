@@ -6,7 +6,7 @@ import io.taig.otter.Record
 import io.taig.otter.Violations
 
 final class RecordDecoder[F[-_, +_], T](decoder: Decoder.Remaining[F, Fields[T]])
-    extends Decoder.Remaining[[w, r] =>> Record[F, w, r], Fields[T]]:
+    extends Decoder.Remaining[Record[F, *, *], Fields[T]]:
   override def decodeRemaining[R](
       schema: Record[F, Nothing, R],
       values: Fields[T]

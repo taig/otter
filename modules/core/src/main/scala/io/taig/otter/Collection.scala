@@ -31,6 +31,6 @@ object Collection:
       extends Collection[F, W, R]:
     export self.schema
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Collection[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Collection[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Collection[F, W0, R0])(f: W => W0)(g: R0 => R): Collection[F, W, R] =
       Collection.Modify(self, g, f)

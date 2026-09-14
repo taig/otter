@@ -121,7 +121,7 @@ object Parameter:
       */
     sealed abstract class Schema[+S[-w, +r] <: Parameter.Schema[?, w, r], -W, +R] extends Parameter.Schema[S, W, R]
 
-    given profunctor: [S[-w, +r] <: Parameter.Node[w, r]] => Profunctor[[w, r] =>> Parameter.Value.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r] <: Parameter.Node[w, r]] => Profunctor[Parameter.Value.Schema[S, *, *]]:
       override def dimap[W0, R0, W, R](
           self: Parameter.Value.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Parameter.Value.Schema[S, W, R] = self match
@@ -134,15 +134,15 @@ object Parameter:
           Parameter.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
         case self @ Parameter.Primitive.Text.Schema(_) => Parameter.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
-    given functor: [S[-w, +r] <: Parameter.Node[w, r]] => Functor[[a] =>> Parameter.Value.Schema[S, Nothing, a]] =
-      Direction.functor[[w, r] =>> Parameter.Value.Schema[S, w, r]]
+    given functor: [S[-w, +r] <: Parameter.Node[w, r]] => Functor[Parameter.Value.Schema[S, Nothing, *]] =
+      Direction.functor[Parameter.Value.Schema[S, *, *]]
 
     given contravariant: [S[-w, +r] <: Parameter.Node[w, r]]
-      => Contravariant[[a] =>> Parameter.Value.Schema[S, a, Any]] =
-      Direction.contravariant[[w, r] =>> Parameter.Value.Schema[S, w, r]]
+      => Contravariant[Parameter.Value.Schema[S, *, Any]] =
+      Direction.contravariant[Parameter.Value.Schema[S, *, *]]
 
     given invariant: [S[-w, +r] <: Parameter.Node[w, r]] => Invariant[[a] =>> Parameter.Value.Schema[S, a, a]] =
-      Direction.invariant[[w, r] =>> Parameter.Value.Schema[S, w, r]]
+      Direction.invariant[Parameter.Value.Schema[S, *, *]]
 
   type Primitive[A] = Parameter.Primitive.Of[Parameter.Node, A]
 
@@ -228,7 +228,7 @@ object Parameter:
             [w, r] => (parameter: Parameter.Primitive.Text.Schema[w, r]) => parameter.self
           )
 
-    given profunctor: [S[-w, +r] <: Parameter.Node[w, r]] => Profunctor[[w, r] =>> Parameter.Primitive.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r] <: Parameter.Node[w, r]] => Profunctor[Parameter.Primitive.Schema[S, *, *]]:
       override def dimap[W0, R0, W, R](
           self: Parameter.Primitive.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Parameter.Primitive.Schema[S, W, R] = self match
@@ -238,15 +238,15 @@ object Parameter:
           Parameter.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
         case self @ Parameter.Primitive.Text.Schema(_) => Parameter.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
-    given functor: [S[-w, +r] <: Parameter.Node[w, r]] => Functor[[a] =>> Parameter.Primitive.Schema[S, Nothing, a]] =
-      Direction.functor[[w, r] =>> Parameter.Primitive.Schema[S, w, r]]
+    given functor: [S[-w, +r] <: Parameter.Node[w, r]] => Functor[Parameter.Primitive.Schema[S, Nothing, *]] =
+      Direction.functor[Parameter.Primitive.Schema[S, *, *]]
 
     given contravariant: [S[-w, +r] <: Parameter.Node[w, r]]
-      => Contravariant[[a] =>> Parameter.Primitive.Schema[S, a, Any]] =
-      Direction.contravariant[[w, r] =>> Parameter.Primitive.Schema[S, w, r]]
+      => Contravariant[Parameter.Primitive.Schema[S, *, Any]] =
+      Direction.contravariant[Parameter.Primitive.Schema[S, *, *]]
 
     given invariant: [S[-w, +r] <: Parameter.Node[w, r]] => Invariant[[a] =>> Parameter.Primitive.Schema[S, a, a]] =
-      Direction.invariant[[w, r] =>> Parameter.Primitive.Schema[S, w, r]]
+      Direction.invariant[Parameter.Primitive.Schema[S, *, *]]
 
   type Coerce[A] = Parameter.Coerce.Of[Parameter.Primitive.Node, A]
 
@@ -341,7 +341,7 @@ object Parameter:
             (parameter: Parameter.Enumeration.Schema[s, w, r]) => parameter.self
         )
 
-  given profunctor: [S[-w, +r] <: Parameter.Node[w, r]] => Profunctor[[w, r] =>> Parameter.Schema[S, w, r]]:
+  given profunctor: [S[-w, +r] <: Parameter.Node[w, r]] => Profunctor[Parameter.Schema[S, *, *]]:
     override def dimap[W0, R0, W, R](
         self: Parameter.Schema[S, W0, R0]
     )(f: W => W0)(g: R0 => R): Parameter.Schema[S, W, R] = self match
@@ -354,11 +354,11 @@ object Parameter:
       case self @ Parameter.Primitive.Number.Schema(_) => Parameter.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
       case self @ Parameter.Primitive.Text.Schema(_)   => Parameter.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
-  given functor: [S[-w, +r] <: Parameter.Node[w, r]] => Functor[[a] =>> Parameter.Schema[S, Nothing, a]] =
-    Direction.functor[[w, r] =>> Parameter.Schema[S, w, r]]
+  given functor: [S[-w, +r] <: Parameter.Node[w, r]] => Functor[Parameter.Schema[S, Nothing, *]] =
+    Direction.functor[Parameter.Schema[S, *, *]]
 
-  given contravariant: [S[-w, +r] <: Parameter.Node[w, r]] => Contravariant[[a] =>> Parameter.Schema[S, a, Any]] =
-    Direction.contravariant[[w, r] =>> Parameter.Schema[S, w, r]]
+  given contravariant: [S[-w, +r] <: Parameter.Node[w, r]] => Contravariant[Parameter.Schema[S, *, Any]] =
+    Direction.contravariant[Parameter.Schema[S, *, *]]
 
   given invariant: [S[-w, +r] <: Parameter.Node[w, r]] => Invariant[[a] =>> Parameter.Schema[S, a, a]] =
-    Direction.invariant[[w, r] =>> Parameter.Schema[S, w, r]]
+    Direction.invariant[Parameter.Schema[S, *, *]]

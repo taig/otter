@@ -18,6 +18,6 @@ object Optional:
       extends Optional[F, W, R]:
     export self.schema
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Optional[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Optional[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Optional[F, W0, R0])(f: W => W0)(g: R0 => R): Optional[F, W, R] =
       Optional.Modify(self, g, f)

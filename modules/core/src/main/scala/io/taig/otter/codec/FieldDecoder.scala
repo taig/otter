@@ -20,7 +20,7 @@ import io.taig.validation.Violation
   * and every one of them exports that root's name, so the key is taken once here and what it held is handed down.
   */
 final class FieldDecoder[F[-_, +_], T](decoder: Decoder[F, T], absent: Option[T] => Boolean)
-    extends Decoder.Remaining[[w, r] =>> Field[F, w, r], Fields[T]]:
+    extends Decoder.Remaining[Field[F, *, *], Fields[T]]:
   override def decodeRemaining[R](
       field: Field[F, Nothing, R],
       values: Fields[T]

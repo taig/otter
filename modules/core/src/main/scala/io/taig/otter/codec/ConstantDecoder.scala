@@ -9,7 +9,7 @@ import io.taig.otter.Violations
 import io.taig.validation.Violation
 
 final class ConstantDecoder[F[-_, +_], T](decoder: Decoder[F, T], encoder: Encoder[F, T], render: T => Data)
-    extends Decoder[[w, r] =>> Constant[F, w, r], T]:
+    extends Decoder[Constant[F, *, *], T]:
   override def decode[R](schema: Constant[F, Nothing, R], value: T): Validated[Violations, R] =
     schema match
       case Constant.Modify(self, f, _)            => decode(self, value).map(f)

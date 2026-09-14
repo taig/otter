@@ -17,7 +17,7 @@ import io.taig.otter.http.Parameter
   * the request asserting it. Only a boolean does: empty text is a perfectly good `String` and a number that is not
   * there is not a number.
   */
-object ParameterCoerceDecoder extends Decoder[[w, r] =>> Coerce[Parameter.Primitive.Node, w, r], String]:
+object ParameterCoerceDecoder extends Decoder[Coerce[Parameter.Primitive.Node, *, *], String]:
   override def decode[R](
       schema: Coerce[Parameter.Primitive.Node, Nothing, R],
       value: String

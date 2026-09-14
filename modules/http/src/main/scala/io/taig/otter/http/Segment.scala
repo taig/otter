@@ -108,20 +108,20 @@ object Segment:
           [s[-w, +r] <: Parameter.Value.Node[w, r], w, r] => (segment: Segment.Dynamic.Schema[s, w, r]) => segment.self
         )
 
-  given profunctor: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Profunctor[[w, r] =>> Segment.Schema[S, w, r]]:
+  given profunctor: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Profunctor[Segment.Schema[S, *, *]]:
     override def dimap[W0, R0, W, R](self: Segment.Schema[S, W0, R0])(f: W => W0)(g: R0 => R): Segment.Schema[S, W, R] =
       self match
         case self @ Segment.Static.Schema(_)  => Segment.Static.Schema.profunctor.dimap(self)(f)(g)
         case self @ Segment.Dynamic.Schema(_) => Segment.Dynamic.Schema.profunctor.dimap(self)(f)(g)
 
-  given functor: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Functor[[a] =>> Segment.Schema[S, Nothing, a]] =
-    Direction.functor[[w, r] =>> Segment.Schema[S, w, r]]
+  given functor: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Functor[Segment.Schema[S, Nothing, *]] =
+    Direction.functor[Segment.Schema[S, *, *]]
 
-  given contravariant: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Contravariant[[a] =>> Segment.Schema[S, a, Any]] =
-    Direction.contravariant[[w, r] =>> Segment.Schema[S, w, r]]
+  given contravariant: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Contravariant[Segment.Schema[S, *, Any]] =
+    Direction.contravariant[Segment.Schema[S, *, *]]
 
   given invariant: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Invariant[[a] =>> Segment.Schema[S, a, a]] =
-    Direction.invariant[[w, r] =>> Segment.Schema[S, w, r]]
+    Direction.invariant[Segment.Schema[S, *, *]]
 
   /** `segment :* segment`, and `segment *: segment`: two segments beside each other are the path that holds them, which
     * is what [[Path.Root]] would otherwise have to be named for.
@@ -130,7 +130,7 @@ object Segment:
     * falls outside this instance's bound and keeps appending into itself through [[Path.Schema.appendable]].
     */
   given appendable: [S1[-w, +r] <: Segment.Node[w, r], S2[-w, +r] <: Segment.Node[w, r]]
-      => AppendableOperation[S1, [w, r] =>> Path.Schema[Path.Or[S1, S2], w, r], S2]:
+      => AppendableOperation[S1, Path.Schema[Path.Or[S1, S2], *, *], S2]:
     override def lift[W, R](fa: S1[W, R]): Path.Schema[Path.Or[S1, S2], W, R] =
       Path.Schema.apply[Path.Or[S1, S2], W, R](Self.Tuple.Root(Reference.now(fa)))
 

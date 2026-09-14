@@ -16,6 +16,6 @@ object Coerce:
       extends Coerce[F, W, R]:
     export self.schema
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Coerce[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Coerce[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Coerce[F, W0, R0])(f: W => W0)(g: R0 => R): Coerce[F, W, R] =
       Coerce.Modify(self, g, f)

@@ -61,13 +61,13 @@ object http:
   /** Ascribed to say that every segment is a primitive, which is the ordinary shape of a path and a compile error for
     * anything that would need more than one piece of text.
     */
-  val flat: Path.Of[[w, r] =>> io.taig.otter.http.Segment.Schema[Parameter.Primitive.Node, w, r], Int] =
+  val flat: Path.Of[io.taig.otter.http.Segment.Schema[Parameter.Primitive.Node, *, *], Int] =
     __ :* segment("users") :* segment("id", int)
 
   /** The same claim about a path built with `/`: a bare literal is a primitive segment and widens nothing. */
-  val slicedFlat: Path.Of[[w, r] =>> io.taig.otter.http.Segment.Schema[Parameter.Primitive.Node, w, r], Int] =
+  val slicedFlat: Path.Of[io.taig.otter.http.Segment.Schema[Parameter.Primitive.Node, *, *], Int] =
     __ / "users" / segment("id", int)
 
   /** And the same claim about the root written out, which is what says the two names are one value. */
-  val spelledFlat: Path.Of[[w, r] =>> io.taig.otter.http.Segment.Schema[Parameter.Primitive.Node, w, r], Int] =
+  val spelledFlat: Path.Of[io.taig.otter.http.Segment.Schema[Parameter.Primitive.Node, *, *], Int] =
     Path.Root / "users" / segment("id", int)

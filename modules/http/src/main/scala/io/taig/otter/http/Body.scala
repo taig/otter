@@ -25,9 +25,9 @@ object Body:
   type Whole[P[-w, +r]] = [w, r] =>> Body.Requirement.Whole[P, w, r]
 
   object Requirement:
-    sealed abstract class Whole[+P[-w, +r], -W, +R]
+    sealed abstract class Whole[+P[-_, +_], -W, +R]
 
-    sealed abstract class Streamed[+P[-w, +r], -W, +R]
+    sealed abstract class Streamed[+P[-_, +_], -W, +R]
 
   /** The payload of a body that has none, which is not the same as a body that is not there.
     *
@@ -63,11 +63,11 @@ object Body:
     type Of[S[-w, +r], -A] = Body.Schema[S, A, Any]
 
   /** A body, with the metadata a renderer reads its description and examples from. */
-  final case class Schema[+S[-w, +r], -W, +R](self: Annotation[Body.Value[S, W, R]]):
+  final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Body.Value[S, W, R]]):
     def mediaType: MediaType = self.self.mediaType
 
   object Schema:
-    def apply[S[-w, +r], W, R](self: Body.Value[S, W, R]): Body.Schema[S, W, R] =
+    def apply[S[-_, +_], W, R](self: Body.Value[S, W, R]): Body.Schema[S, W, R] =
       new Body.Schema(Annotation(self))
 
     given annotated: [S[-w, +r], W, R] => Annotated[Body.Schema[S, W, R]]:
@@ -75,31 +75,31 @@ object Body:
         override def lens: (Metadata, Metadata => Body.Schema[S, W, R]) =
           (self.self.metadata, metadata => new Body.Schema(self.self.copy(metadata = metadata)))
 
-    given profunctor: [S[-w, +r]] => Profunctor[[w, r] =>> Body.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r]] => Profunctor[Body.Schema[S, *, *]]:
       override def dimap[W0, R0, W, R](
           self: Body.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Body.Schema[S, W, R] =
         new Body.Schema(self.self.map(Body.Value.profunctor.dimap(_)(f)(g)))
 
-    given functor: [S[-w, +r]] => Functor[[a] =>> Body.Schema[S, Nothing, a]] =
-      Direction.functor[[w, r] =>> Body.Schema[S, w, r]]
+    given functor: [S[-w, +r]] => Functor[Body.Schema[S, Nothing, *]] =
+      Direction.functor[Body.Schema[S, *, *]]
 
-    given contravariant: [S[-w, +r]] => Contravariant[[a] =>> Body.Schema[S, a, Any]] =
-      Direction.contravariant[[w, r] =>> Body.Schema[S, w, r]]
+    given contravariant: [S[-w, +r]] => Contravariant[Body.Schema[S, *, Any]] =
+      Direction.contravariant[Body.Schema[S, *, *]]
 
     given invariant: [S[-w, +r]] => Invariant[[a] =>> Body.Schema[S, a, a]] =
-      Direction.invariant[[w, r] =>> Body.Schema[S, w, r]]
+      Direction.invariant[Body.Schema[S, *, *]]
 
     given unionable: [S[-w, +r]]
-      => UnionableOperation[[w, r] =>> Body.Schema[S, w, r], [w, r] =>> Bodies.Schema[S, w, r]] =
+      => UnionableOperation[Body.Schema[S, *, *], Bodies.Schema[S, *, *]] =
       UnionableOperation.derived
 
     /** `body :+ body`. The result carries both children's payload, so the union accumulates down the chain. */
     given alternable: [S1[-w, +r], S2[-w, +r]]
         => AlternableOperation[
-          [w, r] =>> Body.Schema[S1, w, r],
-          [w, r] =>> Bodies.Schema[Body.Or[S1, S2], w, r],
-          [w, r] =>> Body.Schema[S2, w, r]
+          Body.Schema[S1, *, *],
+          Bodies.Schema[Body.Or[S1, S2], *, *],
+          Body.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Body.Schema[S1, W, R]): Bodies.Schema[Body.Or[S1, S2], W, R] =
         Bodies.Schema.apply[Body.Or[S1, S2], W, R](Self.Union.Root(Reference.now(fa)))
@@ -133,7 +133,7 @@ object Body:
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Body.Streamed.Schema[Body.Payload, w, r]
 
-    final case class Schema[+S[-w, +r], -W, +R](self: Annotation[Body.Value.Streamed[S, W, R]]):
+    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Body.Value.Streamed[S, W, R]]):
       /** The same body as a [[Request]] sees it, which is as something contributing nothing. */
       def body: Body.Schema[Body.Streamed.Requirement[S], Unit, Unit] = new Body.Schema(self)
 
@@ -153,12 +153,12 @@ object Body:
     * image, a PDF -- carried as a `ByteVector` so that comparing two of them means comparing their contents. A
     * [[Body.Value.Streamed]] is a sequence of documents arriving one at a time.
     */
-  sealed abstract class Value[+S[-w, +r], -W, +R]:
+  sealed abstract class Value[+S[-_, +_], -W, +R]:
     def mediaType: MediaType
 
   object Value:
     /** One document, read and written whole. */
-    final case class Whole[+S[-w, +r], -W, +R](
+    final case class Whole[+S[-_, +_], -W, +R](
         override val mediaType: MediaType,
         payload: Reference[S, W, R]
     ) extends Body.Value[Body.Whole[S], W, R]
@@ -179,19 +179,19 @@ object Body:
       * `Streamed` keeping the element in its own type is what lets that backend pin the element type in the compiler
       * rather than in a comment.
       */
-    final case class Streamed[+S[-w, +r], -W, +R](
+    final case class Streamed[+S[-_, +_], -W, +R](
         override val mediaType: MediaType,
         frame: Frame,
         element: Reference[S, W, R]
     ) extends Body.Value[Body.Streamed.Requirement[S], Unit, Unit]
 
-    final case class Modify[+S[-w, +r], W0, R0, -W, +R](
+    final case class Modify[+S[-_, +_], W0, R0, -W, +R](
         self: Body.Value[S, W0, R0],
         f: R0 => R,
         g: W => W0
     ) extends Body.Value[S, W, R]:
       export self.mediaType
 
-    given profunctor: [S[-w, +r]] => Profunctor[[w, r] =>> Body.Value[S, w, r]]:
+    given profunctor: [S[-w, +r]] => Profunctor[Body.Value[S, *, *]]:
       override def dimap[W0, R0, W, R](self: Body.Value[S, W0, R0])(f: W => W0)(g: R0 => R): Body.Value[S, W, R] =
         Body.Value.Modify(self, g, f)

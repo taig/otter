@@ -39,27 +39,27 @@ object Responses:
     case Self.Union.Coproduct(left, right) => Responses.walk(left) ++ Responses.walk(right)
     case Self.Union.Root(branch)           => Chain.one(branch.value)
 
-  final case class Schema[+S[-w, +r], -W, +R](
-      self: Annotation[Self.Union[[w, r] =>> Response.Schema[S, w, r], W, R]]
+  final case class Schema[+S[-_, +_], -W, +R](
+      self: Annotation[Self.Union[Response.Schema[S, *, *], W, R]]
   )
 
   object Schema
       extends Wrapper.Union[Body.Payload, Responses.Schema, Response.Schema](
         [s[-w, +r], w, r] =>
-          (annotation: Annotation[Self.Union[[a, b] =>> Response.Schema[s, a, b], w, r]]) =>
+          (annotation: Annotation[Self.Union[Response.Schema[s, *, *], w, r]]) =>
             new Responses.Schema(annotation),
         [s[-w, +r], w, r] => (responses: Responses.Schema[s, w, r]) => responses.self
       ):
     given unionable: [S[-w, +r]]
-      => UnionableOperation[[w, r] =>> Responses.Schema[S, w, r], [w, r] =>> Responses.Schema[S, w, r]] =
+      => UnionableOperation[Responses.Schema[S, *, *], Responses.Schema[S, *, *]] =
       UnionableOperation.identity
 
     /** `responses :+ response`. */
     given alternable: [S1[-w, +r], S2[-w, +r]]
         => AlternableOperation[
-          [w, r] =>> Responses.Schema[S1, w, r],
-          [w, r] =>> Responses.Schema[Body.Or[S1, S2], w, r],
-          [w, r] =>> Response.Schema[S2, w, r]
+          Responses.Schema[S1, *, *],
+          Responses.Schema[Body.Or[S1, S2], *, *],
+          Response.Schema[S2, *, *]
         ]:
       override def lift[W, R](fa: Responses.Schema[S1, W, R]): Responses.Schema[Body.Or[S1, S2], W, R] = fa
 

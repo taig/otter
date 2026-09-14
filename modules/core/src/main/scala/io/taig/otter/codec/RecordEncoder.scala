@@ -10,7 +10,7 @@ import io.taig.otter.Record
   * container of pairs and hands it to its own object constructor; a format writing into an output asks for the write
   * itself, and then combining two fields is composing two writes and no container is built at all.
   */
-final class RecordEncoder[F[-_, +_], M: Monoid](encoder: Encoder[F, M]) extends Encoder[[w, r] =>> Record[F, w, r], M]:
+final class RecordEncoder[F[-_, +_], M: Monoid](encoder: Encoder[F, M]) extends Encoder[Record[F, *, *], M]:
   override def encode[W](schema: Record[F, W, Any], w: W): M = schema match
     case Record.Empty                => Monoid[M].empty
     case Record.Modify(self, _, g)   => encode(self, g(w))

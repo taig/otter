@@ -14,13 +14,13 @@ import scodec.bits.ByteVector
   * registry during construction. Runtime recognition remains confined to this registry because payload alternatives are
   * existential after a schema is stored in a union.
   */
-sealed abstract class Http4sPayload[-P[-w, +r]]:
+sealed abstract class Http4sPayload[-P[-_, +_]]:
   private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[DecodingFailure, R]]
 
   private[http] def encode[W](payload: Any, value: W): Option[Either[String, ByteVector]]
 
   /** The first interpreter recognizing the schema owns both successes and failures. */
-  final def orElse[Q[-w, +r]](that: Http4sPayload[Q]): Http4sPayload[Body.Or[P, Q]] =
+  final def orElse[Q[-_, +_]](that: Http4sPayload[Q]): Http4sPayload[Body.Or[P, Q]] =
     new Http4sPayload[Body.Or[P, Q]]:
       override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[DecodingFailure, R]] =
         Http4sPayload.this.decode(payload, bytes).orElse(that.decode(payload, bytes))
@@ -33,7 +33,7 @@ object Http4sPayload:
   type Supported[P[-w, +r]] = Body.Or[Body.Whole[P], Body.Opaque]
 
   /** A codec must implement its entire advertised alphabet. Failure to encode is distinct from not recognizing it. */
-  trait Codec[-P[-w, +r]]:
+  trait Codec[-P[-_, +_]]:
     def decode[R](payload: P[Nothing, R], bytes: ByteVector): Validated[Violations, R]
 
     /** Override when the parser can distinguish malformed bytes from schema violations. */
@@ -45,7 +45,7 @@ object Http4sPayload:
   /** `recognize` must accept every schema in `P`, preserving its write/read types. The registry only supplies schemas
     * with those types; an alphabet's type test is the single boundary where their erasure is recovered.
     */
-  def apply[P[-w, +r]](recognize: [w, r] => Any => Option[P[w, r]])(codec: Http4sPayload.Codec[P]): Http4sPayload[P] =
+  def apply[P[-_, +_]](recognize: [w, r] => Any => Option[P[w, r]])(codec: Http4sPayload.Codec[P]): Http4sPayload[P] =
     new Http4sPayload[P]:
       override private[http] def decode[R](payload: Any, bytes: ByteVector): Option[Validated[DecodingFailure, R]] =
         recognize[Nothing, R](payload).map(codec.decodeDetailed(_, bytes))

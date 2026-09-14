@@ -17,12 +17,12 @@ import cats.arrow.Profunctor
   */
 object Direction:
   /** The read side of a schema that writes nothing. */
-  def functor[F[-_, +_]](using P: Profunctor[F]): Functor[[a] =>> F[Nothing, a]] = new Functor[[a] =>> F[Nothing, a]]:
+  def functor[F[-_, +_]](using P: Profunctor[F]): Functor[F[Nothing, *]] = new Functor[F[Nothing, *]]:
     override def map[A, B](fa: F[Nothing, A])(f: A => B): F[Nothing, B] = P.rmap(fa)(f)
 
   /** The write side of a schema that reads nothing usable. */
-  def contravariant[F[-_, +_]](using P: Profunctor[F]): Contravariant[[a] =>> F[a, Any]] =
-    new Contravariant[[a] =>> F[a, Any]]:
+  def contravariant[F[-_, +_]](using P: Profunctor[F]): Contravariant[F[*, Any]] =
+    new Contravariant[F[*, Any]]:
       override def contramap[A, B](fa: F[A, Any])(f: B => A): F[B, Any] = P.lmap(fa)(f)
 
   /** Both sides of a schema that round trips, which can only move in lockstep. */

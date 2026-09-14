@@ -8,4 +8,4 @@ trait TupleComponent[Bound[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, +_]]:
     * A place to start a chain rather than something a chain needs: two schemas beside each other already are the tuple
     * that holds them, so `TNil :* string :* int`, `string :* int` and `string *: int *: TNil` are one schema.
     */
-  def TNil(using F: TupleOperation[[w, r] =>> F[Nothing, w, r], Nothing]): F[Nothing, Unit, Unit] = F.empty
+  def TNil(using F: TupleOperation[F[Nothing, *, *], Nothing]): F[Nothing, Unit, Unit] = F.empty

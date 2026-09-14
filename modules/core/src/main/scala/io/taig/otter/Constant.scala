@@ -19,6 +19,6 @@ object Constant:
       extends Constant[F, W, R]:
     export self.schema
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Constant[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Constant[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Constant[F, W0, R0])(f: W => W0)(g: R0 => R): Constant[F, W, R] =
       Constant.Modify(self, g, f)

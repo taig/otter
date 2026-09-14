@@ -6,7 +6,7 @@ import io.taig.otter.Optional
 import io.taig.otter.Violations
 
 final class OptionalDecoder[F[-_, +_], T](decoder: Decoder[F, T], empty: T => Boolean)
-    extends Decoder[[w, r] =>> Optional[F, w, r], T]:
+    extends Decoder[Optional[F, *, *], T]:
   override def decode[R](schema: Optional[F, Nothing, R], value: T): Validated[Violations, R] =
     schema match
       case Optional.Default(reference, default) =>

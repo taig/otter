@@ -67,7 +67,7 @@ final class JsonSchemaNodeRenderer(
     constraints.toList
       .traverse: constraint =>
         profile.keyword(constraint) match
-          case Some(keyword) => keyword.some.pure[[a] =>> State[JsonSchemaContext, a]]
+          case Some(keyword) => keyword.some.pure[State[JsonSchemaContext, *]]
           case None          => issue(JsonSchemaIssue.Dropped(_, constraint)).as(none[(String, CirceJson)])
       .map(_.flatten)
 

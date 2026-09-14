@@ -32,7 +32,7 @@ object Part:
   object Writer:
     type Of[B[-w, +r], -A] = Part.Schema[B, A, Any]
 
-  final case class Schema[+B[-w, +r], -W, +R](self: Annotation[Self.Field[B, W, R]])
+  final case class Schema[+B[-_, +_], -W, +R](self: Annotation[Self.Field[B, W, R]])
 
   object Schema
       extends Wrapper.Field[Body.Node, Part.Schema](
@@ -41,15 +41,15 @@ object Part:
         [b[-w, +r] <: Body.Node[w, r], w, r] => (part: Part.Schema[b, w, r]) => part.self
       ):
     given recordable: [B[-w, +r] <: Body.Node[w, r]]
-      => RecordableOperation[[w, r] =>> Part.Schema[B, w, r], [w, r] =>> Multipart.Schema[B, w, r]] =
+      => RecordableOperation[Part.Schema[B, *, *], Multipart.Schema[B, *, *]] =
       RecordableOperation.derived
 
     /** `part :* part`. */
     given appendable: [B1[-w, +r] <: Body.Node[w, r], B2[-w, +r] <: Body.Node[w, r]]
         => AppendableOperation[
-          [w, r] =>> Part.Schema[B1, w, r],
-          [w, r] =>> Multipart.Schema[Multipart.Or[B1, B2], w, r],
-          [w, r] =>> Part.Schema[B2, w, r]
+          Part.Schema[B1, *, *],
+          Multipart.Schema[Multipart.Or[B1, B2], *, *],
+          Part.Schema[B2, *, *]
         ]:
       override def lift[W, R](fa: Part.Schema[B1, W, R]): Multipart.Schema[Multipart.Or[B1, B2], W, R] =
         Multipart.Schema.apply[Multipart.Or[B1, B2], W, R](Self.Record.Root(Reference.now(fa)))

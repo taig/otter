@@ -37,12 +37,12 @@ object Http4s:
   def routes[F[_]: Concurrent]: Http4s.RoutesBuilder[F] = new Http4s.RoutesBuilder[F]
 
   final class RoutesBuilder[F[_]: Concurrent]:
-    def apply[P[-w, +r]](
+    def apply[P[-_, +_]](
         payload: Http4sPayload[P],
         observe: Http4sObservation[F] => F[Unit] = (_: Http4sObservation[F]) => Concurrent[F].unit
     ): Http4s.RoutesWithPayload[F, P] = new Http4s.RoutesWithPayload(payload, observe)
 
-  final class RoutesWithPayload[F[_]: Concurrent, P[-w, +r]](
+  final class RoutesWithPayload[F[_]: Concurrent, P[-_, +_]](
       payload: Http4sPayload[P],
       observe: Http4sObservation[F] => F[Unit]
   ):
@@ -76,7 +76,7 @@ object Http4s:
   def client[F[_]: Concurrent, A, B]: Http4s.ClientBuilder[F, A, B] = new Http4s.ClientBuilder[F, A, B]
 
   final class ClientBuilder[F[_]: Concurrent, A, B]:
-    def apply[P[-w, +r], E, D](
+    def apply[P[-_, +_], E, D](
         payload: Http4sPayload[P],
         base: Uri,
         client: Http4sClient[F]
@@ -87,13 +87,13 @@ object Http4s:
       new Http4s.ClientBuilder[F, A, Either[E | D, B]]
         .apply(payload, base, client)(endpoint.compose(api.errors).client)
 
-    def apply[P[-w, +r], E](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
+    def apply[P[-_, +_], E](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
         endpoint: Endpoint.WithErrors[Http4sPayload.Supported[P], A, Any, Nothing, B, E]
     ): A => F[Either[E | Status, B]] =
       new Http4s.ClientBuilder[F, A, Either[E | Status, B]]
         .apply(payload, base, client)(endpoint.compose(ErrorPolicy.default).client)
 
-    def apply[P[-w, +r]](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
+    def apply[P[-_, +_]](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
         endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
     ): A => F[B] =
       val encoder = Http4sRequestEncoder(payload)

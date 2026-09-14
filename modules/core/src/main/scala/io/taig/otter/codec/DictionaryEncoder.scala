@@ -12,7 +12,7 @@ final class DictionaryEncoder[K[-_, +_], F[-_, +_], T, M: Monoid](
     key: Encoder[K, String],
     encoder: Encoder[F, T],
     member: (String, T) => M
-) extends Encoder[[w, r] =>> Dictionary[K, F, w, r], M]:
+) extends Encoder[Dictionary[K, F, *, *], M]:
   override def encode[W](schema: Dictionary[K, F, W, Any], w: W): M = schema match
     case Dictionary.Hashed(keys, reference, _, _) =>
       Monoid[M].combineAll:

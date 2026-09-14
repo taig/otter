@@ -31,6 +31,6 @@ object Field:
       extends Field[F, W, R]:
     export self.{isOptional, name, schema}
 
-  given [F[-_, +_]] => Profunctor[[w, r] =>> Field[F, w, r]]:
+  given [F[-_, +_]] => Profunctor[Field[F, *, *]]:
     override def dimap[W0, R0, W, R](self: Field[F, W0, R0])(f: W => W0)(g: R0 => R): Field[F, W, R] =
       Field.Modify(self, g, f)

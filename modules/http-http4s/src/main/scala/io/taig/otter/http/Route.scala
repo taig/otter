@@ -16,7 +16,7 @@ import scodec.bits.ByteVector
   * wrong: a status is chosen by which branch of the response union the value took, and a handler that returns the wrong
   * shape does not compile.
   */
-final case class Route[F[_], +S[-w, +r], A, B](
+final case class Route[F[_], +S[-_, +_], A, B](
     endpoint: Endpoint.Server[S, A, B],
     handler: A => F[B],
     errors: ErrorPolicy[S, Any] = ErrorPolicy.default,
@@ -92,20 +92,20 @@ final case class Route[F[_], +S[-w, +r], A, B](
     F.onCancel(respond, notify(Http4sObservation.Event.Cancelled))
 
 object Route:
-  def apply[F[_], S[-w, +r], A, B, E, D](
+  def apply[F[_], S[-_, +_], A, B, E, D](
       api: Api[S, E],
       endpoint: Endpoint.Declaration[S, Nothing, A, B, Any, D],
       handler: A => F[B]
   ): Route[F, S, A, B] =
     new Route(endpoint.domain, handler, endpoint.compose(api.errors).errors, endpoint.overrides)
 
-  def apply[F[_], S[-w, +r], A, B, E](
+  def apply[F[_], S[-_, +_], A, B, E](
       endpoint: Endpoint.WithErrors[S, Nothing, A, B, Any, E],
       handler: A => F[B]
   ): Route[F, S, A, B] =
     new Route(endpoint.domain, handler, endpoint.compose(ErrorPolicy.default).errors, endpoint.overrides)
 
-  def apply[F[_], S[-w, +r], A, B, E](
+  def apply[F[_], S[-_, +_], A, B, E](
       endpoint: ComposedEndpoint[S, Nothing, A, B, Any, E],
       handler: A => F[B]
   ): Route[F, S, A, B] = new Route(endpoint.domain, handler, endpoint.errors)
@@ -115,7 +115,7 @@ object Route:
     * An endpoint with no body never touches the entity at all, which is what keeps a `GET` from paying for a stream it
     * was never going to look at.
     */
-  private def bytes[F[_]: Concurrent, S[-w, +r]](
+  private def bytes[F[_]: Concurrent, S[-_, +_]](
       endpoint: Endpoint.Server[S, ?, ?],
       request: Http4sRequest[F]
   ): F[ByteVector] =
