@@ -53,4 +53,4 @@ object api:
   val unserved: Chain[Endpoint.Node] = Chain(books.upload, books.exported, books.report)
 
   /** Everything, resolved from the API-wide policy for the renderers. */
-  val all = contract.definition.effective.toOption.get
+  val all = contract.checked(contract.definition.effective)

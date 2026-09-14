@@ -2,6 +2,7 @@ package io.taig.otter.sample.api
 
 import cats.syntax.all.*
 import io.taig.otter.http.Api
+import io.taig.otter.http.ApiIssue
 import io.taig.otter.http.Code
 import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.ErrorPolicy
@@ -13,6 +14,11 @@ import io.taig.otter.sample.api.dsl.*
 
 /** The same declared error responses are served, documented, and decoded by callers. */
 object contract:
+  @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
+  def checked[A](result: Either[ApiIssue, A]): A = result match
+    case Right(value) => value
+    case Left(issue)  => throw new IllegalStateException(s"Invalid sample API declaration: $issue")
+
   def response(status: Int): Result.Schema[dsl.Payload, Failure, Problem] =
     result(Code(status))(body.json(schema.problem)).dimap[Failure, Problem](failure =>
       if status == 500 then Problem.internal
@@ -31,32 +37,33 @@ object contract:
     response(500)
   )
 
-  val definition = Api(
-    errors,
-    loans.health,
-    books.list,
-    books.create,
-    books.fetch,
-    books.patch,
-    books.delete,
-    books.scan,
-    books.intake,
-    books.catalogue,
-    loans.fetch,
-    loans.borrow,
-    books.upload,
-    books.exported,
-    books.report
-  ).flatMap(_.withErrors(books.catalogue, ErrorOverrides(unexpected = Some(response(503))))).toOption.get
+  val definition = checked:
+    Api(
+      errors,
+      loans.health,
+      books.list,
+      books.create,
+      books.fetch,
+      books.patch,
+      books.delete,
+      books.scan,
+      books.intake,
+      books.catalogue,
+      loans.fetch,
+      loans.borrow,
+      books.upload,
+      books.exported,
+      books.report
+    ).flatMap(_.withErrors(books.catalogue, ErrorOverrides(unexpected = Some(response(503)))))
 
-  val health = definition.resolve(loans.health).toOption.get
-  val listBooks = definition.resolve(books.list).toOption.get
-  val createBook = definition.resolve(books.create).toOption.get
-  val fetchBook = definition.resolve(books.fetch).toOption.get
-  val patchBook = definition.resolve(books.patch).toOption.get
-  val deleteBook = definition.resolve(books.delete).toOption.get
-  val scanBooks = definition.resolve(books.scan).toOption.get
-  val intakeBooks = definition.resolve(books.intake).toOption.get
-  val catalogue = definition.resolve(books.catalogue).toOption.get
-  val fetchLoans = definition.resolve(loans.fetch).toOption.get
-  val borrow = definition.resolve(loans.borrow).toOption.get
+  val health = checked(definition.resolve(loans.health))
+  val listBooks = checked(definition.resolve(books.list))
+  val createBook = checked(definition.resolve(books.create))
+  val fetchBook = checked(definition.resolve(books.fetch))
+  val patchBook = checked(definition.resolve(books.patch))
+  val deleteBook = checked(definition.resolve(books.delete))
+  val scanBooks = checked(definition.resolve(books.scan))
+  val intakeBooks = checked(definition.resolve(books.intake))
+  val catalogue = checked(definition.resolve(books.catalogue))
+  val fetchLoans = checked(definition.resolve(loans.fetch))
+  val borrow = checked(definition.resolve(loans.borrow))
