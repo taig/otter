@@ -3,13 +3,17 @@ package io.taig.otter.sample
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.github.iltotore.iron.autoRefine
-import io.taig.otter.http.ComposedEndpoint
+import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
+import io.taig.otter.http.Route
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
-import io.taig.otter.sample.api.contract
+import io.taig.otter.sample.api.api
+import io.taig.otter.sample.api.books
 import io.taig.otter.sample.api.dsl
+import io.taig.otter.sample.api.loans
+import org.http4s.Request as Http4sRequest
 import org.http4s.Uri
 import org.http4s.client.Client as Http4sClient
 import org.http4s.implicits.*
@@ -52,21 +56,21 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
   private val austen: Isbn = Isbn.digits("9780141439518")
 
   /** A fresh catalogue per call, so no test can see what another one wrote. */
-  private def call[A, B](endpoint: ComposedEndpoint[dsl.Payload, A, A, B, B, Problem])(value: A): Task[B] =
+  private def call[A, B](endpoint: Endpoint.Declaration[dsl.Payload, A, A, B, B, Problem])(value: A): Task[B] =
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
         .flatMap: library =>
           val client = Http4sClient.fromHttpApp(LibraryRoutes(library).orNotFound)
 
           Http4s
-            .client[IO, A, Either[Problem, B]](Http4sCirce.Payload, Base, client)(endpoint.effective)(value)
+            .client[IO, A, B](Http4sCirce.Payload, Base, client)(api.all, endpoint)(value)
             .flatMap(unwrap)
         .unsafeToFuture()
 
   /** Two calls against one catalogue, for the claims that need a server to remember something. */
   private def calls[A1, B1, A2, B2](
-      first: ComposedEndpoint[dsl.Payload, A1, A1, B1, B1, Problem],
-      second: ComposedEndpoint[dsl.Payload, A2, A2, B2, B2, Problem]
+      first: Endpoint.Declaration[dsl.Payload, A1, A1, B1, B1, Problem],
+      second: Endpoint.Declaration[dsl.Payload, A2, A2, B2, B2, Problem]
   )(a1: A1, a2: A2): Task[B2] =
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
@@ -74,10 +78,10 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           val client = Http4sClient.fromHttpApp(LibraryRoutes(library).orNotFound)
 
           Http4s
-            .client[IO, A1, Either[Problem, B1]](Http4sCirce.Payload, Base, client)(first.effective)(a1)
+            .client[IO, A1, B1](Http4sCirce.Payload, Base, client)(api.all, first)(a1)
             .flatMap(unwrap) *>
             Http4s
-              .client[IO, A2, Either[Problem, B2]](Http4sCirce.Payload, Base, client)(second.effective)(a2)
+              .client[IO, A2, B2](Http4sCirce.Payload, Base, client)(api.all, second)(a2)
               .flatMap(unwrap)
         .unsafeToFuture()
 
@@ -92,38 +96,55 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
   )
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryRoundTripTest")(
+    test("the catalogue serves and decodes its endpoint-local 503 override"):
+      val routes = Http4s
+        .routes[IO](Http4sCirce.Payload)(
+          api.all,
+          Route(
+            books.catalogue,
+            (_: Unit) => IO.raiseError[Category](new IllegalStateException("catalogue unavailable"))
+          )
+        )
+        .orNotFound
+      val client = Http4sClient.fromHttpApp(routes)
+      ZIO.fromFuture: _ =>
+        (for
+          response <- routes.run(Http4sRequest[IO](uri = Base / "catalogue"))
+          answer <- Http4s.client[IO, Unit, Category](Http4sCirce.Payload, Base, client)(api.all, books.catalogue)(())
+        yield assertTrue(response.status.code == 503, answer == Left(Problem.malformed(Nil)))).unsafeToFuture()
+    ,
     suite("the envelope")(
       test("an answer with no entity round trips as a unit"):
-        call(contract.health)(()).map(answer => assertTrue(answer == ()))
+        call(loans.health)(()).map(answer => assertTrue(answer == ()))
       ,
       test("a defaulted query reaches the handler as its default, and the whole catalogue comes back"):
-        call(contract.listBooks)((1, 20, Nil, false, ("abc-123", None))).map(books => assertTrue(books.length == 3))
+        call(books.list)((1, 20, Nil, false, ("abc-123", None))).map(books => assertTrue(books.length == 3))
       ,
       test("a repeated query parameter is read as every value that was given"):
-        call(contract.listBooks)((1, 20, List(Genre.Romance), false, ("abc-123", None))).map(books =>
+        call(books.list)((1, 20, List(Genre.Romance), false, ("abc-123", None))).map(books =>
           assertTrue(books.map(_.isbn) == List(austen))
         )
       ,
       test("paging is the caller's, and a size of one yields one"):
-        call(contract.listBooks)((1, 1, Nil, false, ("abc-123", None))).map(books => assertTrue(books.length == 1))
+        call(books.list)((1, 1, Nil, false, ("abc-123", None))).map(books => assertTrue(books.length == 1))
       ,
       test("a bare flag is true because the name was given at all"):
-        call(contract.listBooks)((1, 20, Nil, true, ("abc-123", None))).map(books => assertTrue(books.length == 3))
+        call(books.list)((1, 20, Nil, true, ("abc-123", None))).map(books => assertTrue(books.length == 3))
       ,
       test("an optional list valued header round trips every value"):
-        call(contract.listBooks)((1, 20, Nil, false, ("abc-123", Some(List("en", "de"))))).map(books =>
+        call(books.list)((1, 20, Nil, false, ("abc-123", Some(List("en", "de"))))).map(books =>
           assertTrue(books.length == 3)
         )
       ,
       test("a path placeholder that parses hands the handler the parsed value and not the text"):
-        call(contract.fetchBook)(hobbit).map(answer => assertTrue(answer.map(_.title) == Some("The Hobbit")))
+        call(books.fetch)(hobbit).map(answer => assertTrue(answer.map(_.title) == Some("The Hobbit")))
       ,
       test("a branch with no entity is told apart from one with a body by the status code alone"):
-        call(contract.fetchBook)(Isbn.digits("9789999999999")).map(answer => assertTrue(answer == None))
+        call(books.fetch)(Isbn.digits("9789999999999")).map(answer => assertTrue(answer == None))
     ),
     suite("payloads")(
       test("a book written by the handler is the book the caller reads, refinements and all"):
-        call(contract.fetchBook)(hobbit).map(answer =>
+        call(books.fetch)(hobbit).map(answer =>
           assertTrue(
             answer.map(_.pages) == Some(310),
             answer.map(_.genres) == Some(List(Genre.Fantasy, Genre.Children)),
@@ -132,15 +153,15 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         )
       ,
       test("a dictionary round trips under keys nobody named in a schema"):
-        call(contract.fetchBook)(hobbit).map(answer =>
+        call(books.fetch)(hobbit).map(answer =>
           assertTrue(answer.map(_.metadata) == Some(SortedMap("condition" -> "good", "shelf" -> "F-TOL")))
         )
       ,
       test("a case insensitive email is one value however it was typed"):
-        call(contract.fetchLoans)(ada).map(answer => assertTrue(answer.map(_.email.toString) == Some("ada@otter.test")))
+        call(loans.fetch)(ada).map(answer => assertTrue(answer.map(_.email.toString) == Some("ada@otter.test")))
       ,
       test("an instant and a local date survive the trip as themselves"):
-        call(contract.fetchLoans)(ada).map(answer =>
+        call(loans.fetch)(ada).map(answer =>
           assertTrue(
             answer.map(_.joined) == Some(Instant.parse("2021-03-04T09:15:00Z")),
             answer.map(_.expires) == Some(LocalDate.of(2027, 3, 4))
@@ -148,7 +169,7 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         )
       ,
       test("a payload that refers to itself round trips to the depth it was written at"):
-        call(contract.catalogue)(()).map(category =>
+        call(books.catalogue)(()).map(category =>
           assertTrue(
             category.shelves.length == 2,
             category.shelves.flatMap(_.shelves).map(_.name) == List("Fantasy", "Thriller", "History")
@@ -158,14 +179,14 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
       test("bytes with no document in them round trip unchanged"):
         val bytes = ByteVector(0x25, 0x50, 0x44, 0x46, 0x00, 0xff)
 
-        call(contract.scanBooks)((hobbit, bytes)).map(answer => assertTrue(answer == bytes))
+        call(books.scan)((hobbit, bytes)).map(answer => assertTrue(answer == bytes))
     ),
     suite("the status code is chosen by the branch the handler returned")(
       test("a book that is new is created"):
-        call(contract.createBook)(creation).map(answer => assertTrue(answer == Created.Added(creation.toBook)))
+        call(books.create)(creation).map(answer => assertTrue(answer == Created.Added(creation.toBook)))
       ,
       test("a book that is already there is a conflict, and says which one"):
-        calls(contract.createBook, contract.createBook)(creation, creation).map(answer =>
+        calls(books.create, books.create)(creation, creation).map(answer =>
           assertTrue(answer match
             case Created.Duplicate(problem) =>
               problem.kind == Problem.Kind.Conflict && problem.title.contains("9780000000001")
@@ -173,15 +194,15 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         )
       ,
       test("deleting a book nobody is holding answers with no entity at all"):
-        call(contract.deleteBook)(hobbit).map(answer => assertTrue(answer == Left(())))
+        call(books.delete)(hobbit).map(answer => assertTrue(answer == Left(())))
       ,
       test("deleting a book somebody is holding is refused, and answers with a document"):
-        calls(contract.borrow, contract.deleteBook)((ada, Loan.Request(hobbit, None)), hobbit).map(answer =>
+        calls(loans.borrow, books.delete)((ada, Loan.Request(hobbit, None)), hobbit).map(answer =>
           assertTrue(answer.toOption.map(_.kind) == Some(Problem.Kind.Conflict))
         )
       ,
       test("a loan is granted, and the period it was granted for is the member's own"):
-        call(contract.borrow)((ada, Loan.Request(hobbit, None))).map(answer =>
+        call(loans.borrow)((ada, Loan.Request(hobbit, None))).map(answer =>
           assertTrue(answer match
             case Borrowed.Lent(loan) =>
               loan.period == Period.ofWeeks(3) &&
@@ -191,14 +212,14 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         )
       ,
       test("a period the caller asked for is the period they get, and a Period is calendar arithmetic"):
-        call(contract.borrow)((ada, Loan.Request(hobbit, Some(Period.ofMonths(1))))).map(answer =>
+        call(loans.borrow)((ada, Loan.Request(hobbit, Some(Period.ofMonths(1))))).map(answer =>
           assertTrue(answer match
             case Borrowed.Lent(loan) => loan.due == LocalDate.of(2024, 7, 1)
             case _                   => false)
         )
       ,
       test("borrowing for a member nobody has heard of is the third branch and not the second"):
-        call(contract.borrow)((UUID.fromString("00000000-0000-4000-8000-000000000000"), Loan.Request(hobbit, None)))
+        call(loans.borrow)((UUID.fromString("00000000-0000-4000-8000-000000000000"), Loan.Request(hobbit, None)))
           .map(answer =>
             assertTrue(answer match
               case Borrowed.Unknown(_) => true
@@ -206,7 +227,7 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           )
       ,
       test("borrowing a book somebody else has is the conflict branch"):
-        calls(contract.borrow, contract.borrow)((ada, Loan.Request(hobbit, None)), (ada, Loan.Request(hobbit, None)))
+        calls(loans.borrow, loans.borrow)((ada, Loan.Request(hobbit, None)), (ada, Loan.Request(hobbit, None)))
           .map(answer =>
             assertTrue(answer match
               case Borrowed.Unavailable(_) => true
@@ -215,27 +236,25 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
     ),
     suite("content negotiation")(
       test("the alternative the caller wrote is the one the handler reads"):
-        call(contract.intakeBooks)(Some(Left(creation))).map(answer => assertTrue(answer == ()))
+        call(books.intake)(Some(Left(creation))).map(answer => assertTrue(answer == ()))
       ,
       test("the other alternative is told apart by its media type and not by parsing"):
-        call(contract.intakeBooks)(Some(Right(ByteVector(0x25, 0x50, 0x44, 0x46)))).map(answer =>
-          assertTrue(answer == ())
-        )
+        call(books.intake)(Some(Right(ByteVector(0x25, 0x50, 0x44, 0x46)))).map(answer => assertTrue(answer == ()))
       ,
       test("a body that need not be sent, and was not, reaches the handler as nothing at all"):
-        call(contract.intakeBooks)(None).map(answer => assertTrue(answer == ()))
+        call(books.intake)(None).map(answer => assertTrue(answer == ()))
     ),
     suite("a field that may be absent, and a field that may be null")(
       test("a key left out leaves the value as it was"):
-        calls(contract.patchBook, contract.fetchBook)((austen, Book.Patch(Some("Pride"), None, None, None)), austen)
+        calls(books.patch, books.fetch)((austen, Book.Patch(Some("Pride"), None, None, None)), austen)
           .map(answer => assertTrue(answer.map(_.title) == Some("Pride"), answer.map(_.pages) == Some(432)))
       ,
       test("an explicit null is a different thing from a missing key, and clears the value"):
-        calls(contract.patchBook, contract.fetchBook)((hobbit, Book.Patch(None, None, None, Some(None))), hobbit).map(
-          answer => assertTrue(answer.map(_.summary) == Some(None))
+        calls(books.patch, books.fetch)((hobbit, Book.Patch(None, None, None, Some(None))), hobbit).map(answer =>
+          assertTrue(answer.map(_.summary) == Some(None))
         )
       ,
       test("a book whose summary was never set reads back as having none"):
-        call(contract.fetchBook)(austen).map(answer => assertTrue(answer.map(_.summary) == Some(None)))
+        call(books.fetch)(austen).map(answer => assertTrue(answer.map(_.summary) == Some(None)))
     )
   )

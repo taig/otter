@@ -9,8 +9,8 @@ import io.taig.otter.Violations
 import io.taig.otter.http.codec.Http4sPayload
 import io.taig.otter.http.codec.Http4sRequestDecoderUnchecked
 import io.taig.otter.http.codec.Http4sRequestEncoder
-import io.taig.otter.http.codec.Http4sResultDecoder
-import io.taig.otter.http.codec.Http4sResultEncoderUnchecked
+import io.taig.otter.http.codec.Http4sResponseDecoder
+import io.taig.otter.http.codec.Http4sResponseEncoderUnchecked
 import io.taig.otter.http.component.MediaTypeComponent
 import org.http4s.Entity
 import org.http4s.HttpRoutes
@@ -48,16 +48,16 @@ object Http4s:
   ):
     def apply(routes: Route[F, Http4sPayload.Supported[P], ?, ?]*): HttpRoutes[F] = apply(Routes(routes*))
 
-    /** A subset of an API may be served by this backend, but each supplied route must belong to that API. */
+    /** Apply the API defaults and each route's endpoint-local overrides. */
     def apply[E](
         api: Api[Http4sPayload.Supported[P], E],
         routes: Route[F, Http4sPayload.Supported[P], ?, ?]*
-    ): Either[ApiIssue, HttpRoutes[F]] =
-      routes.toList.traverse(route => api.policy(route.endpoint).map(_ => route)).map(values => apply(values*))
+    ): HttpRoutes[F] =
+      apply(routes.map(route => route.copy(errors = route.overrides(api.errors)))*)
 
     def apply(routes: Routes[F, Http4sPayload.Supported[P]]): HttpRoutes[F] =
       val decoder = Http4sRequestDecoderUnchecked(payload)
-      val encoder = Http4sResultEncoderUnchecked(payload)
+      val encoder = Http4sResponseEncoderUnchecked(payload)
 
       HttpRoutes[F]: request =>
         val method = Http4sEnvelope.toMethod(request.method)
@@ -76,24 +76,28 @@ object Http4s:
   def client[F[_]: Concurrent, A, B]: Http4s.ClientBuilder[F, A, B] = new Http4s.ClientBuilder[F, A, B]
 
   final class ClientBuilder[F[_]: Concurrent, A, B]:
-    def apply[P[-w, +r], E](
+    def apply[P[-w, +r], E, D](
         payload: Http4sPayload[P],
         base: Uri,
         client: Http4sClient[F]
     )(
         api: Api[Http4sPayload.Supported[P], E],
-        endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
-    ): Either[ApiIssue, A => F[Either[E, B]]] =
-      api
-        .resolve(endpoint)
-        .map: composed =>
-          new Http4s.ClientBuilder[F, A, Either[E, B]].apply(payload, base, client)(composed.client)
+        endpoint: Endpoint.Declaration[Http4sPayload.Supported[P], A, Any, Nothing, B, D]
+    ): A => F[Either[E | D, B]] =
+      new Http4s.ClientBuilder[F, A, Either[E | D, B]]
+        .apply(payload, base, client)(endpoint.compose(api.errors).client)
+
+    def apply[P[-w, +r], E](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
+        endpoint: Endpoint.WithErrors[Http4sPayload.Supported[P], A, Any, Nothing, B, E]
+    ): A => F[Either[E | Status, B]] =
+      new Http4s.ClientBuilder[F, A, Either[E | Status, B]]
+        .apply(payload, base, client)(endpoint.compose(ErrorPolicy.default).client)
 
     def apply[P[-w, +r]](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
         endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
     ): A => F[B] =
       val encoder = Http4sRequestEncoder(payload)
-      val decoder = Http4sResultDecoder(payload)
+      val decoder = Http4sResponseDecoder(payload)
 
       value =>
         for
@@ -106,7 +110,7 @@ object Http4s:
             .run(Http4s.toHttp4sRequest[F](method, base, wire))
             .use(response => Http4s.toWire(response).map((response.status.code, _)))
           decoded <- decoder
-            .decode(endpoint.responses, Http4sWire.Response(Code(response._1), response._2._1, response._2._2))
+            .decode(endpoint.responses, Http4sWire.Response(Status(response._1), response._2._1, response._2._2))
             .leftMap(Http4sFailure.Response.apply)
             .liftTo[F]
         yield decoded
@@ -131,7 +135,9 @@ object Http4s:
     go(Chain.empty, violations).toList.mkString("\n")
 
   private def respondable[F[_]](response: Http4sWire.Response): Either[Http4sFailure, Http4sResponse[F]] =
-    Http4sEnvelope.toHttp4sResponse[F](response).leftMap(failure => Http4sFailure.Code(response.code, failure.message))
+    Http4sEnvelope
+      .toHttp4sResponse[F](response)
+      .leftMap(failure => Http4sFailure.Status(response.status, failure.message))
 
   private[http] def respond[F[_]](
       response: Either[Http4sIssue, Http4sWire.Response]

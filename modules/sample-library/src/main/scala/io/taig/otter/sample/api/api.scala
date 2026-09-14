@@ -1,6 +1,7 @@
 package io.taig.otter.sample.api
 
 import cats.data.Chain
+import io.taig.otter.http.Api
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.OpenApi
 
@@ -19,18 +20,18 @@ object api:
   )
 
   /** The endpoints [[io.taig.otter.sample.LibraryRoutes]] answers. */
-  val served: Chain[Endpoint.Node] = Chain(
-    contract.health.effective,
-    contract.listBooks.effective,
-    contract.createBook.effective,
-    contract.fetchBook.effective,
-    contract.patchBook.effective,
-    contract.deleteBook.effective,
-    contract.scanBooks.effective,
-    contract.intakeBooks.effective,
-    contract.catalogue.effective,
-    contract.fetchLoans.effective,
-    contract.borrow.effective
+  val served: Chain[Endpoint.Declaration.Node] = Chain(
+    loans.health,
+    books.list,
+    books.create,
+    books.fetch,
+    books.patch,
+    books.delete,
+    books.scan,
+    books.intake,
+    books.catalogue,
+    loans.fetch,
+    loans.borrow
   )
 
   /** The endpoints nothing here answers, and why each one cannot be.
@@ -50,7 +51,7 @@ object api:
     * returns a document and a list of issues; it never throws and never half emits, and `LibraryShortfallTest` holds it
     * to that.
     */
-  val unserved: Chain[Endpoint.Node] = Chain(books.upload, books.exported, books.report)
+  val unserved: Chain[Endpoint.Declaration.Node] = Chain(books.upload, books.exported, books.report)
 
-  /** Everything, resolved from the API-wide policy for the renderers. */
-  val all = contract.checked(contract.definition.effective)
+  /** Everything, with the global error policy shared by every consumer. */
+  val all = Api(served ++ unserved, contract.errors)

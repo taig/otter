@@ -11,18 +11,17 @@ import io.taig.otter.TypescriptEffect
 import io.taig.otter.codec.JsonTypescriptContext
 import io.taig.otter.codec.JsonTypescriptDefinition
 import io.taig.otter.http.Api
-import io.taig.otter.http.ApiIssue
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
-import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.HttpTypescriptEffect
 import io.taig.otter.http.HttpTypescriptKeys
 import io.taig.otter.http.MediaType
 import io.taig.otter.http.Multipart
 import io.taig.otter.http.Request
-import io.taig.otter.http.Result
-import io.taig.otter.http.Results
+import io.taig.otter.http.Response
+import io.taig.otter.http.Responses
+import io.taig.otter.http.Status
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
 
@@ -55,7 +54,7 @@ final class TypescriptEndpointRenderer(
   import TypescriptEndpointRenderer.Collected
   import TypescriptEndpointRenderer.Step
 
-  def render(endpoints: Chain[Endpoint.Node]): TypescriptModule =
+  def render(endpoints: Chain[Endpoint.Declaration.Node]): TypescriptModule =
     val empty = (Chain.empty[Typescript.Statement], Chain.empty[TypescriptIssue], Set.empty[String])
 
     val program = endpoints.toList.foldLeft(State.pure[JsonTypescriptContext, Collected](empty)):
@@ -63,7 +62,7 @@ final class TypescriptEndpointRenderer(
         for
           collected <- accumulated
           (statements, issues, names) = collected
-          rendered <- endpoint(value, names)
+          rendered <- endpoint(value.effective, names)
         yield rendered match
           case Left(issue)                    => (statements, issues :+ issue, names)
           case Right((name, declared, found)) => (statements ++ declared, issues ++ found, names + name)
@@ -76,8 +75,8 @@ final class TypescriptEndpointRenderer(
       issues.toList
     )
 
-  /** Resolve shared error defaults before generating the endpoint descriptors. */
-  def render(api: Api[?, ?]): Either[ApiIssue, TypescriptModule] = api.effective.map(render)
+  /** Apply shared error defaults before generating the endpoint descriptors. */
+  def render(api: Api[?, ?]): TypescriptModule = render(api.effective)
 
   /** One endpoint: the type of its input, the two types of its answer, and the descriptor itself. */
   private def endpoint(
@@ -101,21 +100,21 @@ final class TypescriptEndpointRenderer(
         outputName <- State[JsonTypescriptContext, String](_.allocate(declared ++ "Output"))
         encodedName <- State[JsonTypescriptContext, String](_.allocate(declared ++ "Encoded"))
         (body, requested) <- this.body(operation, declared, schema)
-        (results, answered) <- this.results(operation, declared, endpoint.responses)
+        (responses, answered) <- this.responses(operation, declared, endpoint.responses)
       yield
         val input = this.input(schema, body.map(_._2))
         val statements =
           Chain(
             Typescript.Statement.Declaration.Type(exported = true, inputName, input),
             Typescript.Statement.Declaration
-              .Type(exported = true, outputName, this.answer(results, TypescriptEffect.inferred)),
+              .Type(exported = true, outputName, this.answer(responses, TypescriptEffect.inferred)),
             Typescript.Statement.Declaration
-              .Type(exported = true, encodedName, this.answer(results, TypescriptEffect.encoded)),
+              .Type(exported = true, encodedName, this.answer(responses, TypescriptEffect.encoded)),
             Typescript.Statement.Declaration.Constant(
               exported = true,
               descriptorName,
               tpe = None,
-              value = Typescript.Expression.AsConst(descriptor(schema, inputName, body.map(_._1), results))
+              value = Typescript.Expression.AsConst(descriptor(schema, inputName, body.map(_._1), responses))
             )
           )
 
@@ -126,7 +125,7 @@ final class TypescriptEndpointRenderer(
       schema: Request.Schema[?, ?, ?],
       inputName: String,
       body: Option[Typescript.Expression],
-      results: List[TypescriptEndpointRenderer.Answer]
+      responses: List[TypescriptEndpointRenderer.Answer]
   ): Typescript.Expression =
     val input = Typescript.Type.Symbol(inputName, parameters = Nil)
     val queries = TypescriptEnvelope.queries(schema)
@@ -147,14 +146,14 @@ final class TypescriptEndpointRenderer(
       Some(("body", body.getOrElse(Typescript.Expression.Undefined))),
       Some(
         (
-          "results",
+          "responses",
           Typescript.Expression.Object(
-            results
-              .map(_.code.value)
+            responses
+              .map(_.status.value)
               .distinct
-              .map: code =>
-                code.toString -> TypescriptEndpointRenderer.entries(
-                  results.filter(_.code.value == code).flatMap(_.bodies)
+              .map: status =>
+                status.toString -> TypescriptEndpointRenderer.entries(
+                  responses.filter(_.status.value == status).flatMap(_.bodies)
                 )
           )
         )
@@ -190,13 +189,13 @@ final class TypescriptEndpointRenderer(
     * being cached.
     */
   private def answer(
-      results: List[TypescriptEndpointRenderer.Answer],
+      responses: List[TypescriptEndpointRenderer.Answer],
       shape: Typescript.Type => Typescript.Type
   ): Typescript.Type =
-    val members = results.map: answer =>
+    val members = responses.map: answer =>
       val status = Typescript.Type.Field(
         "status",
-        Typescript.Type.Literal.Number(new JBigDecimal(answer.code.value)),
+        Typescript.Type.Literal.Number(new JBigDecimal(answer.status.value)),
         optional = false
       )
 
@@ -210,24 +209,24 @@ final class TypescriptEndpointRenderer(
      * says so -- not an empty union, which is not a type TypeScript spells. */
     TypescriptEndpointRenderer.union(members).getOrElse(Typescript.Type.Symbol("never", parameters = Nil))
 
-  private def results(
+  private def responses(
       operation: String,
       declared: String,
-      schema: Results.Schema[?, ?, ?]
+      schema: Responses.Schema[?, ?, ?]
   ): Step[List[TypescriptEndpointRenderer.Answer]] =
-    Results
+    Responses
       .branches(schema)
       .toList
-      .traverse(result => this.result(operation, declared, result))
+      .traverse(branch => this.answer(operation, declared, branch))
       .map(answers => (answers.map(_._1), Chain.fromSeq(answers).flatMap(_._2)))
 
-  private def result(
+  private def answer(
       operation: String,
       declared: String,
-      schema: Result.Schema[?, ?, ?]
+      schema: Response.Schema[?, ?, ?]
   ): State[JsonTypescriptContext, (TypescriptEndpointRenderer.Answer, Chain[TypescriptIssue])] =
-    val code = schema.code
-    val hint = declared ++ "Response" ++ code.value.toString
+    val status = schema.status
+    val hint = declared ++ "Response" ++ status.value.toString
 
     val whole = schema.bodies
       .map(reference => bodies(operation, hint, response, reference.value))
@@ -237,7 +236,7 @@ final class TypescriptEndpointRenderer(
       schema.streamed.map(reference => TypescriptIssue.Streamed(operation, reference.value.mediaType.render))
     )
 
-    whole.map((bodies, issues) => (TypescriptEndpointRenderer.Answer(code, bodies), issues ++ streamed))
+    whole.map((bodies, issues) => (TypescriptEndpointRenderer.Answer(status, bodies), issues ++ streamed))
 
   private def body(
       operation: String,
@@ -366,7 +365,7 @@ object TypescriptEndpointRenderer:
   final private case class Alternative(media: MediaType, schema: Option[Typescript.Expression], tpe: Typescript.Type)
 
   /** One answer: the status it comes under, and the alternatives it may carry. */
-  final private case class Answer(code: Code, bodies: List[TypescriptEndpointRenderer.Alternative])
+  final private case class Answer(status: Status, bodies: List[TypescriptEndpointRenderer.Alternative])
 
   /** The alternatives of a body, keyed by media type, with `undefined` where nothing describes one. */
   private def entries(bodies: List[TypescriptEndpointRenderer.Alternative]): Typescript.Expression =

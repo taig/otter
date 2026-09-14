@@ -29,6 +29,6 @@ object Http4sFailure:
   final case class Method(method: io.taig.otter.http.Method, reason: String)
       extends Http4sFailure(show"Cannot send method '${method.name}': $reason")
 
-  /** A status code http4s will not answer with. */
-  final case class Code(code: io.taig.otter.http.Code, reason: String)
-      extends Http4sFailure(show"Cannot answer with code '${code.value}': $reason")
+  /** A status http4s will not answer with. */
+  final case class Status(status: io.taig.otter.http.Status, reason: String)
+      extends Http4sFailure(show"Cannot answer with status '${status.value}': $reason")

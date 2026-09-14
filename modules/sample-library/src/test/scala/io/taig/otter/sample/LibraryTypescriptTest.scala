@@ -1,9 +1,12 @@
 package io.taig.otter.sample
 
+import io.taig.otter.http.Api
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.codec.TypescriptEffectPayload
 import io.taig.otter.http.codec.TypescriptEndpointRenderer
 import io.taig.otter.sample.api.api
+import io.taig.otter.sample.api.books
+import io.taig.otter.sample.api.contract
 import zio.Scope
 import zio.test.*
 
@@ -23,6 +26,20 @@ object LibraryTypescriptTest extends ZIOSpecDefault:
   private val source: String = module.render
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryTypescriptTest")(
+    test("catalogue declares its local 503 response alongside inherited errors"):
+      val catalogue = TypescriptEndpointRenderer
+        .client(TypescriptEffectPayload.json)
+        .render(Api(contract.errors, books.catalogue))
+        .render
+      assertTrue(
+        catalogue.contains("export const catalogue = {"),
+        catalogue.contains("\"503\":"),
+        catalogue.contains("\"500\":"),
+        catalogue.contains("\"400\":"),
+        catalogue.contains("Schema.Schema.Type<typeof Problem>"),
+        catalogue.contains("Schema.Schema.Encoded<typeof Problem>")
+      )
+    ,
     suite("what is generated")(
       test("calls nothing: no fetch, no await, no async"):
         assertTrue(!source.contains("fetch("), !source.contains("await "), !source.contains("async "))

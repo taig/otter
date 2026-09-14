@@ -32,6 +32,14 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
     at(document, path*).flatMap(_.asArray).map(_.flatMap(_.asString).toList).getOrElse(Nil)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryOpenApiTest")(
+    test("catalogue overrides unexpected failures and inherits the other global errors"):
+      assertTrue(
+        keys(server.value, "paths", "/catalogue", "get", "responses").contains("503"),
+        keys(server.value, "paths", "/catalogue", "get", "responses").contains("500"),
+        keys(client.value, "paths", "/catalogue", "get", "responses").contains("503"),
+        !keys(server.value, "paths", "/books", "get", "responses").contains("503")
+      )
+    ,
     suite("the document")(
       test("says which version of the specification it is written in, and what it describes"):
         assertTrue(

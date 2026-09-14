@@ -44,9 +44,9 @@ object Bodies:
   /** Bodies that need not be sent at all.
     *
     * Not a fourth form a body comes in: optionality belongs to the request, and the two are genuinely different
-    * questions, which [[Request.Value.OptionalPayload]] spells out -- a union says *which* entity arrived, and this
-    * says whether one had to. It is a type of its own rather than a flag so that only a [[Request]] accepts one: a
-    * [[Result]] has no overload taking it, and an answer that need not carry its entity stays a compile error rather
+    * questions, which [[Request.Value.OptionalEntity]] spells out -- a union says *which* entity arrived, and this says
+    * whether one had to. It is a type of its own rather than a flag so that only a [[Request]] accepts one: a
+    * [[Response]] has no overload taking it, and an answer that need not carry its entity stays a compile error rather
     * than a rule written down.
     *
     * It holds a [[Reference]] rather than the schema, which is what lets the position that takes one take it strictly:

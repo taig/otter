@@ -5,25 +5,25 @@ import io.taig.otter.Union
 
 /** Statically declared answers for every recoverable execution failure. */
 final case class ErrorPolicy[+S[-w, +r], +E](
-    envelope: Result.Schema[S, Failure, E],
-    syntax: Result.Schema[S, Failure, E],
-    contentType: Result.Schema[S, Failure, E],
-    validation: Result.Schema[S, Failure, E],
-    entityRead: Result.Schema[S, Failure, E],
-    encoding: Result.Schema[S, Failure, E],
-    status: Result.Schema[S, Failure, E],
-    unexpected: Result.Schema[S, Failure, E],
-    interpreter: Result.Schema[S, Failure, E]
+    envelope: Response.Schema[S, Failure, E],
+    syntax: Response.Schema[S, Failure, E],
+    contentType: Response.Schema[S, Failure, E],
+    validation: Response.Schema[S, Failure, E],
+    entityRead: Response.Schema[S, Failure, E],
+    encoding: Response.Schema[S, Failure, E],
+    status: Response.Schema[S, Failure, E],
+    unexpected: Response.Schema[S, Failure, E],
+    interpreter: Response.Schema[S, Failure, E]
 ):
   /** Selection is encoded into the schema, so the wire encoder needs no response-producing callback. */
-  val responses: Results.Schema[S, Failure, E] =
-    def leaf(value: Result.Schema[S, Failure, E]): Union[[w, r] =>> Result.Schema[S, w, r], Failure, E] =
+  val responses: Responses.Schema[S, Failure, E] =
+    def leaf(value: Response.Schema[S, Failure, E]): Union[[w, r] =>> Response.Schema[S, w, r], Failure, E] =
       Union.Root(Reference.now(value))
     def append(
-        left: Union[[w, r] =>> Result.Schema[S, w, r], Failure, E],
+        left: Union[[w, r] =>> Response.Schema[S, w, r], Failure, E],
         category: Failure.Category,
-        right: Result.Schema[S, Failure, E]
-    ): Union[[w, r] =>> Result.Schema[S, w, r], Failure, E] =
+        right: Response.Schema[S, Failure, E]
+    ): Union[[w, r] =>> Response.Schema[S, w, r], Failure, E] =
       Union.Modify(
         Union.Coproduct(left, leaf(right)),
         _.fold(identity, identity),
@@ -39,8 +39,8 @@ final case class ErrorPolicy[+S[-w, +r], +E](
       Failure.Category.Unexpected -> unexpected,
       Failure.Category.Interpreter -> interpreter
     )
-    Results.Schema(entries.foldLeft(leaf(envelope)) { case (self, (category, result)) =>
-      append(self, category, result)
+    Responses.Schema(entries.foldLeft(leaf(envelope)) { case (self, (category, response)) =>
+      append(self, category, response)
     })
 
   def apply[T[-w, +r] >: S[w, r], AW, AR, BW, BR](
@@ -49,17 +49,17 @@ final case class ErrorPolicy[+S[-w, +r], +E](
 
 object ErrorPolicy:
   /** Bodyless defaults work with every payload interpreter. Errors on the wire are identified by status. */
-  val default: ErrorPolicy[Nothing, Code] =
-    def result(code: Int): Result.Schema[Nothing, Failure, Code] =
-      Result.Schema(Result.Value.Modify(Result.Value.Root(Code(code)), _ => Code(code), _ => ()))
+  val default: ErrorPolicy[Nothing, Status] =
+    def response(status: Int): Response.Schema[Nothing, Failure, Status] =
+      Response.Schema(Response.Value.Modify(Response.Value.Root(Status(status)), _ => Status(status), _ => ()))
     ErrorPolicy(
-      result(400),
-      result(400),
-      result(415),
-      result(422),
-      result(500),
-      result(500),
-      result(500),
-      result(500),
-      result(500)
+      response(400),
+      response(400),
+      response(415),
+      response(422),
+      response(500),
+      response(500),
+      response(500),
+      response(500),
+      response(500)
     )

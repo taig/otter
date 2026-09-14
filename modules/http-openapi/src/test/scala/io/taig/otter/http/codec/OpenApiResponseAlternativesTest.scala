@@ -5,8 +5,7 @@ import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.taig.otter.Keys
 import io.taig.otter.http.Api
-import io.taig.otter.http.ApiIssue
-import io.taig.otter.http.Code
+import io.taig.otter.http.Status
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.ErrorPolicy
@@ -32,7 +31,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
   private def render(value: Endpoint.Node): OpenApiDocument =
     renderer.render(OpenApi.Info("Alternatives", "1"), Chain.one(value))
 
-  private def response(document: OpenApiDocument): CirceJson =
+  private def answer(document: OpenApiDocument): CirceJson =
     document.value.hcursor
       .downField("paths")
       .downField("/alternatives")
@@ -44,9 +43,9 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("OpenApiResponseAlternativesTest")(
     test("composed errors are rendered from declarations without executing mappings"):
-      val error = result(Code(503))(body.json(payload.string))
+      val error = response(Status(503))(body.json(payload.string))
         .dimap[Failure, String](OpenApiResponseAlternativesTest.unexpectedMapping)(identity)
-      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, result(code.noContent)))
+      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, response(status.noContent)))
       val document = render(composed.effective)
       val responses =
         document.value.hcursor.downField("paths").downField("/alternatives").downField("get").downField("responses")
@@ -66,11 +65,11 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(code.ok)(body.json(payload.int)).attr(Keys.description, "A number") :+
-            result(code.ok)(body(mediaType.text, payload.string)).attr(Keys.description, "Text")
+          response(status.ok)(body.json(payload.int)).attr(Keys.description, "A number") :+
+            response(status.ok)(body(mediaType.text, payload.string)).attr(Keys.description, "Text")
         )
       )
-      val value = response(document)
+      val value = answer(document)
       assertTrue(
         document.issues.isEmpty,
         value.hcursor.get[String]("description") == Right("A number\n\nText"),
@@ -88,10 +87,10 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(code.ok)(body.json(payload.int)) :+ result(code.ok)(body.json(payload.double))
+          response(status.ok)(body.json(payload.int)) :+ response(status.ok)(body.json(payload.double))
         )
       )
-      val schema = response(document).hcursor.downField("content").downField("application/json").downField("schema")
+      val schema = answer(document).hcursor.downField("content").downField("application/json").downField("schema")
       assertTrue(
         document.issues.isEmpty,
         schema.get[List[CirceJson]]("anyOf") == Right(
@@ -110,10 +109,10 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(code.ok)(body.json(payload.int)) :+ result(code.ok)(body.json(payload.int))
+          response(status.ok)(body.json(payload.int)) :+ response(status.ok)(body.json(payload.int))
         )
       )
-      val schema = response(document).hcursor.downField("content").downField("application/json").downField("schema")
+      val schema = answer(document).hcursor.downField("content").downField("application/json").downField("schema")
       assertTrue(
         document.issues.isEmpty,
         schema.get[String]("type") == Right("integer"),
@@ -124,11 +123,11 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(code.ok).headers(header("X-Count", int).toRecord)(body.json(payload.int)) :+
-            result(code.ok)(body.json(payload.string))
+          response(status.ok).headers(header("X-Count", int).toRecord)(body.json(payload.int)) :+
+            response(status.ok)(body.json(payload.string))
         )
       )
-      val headers = response(document).hcursor.downField("headers")
+      val headers = answer(document).hcursor.downField("headers")
       assertTrue(
         document.issues.contains(OpenApiIssue.ResponseAlternatives("GET /alternatives", 200)),
         headers.downField("X-Count").get[Boolean]("required") == Right(false),
@@ -139,11 +138,11 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(code.ok).headers(header("X-Value", int).toRecord)(body.json(payload.int)) :+
-            result(code.ok).headers(header("x-value", string).toRecord)(body.json(payload.string))
+          response(status.ok).headers(header("X-Value", int).toRecord)(body.json(payload.int)) :+
+            response(status.ok).headers(header("x-value", string).toRecord)(body.json(payload.string))
         )
       )
-      val headers = response(document).hcursor.downField("headers")
+      val headers = answer(document).hcursor.downField("headers")
       assertTrue(
         document.issues.contains(OpenApiIssue.ResponseAlternatives("GET /alternatives", 200)),
         headers.focus.flatMap(_.asObject).map(_.keys.toList) == Some(List("X-Value")),
@@ -152,18 +151,18 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       )
     ,
     test("an empty response alternative is reported without dropping the body"):
-      val document = render(endpoint(requestSchema, result(code.ok) :+ result(code.ok)(body.json(payload.int))))
+      val document = render(endpoint(requestSchema, response(status.ok) :+ response(status.ok)(body.json(payload.int))))
       assertTrue(
         document.issues.contains(OpenApiIssue.ResponseAlternatives("GET /alternatives", 200)),
-        response(document).hcursor.downField("content").downField("application/json").focus.isDefined
+        answer(document).hcursor.downField("content").downField("application/json").focus.isDefined
       )
     ,
-    test("body alternatives within one result retain every schema"):
+    test("body alternatives within one response retain every schema"):
       val document =
         render(
-          endpoint(requestSchema, result(code.ok)(body.json(payload.int) :+ body.json(payload.string)).toUnion)
+          endpoint(requestSchema, response(status.ok)(body.json(payload.int) :+ body.json(payload.string)).toUnion)
         )
-      val schema = response(document).hcursor.downField("content").downField("application/json").downField("schema")
+      val schema = answer(document).hcursor.downField("content").downField("application/json").downField("schema")
       assertTrue(document.issues.isEmpty, schema.get[List[CirceJson]]("anyOf").map(_.size) == Right(2))
     ,
     test("identical required headers remain required without a correlation issue"):
@@ -171,68 +170,56 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(code.ok).headers(common)(body.json(payload.int)) :+
-            result(code.ok).headers(common)(body.json(payload.string))
+          response(status.ok).headers(common)(body.json(payload.int)) :+
+            response(status.ok).headers(common)(body.json(payload.string))
         )
       )
       assertTrue(
         document.issues.isEmpty,
-        response(document).hcursor.downField("headers").downField("X-Count").get[Boolean]("required") == Right(true)
+        answer(document).hcursor.downField("headers").downField("X-Count").get[Boolean]("required") == Right(true)
       )
+    ,
+    test("standalone endpoint overrides inherit the default error policy"):
+      val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "unavailable")(identity)
+      val declared = endpoint(requestSchema, response(status.noContent))
+        .withErrors(ErrorOverrides(unexpected = Some(error)))
+      val document = renderer.render(OpenApi.Info("Standalone", "1"), Chain.one(declared))
+      val expected = renderer.render(OpenApi.Info("Standalone", "1"), Api(ErrorPolicy.default, declared))
+      assertTrue(document == expected)
     ,
     test("an API inherits defaults and replaces only the categories it overrides"):
       val first: Endpoint.Server[dsl.Payload, Unit, Unit] =
-        endpoint(request(method.get, __ / "api-first"), result(code.ok).toUnion)
+        endpoint(request(method.get, __ / "api-first"), response(status.ok).toUnion)
       val second: Endpoint.Server[dsl.Payload, Unit, Unit] =
-        endpoint(request(method.get, __ / "api-second"), result(code.ok).toUnion)
-      val defaults: ErrorPolicy[dsl.Payload, Code] = ErrorPolicy.default
-      val syntax = result(Code(400))(body.json(payload.string)).dimap[Failure, Code](_ => "")(_ => Code(400))
-      val document = Api(defaults, first, second)
-        .flatMap(_.withErrors(second, ErrorOverrides(syntax = Some(syntax))))
-        .flatMap(renderer.render(OpenApi.Info("Alternatives", "1"), _))
-
-      val firstResponse = document.map(
-        _.value.hcursor
-          .downField("paths")
-          .downField("/api-first")
-          .downField("get")
-          .downField("responses")
-          .downField("400")
-      )
-      val secondResponse = document.map(
-        _.value.hcursor
-          .downField("paths")
-          .downField("/api-second")
-          .downField("get")
-          .downField("responses")
-          .downField("400")
-      )
+        endpoint(request(method.get, __ / "api-second"), response(status.ok).toUnion)
+      val defaults: ErrorPolicy[dsl.Payload, Status] = ErrorPolicy.default
+      val syntax = response(Status(400))(body.json(payload.string)).dimap[Failure, Status](_ => "")(_ => Status(400))
+      val api = Api(defaults, first, second.withErrors(ErrorOverrides(syntax = Some(syntax))))
+      val document = renderer.render(OpenApi.Info("Alternatives", "1"), api)
+      val paths = document.value.hcursor.downField("paths")
+      val firstResponse = paths.downField("/api-first").downField("get").downField("responses").downField("400")
+      val secondResponse = paths.downField("/api-second").downField("get").downField("responses").downField("400")
       assertTrue(
-        document.exists(_.issues == List(OpenApiIssue.ResponseAlternatives("GET /api-second", 400))),
-        firstResponse.exists(_.downField("content").focus.isEmpty),
-        secondResponse.exists(
-          _.downField("content").downField("application/json").downField("schema").get[String]("type") == Right(
-            "string"
-          )
-        )
+        document.issues == List(OpenApiIssue.ResponseAlternatives("GET /api-second", 400)),
+        firstResponse.downField("content").focus.isEmpty,
+        secondResponse
+          .downField("content")
+          .downField("application/json")
+          .downField("schema")
+          .get[String]("type") == Right("string")
       )
     ,
-    test("API composition reports duplicate and unregistered endpoint identities"):
-      val registered = endpoint(request(method.get, __ / "registered"), result(code.ok).toUnion)
-      val unregistered = endpoint(request(method.get, __ / "unregistered"), result(code.ok).toUnion)
-      val duplicate = Api(ErrorPolicy.default, registered, registered)
-      val missing = Api(ErrorPolicy.default, registered).flatMap(_.withErrors(unregistered, ErrorOverrides()))
-
-      assertTrue(
-        duplicate == Left(ApiIssue.Duplicate(registered)),
-        missing == Left(ApiIssue.Unregistered(unregistered))
-      )
+    test("duplicate operations are reported by the renderer without rejecting the API"):
+      val registered = endpoint(request(method.get, __ / "registered"), response(status.ok).toUnion)
+      val api = Api(ErrorPolicy.default, registered, registered)
+      val document = renderer.render(OpenApi.Info("Duplicates", "1"), api)
+      assertTrue(document.issues.contains(OpenApiIssue.Duplicate("get /registered")))
     ,
     test("complete responses shared by operations become deterministic response components"):
-      val first = endpoint(request(method.get, __ / "first"), result(code.ok)(body.json(payload.string)).toUnion)
-      val second = endpoint(request(method.get, __ / "second"), result(code.ok)(body.json(payload.string)).toUnion)
-      val third = endpoint(request(method.get, __ / "third"), result(code.ok)(body.json(payload.int)).toUnion)
-      val fourth = endpoint(request(method.get, __ / "fourth"), result(code.ok)(body.json(payload.int)).toUnion)
+      val first = endpoint(request(method.get, __ / "first"), response(status.ok)(body.json(payload.string)).toUnion)
+      val second = endpoint(request(method.get, __ / "second"), response(status.ok)(body.json(payload.string)).toUnion)
+      val third = endpoint(request(method.get, __ / "third"), response(status.ok)(body.json(payload.int)).toUnion)
+      val fourth = endpoint(request(method.get, __ / "fourth"), response(status.ok)(body.json(payload.int)).toUnion)
 
       val document = renderer.render(
         OpenApi.Info("Alternatives", "1"),

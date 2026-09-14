@@ -28,7 +28,7 @@ object Http4sWire:
     * response, either a content type or nonempty bytes preserves the payload; untyped nonempty bytes use octet-stream.
     */
   final case class Response(
-      code: Code,
+      status: Status,
       headers: Chain[(String, String)],
       body: Option[(MediaType, ByteVector)]
   )

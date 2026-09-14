@@ -3,7 +3,7 @@ package io.taig.otter.http
 import cats.effect.Concurrent
 import cats.syntax.all.*
 import io.taig.otter.http.codec.Http4sRequestDecoderUnchecked
-import io.taig.otter.http.codec.Http4sResultEncoderUnchecked
+import io.taig.otter.http.codec.Http4sResponseEncoderUnchecked
 import io.taig.otter.http.codec.PathTemplate
 import org.http4s.Request as Http4sRequest
 import org.http4s.Response as Http4sResponse
@@ -13,13 +13,14 @@ import scodec.bits.ByteVector
   *
   * `A => F[B]` and nothing wider is the whole of what a handler is, because the endpoint has already said what a
   * request holds and what an answer may be. There is no request object to reach into and no response builder to get
-  * wrong: a status code is chosen by which branch of the result union the value took, and a handler that returns the
-  * wrong shape does not compile.
+  * wrong: a status is chosen by which branch of the response union the value took, and a handler that returns the wrong
+  * shape does not compile.
   */
 final case class Route[F[_], +S[-w, +r], A, B](
     endpoint: Endpoint.Server[S, A, B],
     handler: A => F[B],
-    errors: ErrorPolicy[S, Any] = ErrorPolicy.default
+    errors: ErrorPolicy[S, Any] = ErrorPolicy.default,
+    overrides: ErrorOverrides[S, Any] = ErrorOverrides()
 ):
   /** Whether this route is the one an incoming method and path is addressed to.
     *
@@ -39,7 +40,7 @@ final case class Route[F[_], +S[-w, +r], A, B](
   /** This route's answer to a request it has already matched. */
   private[http] def run(
       decoder: Http4sRequestDecoderUnchecked,
-      encoder: Http4sResultEncoderUnchecked,
+      encoder: Http4sResponseEncoderUnchecked,
       observe: Http4sObservation[F] => F[Unit],
       request: Http4sRequest[F],
       segments: Vector[String]
@@ -51,7 +52,7 @@ final case class Route[F[_], +S[-w, +r], A, B](
       case Http4sFailure.Execution(refused)                   => refused
       case Http4sFailure.Interpreter(_: Http4sIssue.Encoding) => Failure(Failure.Category.Encoding, cause = Some(cause))
       case Http4sFailure.Interpreter(_) => Failure(Failure.Category.Interpreter, cause = Some(cause))
-      case _: Http4sFailure.Code        => Failure(Failure.Category.Status, cause = Some(cause))
+      case _: Http4sFailure.Status      => Failure(Failure.Category.Status, cause = Some(cause))
       case _                            => Failure(Failure.Category.Unexpected, cause = Some(cause))
 
     val execute = evaluate(Route.bytes(endpoint, request)).flatten.attempt.flatMap:
@@ -91,11 +92,18 @@ final case class Route[F[_], +S[-w, +r], A, B](
     F.onCancel(respond, notify(Http4sObservation.Event.Cancelled))
 
 object Route:
-  def apply[F[_], S[-w, +r], A, B, E](
+  def apply[F[_], S[-w, +r], A, B, E, D](
       api: Api[S, E],
-      endpoint: Endpoint.Server[S, A, B],
+      endpoint: Endpoint.Declaration[S, Nothing, A, B, Any, D],
       handler: A => F[B]
-  ): Either[ApiIssue, Route[F, S, A, B]] = api.resolve(endpoint).map(Route(_, handler))
+  ): Route[F, S, A, B] =
+    new Route(endpoint.domain, handler, endpoint.compose(api.errors).errors, endpoint.overrides)
+
+  def apply[F[_], S[-w, +r], A, B, E](
+      endpoint: Endpoint.WithErrors[S, Nothing, A, B, Any, E],
+      handler: A => F[B]
+  ): Route[F, S, A, B] =
+    new Route(endpoint.domain, handler, endpoint.compose(ErrorPolicy.default).errors, endpoint.overrides)
 
   def apply[F[_], S[-w, +r], A, B, E](
       endpoint: ComposedEndpoint[S, Nothing, A, B, Any, E],

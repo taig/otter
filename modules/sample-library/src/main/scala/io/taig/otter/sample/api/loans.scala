@@ -29,7 +29,7 @@ object loans:
   /** `GET /members/{reference}`, a member or no member -- see [[books.fetch]] for what `.to` is doing to the union. */
   val fetch: Endpoint.Of[dsl.Payload, UUID, Option[Member]] = endpoint(
     request(method.get, loans.one),
-    (result(code.ok)(body.json(schema.member)) :+ result(code.notFound)).to[Option[Member]]
+    (response(status.ok)(body.json(schema.member)) :+ response(status.notFound)).to[Option[Member]]
   ).attr(openapi.operationId, "fetchMember")
     .attr(openapi.summary, "A member, their membership and what they owe")
     .attr(openapi.tags, "members")
@@ -37,9 +37,9 @@ object loans:
   /** `POST /members/{reference}/loans`, answering three ways and carrying a document in each. */
   val borrow: Endpoint.Of[dsl.Payload, (UUID, Loan.Request), Borrowed] = endpoint(
     request(method.post, loans.one / "loans")(body.json(schema.borrow)),
-    (result(code.created)(body.json(schema.loan)).to[Borrowed.Lent] :+
-      result(code.notFound)(body.json(schema.problem)).to[Borrowed.Unknown] :+
-      result(code.conflict)(body.json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
+    (response(status.created)(body.json(schema.loan)).to[Borrowed.Lent] :+
+      response(status.notFound)(body.json(schema.problem)).to[Borrowed.Unknown] :+
+      response(status.conflict)(body.json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
   ).attr(openapi.operationId, "borrowBook")
     .attr(openapi.summary, "Lend a book to a member")
     .attr(openapi.tags, "loans")
@@ -47,5 +47,5 @@ object loans:
   /** `GET /health`, which is the smallest endpoint there is: a literal path, nothing read, nothing written. */
   val health: Endpoint.Of[dsl.Payload, Unit, Unit] = endpoint(
     request(method.get, __ / "health"),
-    result(code.noContent)
+    response(status.noContent)
   ).attr(openapi.operationId, "health").attr(openapi.tags, "service")

@@ -66,14 +66,14 @@ final private[http] class Http4sRequestDecoderUnchecked(payload: Http4sPayload[?
         decode(self, value),
         HeadersDecoder.decode(headers.value, value.headers).leftMap(violations => envelope("header" /: violations))
       ).tupled
-    case Request.Value.Payload(self, values) =>
+    case Request.Value.Entity(self, values) =>
       (decode(self, value), bodies(values.value.self.self, value.body).leftMap(atBody)).tupled
-    case Request.Value.OptionalPayload(self, values) =>
+    case Request.Value.OptionalEntity(self, values) =>
       val body =
         if value.body._1.isEmpty && value.body._2.isEmpty then Validated.valid(None)
         else bodies(values.value.self.self, value.body).map(Some(_)).leftMap(atBody)
 
       (decode(self, value), body).tupled
     // A streamed body changes what the request describes and not what it holds, so there is nothing to read here.
-    case Request.Value.Streaming(self, _) => decode(self, value)
+    case Request.Value.Streamed(self, _)  => decode(self, value)
     case Request.Value.Modify(self, f, _) => decode(self, value).map(f)

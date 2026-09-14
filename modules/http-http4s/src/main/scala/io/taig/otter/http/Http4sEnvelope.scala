@@ -10,7 +10,7 @@ import org.http4s.Method as Http4sMethod
 import org.http4s.ParseResult
 import org.http4s.Query as Http4sQuery
 import org.http4s.Response as Http4sResponse
-import org.http4s.Status
+import org.http4s.Status as Http4sStatus
 import org.http4s.Uri
 import org.typelevel.ci.CIString
 import scodec.bits.ByteVector
@@ -116,7 +116,7 @@ object Http4sEnvelope:
     * two spellings to disagree.
     */
   def toHttp4sResponse[F[_]](response: Http4sWire.Response): ParseResult[Http4sResponse[F]] =
-    Status.fromInt(response.code.value).map { status =>
+    Http4sStatus.fromInt(response.status.value).map { status =>
       val headers =
         response.headers ++ Chain.fromOption(response.body.map((mediaType, _) => ("Content-Type", mediaType.render)))
 

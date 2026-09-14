@@ -31,7 +31,48 @@ object Endpoint:
     */
   type Node = Endpoint.Schema[Body.Payload, Nothing, Any, Nothing, Any]
 
-  final case class Schema[+S[-w, +r], -AW, +AR, -BW, +BR](self: Annotation[Endpoint.Value[S, AW, AR, BW, BR]]):
+  /** A domain endpoint with optional error declarations, composed only by its consumer. */
+  sealed trait Declaration[+S[-w, +r], -AW, +AR, -BW, +BR, +E]:
+    def domain: Endpoint.Schema[S, AW, AR, BW, BR]
+    def overrides: ErrorOverrides[S, E]
+
+    /** Standalone documentation: plain schemas stay plain; overrides inherit the bodyless default policy. */
+    def effective: Endpoint.Node
+
+    final def compose[T[-w, +r] >: S[w, r], F](
+        defaults: ErrorPolicy[T, F]
+    ): ComposedEndpoint[T, AW, AR, BW, BR, E | F] =
+      ComposedEndpoint(domain, overrides(defaults))
+
+  object Declaration:
+    type Node = Endpoint.Declaration[Body.Payload, Nothing, Any, Nothing, Any, Any]
+
+  final case class WithErrors[+S[-w, +r], -AW, +AR, -BW, +BR, +E](
+      override val domain: Endpoint.Schema[S, AW, AR, BW, BR],
+      override val overrides: ErrorOverrides[S, E]
+  ) extends Endpoint.Declaration[S, AW, AR, BW, BR, E]:
+    override def effective: Endpoint.Schema[S, AW, AR, Either[Failure, BW], Either[E | Status, BR]] =
+      compose(ErrorPolicy.default).effective
+
+  object WithErrors:
+    given annotated: [S[-w, +r], AW, AR, BW, BR, E] => Annotated[Endpoint.WithErrors[S, AW, AR, BW, BR, E]]:
+      extension (self: Endpoint.WithErrors[S, AW, AR, BW, BR, E])
+        override def lens: (Metadata, Metadata => Endpoint.WithErrors[S, AW, AR, BW, BR, E]) =
+          (
+            self.domain.self.metadata,
+            metadata => self.copy(domain = new Endpoint.Schema(self.domain.self.copy(metadata = metadata)))
+          )
+
+  final case class Schema[+S[-w, +r], -AW, +AR, -BW, +BR](self: Annotation[Endpoint.Value[S, AW, AR, BW, BR]])
+      extends Endpoint.Declaration[S, AW, AR, BW, BR, Nothing]:
+    override def domain: Endpoint.Schema[S, AW, AR, BW, BR] = this
+    override def effective: Endpoint.Schema[S, AW, AR, BW, BR] = this
+    override def overrides: ErrorOverrides[Nothing, Nothing] = ErrorOverrides()
+
+    def withErrors[T[-w, +r] >: S[w, r], E](
+        overrides: ErrorOverrides[T, E]
+    ): Endpoint.WithErrors[T, AW, AR, BW, BR, E] = Endpoint.WithErrors(this, overrides)
+
     export self.self.{request, responses}
 
   object Schema:
@@ -46,5 +87,5 @@ object Endpoint:
 
   final case class Value[+S[-w, +r], -AW, +AR, -BW, +BR](
       request: Request.Schema[S, AW, AR],
-      responses: Results.Schema[S, BW, BR]
+      responses: Responses.Schema[S, BW, BR]
   )

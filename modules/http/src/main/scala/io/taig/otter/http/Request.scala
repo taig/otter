@@ -145,7 +145,7 @@ object Request:
 
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = Some(values)
 
-    final case class Payload[+S[-w, +r], W1, R1, W2, R2](
+    final case class Entity[+S[-w, +r], W1, R1, W2, R2](
         self: Request.Value[S, W1, R1],
         values: Reference[[w, r] =>> Bodies.Schema[S, w, r], W2, R2]
     ) extends Request.Value[S, (W1, W2), (R1, R2)]:
@@ -169,7 +169,7 @@ object Request:
       * for this over a payload whose own alphabet can say `null`: a body of bytes cannot tell `Some` of none of them
       * from `None`, because HTTP does not.
       */
-    final case class OptionalPayload[+S[-w, +r], W1, R1, W2, R2](
+    final case class OptionalEntity[+S[-w, +r], W1, R1, W2, R2](
         self: Request.Value[S, W1, R1],
         values: Reference[[w, r] =>> Bodies.Schema[S, w, r], W2, R2]
     ) extends Request.Value[S, (W1, Option[W2]), (R1, Option[R2])]:
@@ -184,7 +184,7 @@ object Request:
       * `W1` and `R1` pass through untouched. That is the whole of the streaming decision made visible: the stream is
       * described, and what a sequence of its elements is stays with whoever has an effect type to say it in.
       */
-    final case class Streaming[+S[-w, +r], W1, R1, W2, R2](
+    final case class Streamed[+S[-w, +r], W1, R1, W2, R2](
         self: Request.Value[Body.Streamed.Requirement[S], W1, R1],
         value: Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], W2, R2]
     ) extends Request.Value[Body.Streamed.Requirement[S], W1, R1]:

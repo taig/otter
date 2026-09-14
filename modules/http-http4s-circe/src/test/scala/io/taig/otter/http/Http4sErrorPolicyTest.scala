@@ -28,7 +28,7 @@ import scala.compiletime.asMatchable
 
 object Http4sErrorPolicyTest extends ZIOSpecDefault:
   private val base: Uri = uri"http://otter.test"
-  private val domain = endpoint(request(method.get, __), result(code.noContent))
+  private val domain = endpoint(request(method.get, __), response(status.noContent))
   private val composed = ErrorPolicy.default(domain)
   private val cause = new IllegalStateException("private diagnostic")
 
@@ -130,8 +130,8 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           )
           .orNotFound
       )
-      run(Http4s.client[IO, Unit, Either[Code, Unit]](Http4sPayload.Empty, base, client)(composed.effective)(()))
-        .map(value => assertTrue(value == Left(Code(500))))
+      run(Http4s.client[IO, Unit, Either[Status, Unit]](Http4sPayload.Empty, base, client)(composed.effective)(()))
+        .map(value => assertTrue(value == Left(Status(500))))
     ,
     test("a composed client keeps a domain answer in the right branch"):
       val client = Client.fromHttpApp(
@@ -141,22 +141,22 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           )
           .orNotFound
       )
-      run(Http4s.client[IO, Unit, Either[Code, Unit]](Http4sPayload.Empty, base, client)(composed.effective)(()))
+      run(Http4s.client[IO, Unit, Either[Status, Unit]](Http4sPayload.Empty, base, client)(composed.effective)(()))
         .map(value => assertTrue(value == Right(())))
     ,
     test("overlapping wire responses retain domain priority"):
-      val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Code] =
-        ErrorPolicy.default(endpoint(request(method.get, __), result(Code(500))))
+      val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
+        ErrorPolicy.default(endpoint(request(method.get, __), response(Status(500))))
       val client =
         Client.fromHttpApp(Http4s.routes[IO](Http4sPayload.Empty)(Route(value, (_: Unit) => IO.unit)).orNotFound)
-      run(Http4s.client[IO, Unit, Either[Code, Unit]](Http4sPayload.Empty, base, client)(value.effective)(()))
+      run(Http4s.client[IO, Unit, Either[Status, Unit]](Http4sPayload.Empty, base, client)(value.effective)(()))
         .map(value => assertTrue(value == Right(())))
     ,
     test("a declared JSON error supports a custom status, headers, and typed client value"):
-      val error = result(Code(503))
+      val error = response(Status(503))
         .headers(header("Retry-After", int).toRecord)(body.json(payload.string))
         .dimap[Failure, String](_ => (5, "unavailable"))(_._2)
-      val policy: ErrorPolicy[Body.Whole[Json.Node], Code | String] = ErrorPolicy.default.copy(unexpected = error)
+      val policy: ErrorPolicy[Body.Whole[Json.Node], Status | String] = ErrorPolicy.default.copy(unexpected = error)
       val value = policy(domain)
       val app = Http4s.routes[IO](Http4sCirce.Payload)(Route(value, (_: Unit) => IO.raiseError[Unit](cause))).orNotFound
       run(
@@ -164,7 +164,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           response <- app.run(Http4sRequest[IO](uri = base))
           bytes <- Http4sEnvelope.toBytes(response.entity)
           decoded <- Http4s
-            .client[IO, Unit, Either[Code | String, Unit]](Http4sCirce.Payload, base, Client.fromHttpApp(app))(
+            .client[IO, Unit, Either[Status | String, Unit]](Http4sCirce.Payload, base, Client.fromHttpApp(app))(
               value.effective
             )(())
         yield assertTrue(
@@ -176,7 +176,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       )
     ,
     test("entity read failures are observed separately and do not call the handler"):
-      val value = ErrorPolicy.default(endpoint(request(method.post, __)(body.binary), result(code.noContent)))
+      val value = ErrorPolicy.default(endpoint(request(method.post, __)(body.binary), response(status.noContent)))
       run(
         for
           events <- IO.ref(List.empty[Http4sObservation.Event])
@@ -203,8 +203,8 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       )
     ,
     test("an invalid domain status uses the declared status-error response"):
-      val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Code] =
-        ErrorPolicy.default(endpoint(request(method.get, __), result(Code(-1))))
+      val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
+        ErrorPolicy.default(endpoint(request(method.get, __), response(Status(-1))))
       run(
         Http4s
           .routes[IO](Http4sPayload.Empty)(Route(value, (_: Unit) => IO.unit))
@@ -213,7 +213,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       ).map(response => assertTrue(response.status.code == 500))
     ,
     test("an error mapping failure is observed once and never recursively handled"):
-      val broken = result(Code(503)).dimap[Failure, Code](_ => Http4sErrorPolicyTest.crash)(_ => Code(503))
+      val broken = response(Status(503)).dimap[Failure, Status](_ => Http4sErrorPolicyTest.crash)(_ => Status(503))
       val value = ErrorPolicy.default.copy(unexpected = broken)(domain)
       run(for
         events <- IO.ref(List.empty[Http4sObservation.Event])
@@ -246,7 +246,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("response encoding exceptions have their own category"):
       val answer =
-        result(code.ok)(body.json(payload.string)).dimap[Unit, String](_ => Http4sErrorPolicyTest.crash)(identity)
+        response(status.ok)(body.json(payload.string)).dimap[Unit, String](_ => Http4sErrorPolicyTest.crash)(identity)
       val value = ErrorPolicy.default(endpoint(request(method.get, __), answer))
       run(for
         events <- IO.ref(List.empty[Http4sObservation.Event])
@@ -260,7 +260,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       yield assertTrue(response.status.code == 500, seen == List(Http4sObservation.Event.Failed(Failure(Failure.Category.Encoding, cause = Some(cause))))))
     ,
     test("codec refusals and defensive registry defects are distinct internal categories"):
-      val value = ErrorPolicy.default(endpoint(request(method.get, __), result(code.ok)(body.json(payload.string))))
+      val value = ErrorPolicy.default(endpoint(request(method.get, __), response(status.ok)(body.json(payload.string))))
       def answer(recognize: Boolean): IO[(Int, List[Http4sObservation.Event])] =
         for
           events <- IO.ref(List.empty[Http4sObservation.Event])

@@ -1,18 +1,18 @@
 package io.taig.otter.http
 
 /** The error declarations an endpoint replaces; every missing entry inherits the API policy. */
-final case class ErrorOverrides[S[-w, +r], E](
-    envelope: Option[Result.Schema[S, Failure, E]] = None,
-    syntax: Option[Result.Schema[S, Failure, E]] = None,
-    contentType: Option[Result.Schema[S, Failure, E]] = None,
-    validation: Option[Result.Schema[S, Failure, E]] = None,
-    entityRead: Option[Result.Schema[S, Failure, E]] = None,
-    encoding: Option[Result.Schema[S, Failure, E]] = None,
-    status: Option[Result.Schema[S, Failure, E]] = None,
-    unexpected: Option[Result.Schema[S, Failure, E]] = None,
-    interpreter: Option[Result.Schema[S, Failure, E]] = None
+final case class ErrorOverrides[+S[-w, +r], +E](
+    envelope: Option[Response.Schema[S, Failure, E]] = None,
+    syntax: Option[Response.Schema[S, Failure, E]] = None,
+    contentType: Option[Response.Schema[S, Failure, E]] = None,
+    validation: Option[Response.Schema[S, Failure, E]] = None,
+    entityRead: Option[Response.Schema[S, Failure, E]] = None,
+    encoding: Option[Response.Schema[S, Failure, E]] = None,
+    status: Option[Response.Schema[S, Failure, E]] = None,
+    unexpected: Option[Response.Schema[S, Failure, E]] = None,
+    interpreter: Option[Response.Schema[S, Failure, E]] = None
 ):
-  def apply(defaults: ErrorPolicy[S, E]): ErrorPolicy[S, E] = ErrorPolicy(
+  def apply[T[-w, +r] >: S[w, r], F](defaults: ErrorPolicy[T, F]): ErrorPolicy[T, E | F] = ErrorPolicy(
     envelope.getOrElse(defaults.envelope),
     syntax.getOrElse(defaults.syntax),
     contentType.getOrElse(defaults.contentType),

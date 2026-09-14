@@ -4,7 +4,7 @@ import cats.data.Chain
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.taig.otter.http.codec.Http4sRequestDecoder
-import io.taig.otter.http.codec.Http4sResultDecoder
+import io.taig.otter.http.codec.Http4sResponseDecoder
 import io.taig.otter.http.fixture.*
 import io.taig.otter.http.fixture.dsl.*
 import org.http4s.Entity
@@ -34,20 +34,20 @@ import zio.test.*
   */
 object Http4sRoundTripTest extends ZIOSpecDefault:
   private val errors: ErrorPolicy[dsl.Payload, Any] =
-    def response(status: Int): io.taig.otter.http.Result.Schema[dsl.Payload, Failure, Any] =
-      result(Code(status))(body.binary(dsl.mediaType.text)).contramap[Failure](failure =>
+    def answer(status: Int): io.taig.otter.http.Response.Schema[dsl.Payload, Failure, Any] =
+      response(Status(status))(body.binary(dsl.mediaType.text)).contramap[Failure](failure =>
         ByteVector.encodeUtf8(failure.violations.fold("")(Http4s.report)).getOrElse(ByteVector.empty)
       )
     ErrorPolicy(
-      response(400),
-      response(400),
-      response(415),
-      response(422),
-      response(500),
-      response(500),
-      response(500),
-      response(500),
-      response(500)
+      answer(400),
+      answer(400),
+      answer(415),
+      answer(422),
+      answer(500),
+      answer(500),
+      answer(500),
+      answer(500),
+      answer(500)
     )
 
   private val Base: Uri = uri"http://otter.test"
@@ -56,44 +56,44 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   private val fetch: Endpoint.Of[dsl.Payload, (Int, Int), Either[Report, Unit]] =
     endpoint(
       request(method.get, api.one).queries(api.paging),
-      result(code.ok)(body.json(api.report)) :+ result(code.notFound)
+      response(status.ok)(body.json(api.report)) :+ response(status.notFound)
     )
 
   /** `PUT /settings`, whose payload has a defaulted field and whose answer has no entity at all. */
   private val configure: Endpoint.Of[dsl.Payload, Settings, Unit] =
     endpoint(
       request(method.put, __ :* segment("settings"))(body.json(api.settings)),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   /** `GET /trees`, whose payload refers to itself. */
   private val trees: Endpoint.Of[dsl.Payload, Unit, Tree] =
-    endpoint(request(method.get, __ :* segment("trees")), result(code.ok)(body.json(api.tree)).toUnion)
+    endpoint(request(method.get, __ :* segment("trees")), response(status.ok)(body.json(api.tree)).toUnion)
 
   /** `POST /files` taking and answering with bytes that have no document in them at all. */
   private val upload: Endpoint.Of[dsl.Payload, ByteVector, ByteVector] =
     endpoint(
       request(method.post, __ :* segment("files"))(body.binary(dsl.mediaType.pdf)),
-      result(code.ok)(body.binary(dsl.mediaType.pdf)).toUnion
+      response(status.ok)(body.binary(dsl.mediaType.pdf)).toUnion
     )
 
   /** `POST /reports` whose body may be either of two alternatives, which is what content negotiation describes. */
   private val negotiated: Endpoint.Of[dsl.Payload, Either[Report, ByteVector], Unit] =
     endpoint(
       request(method.post, __ :* segment("reports"))(api.negotiated),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   /** `POST /uploads`, whose payload is a set of parts -- a payload alphabet no interpreter here recognises. */
   val multipart: Endpoint.Of[Body.Whole[Multipart.Node], Upload, Unit] =
     endpoint(
       request(method.post, __ :* segment("uploads"))(body.multipart(api.upload)),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   /** `GET /reports`, whose answer this interpreter cannot yet carry. */
   val streaming: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Json.Node], Unit, Unit] =
-    endpoint(request(method.get, __ :* segment("reports")), result(code.ok)(api.reports).toUnion)
+    endpoint(request(method.get, __ :* segment("reports")), response(status.ok)(api.reports).toUnion)
 
   private def routes[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], handler: A => IO[B]): Http4sClient[IO] =
     Http4sClient.fromHttpApp(Http4s.routes[IO](Http4sCirce.Payload)(Route(endpoint, handler)).orNotFound)
@@ -127,7 +127,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   private val amendable: Endpoint.Of[dsl.Payload, Option[Settings], Unit] =
     endpoint(
       request(method.patch, __ :* segment("settings"))(body.optional(body.json(api.settings))),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   /** The whole answer, so a malformed request can be asked about its status and its body at once. */
@@ -156,18 +156,18 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   private val amend: Endpoint.Of[dsl.Payload, (Int, Int, Settings), Unit] =
     endpoint(
       request(method.put, api.one).queries(api.paging)(body.json(api.settings)),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   /** `GET /reports/{id}?page` answering with nothing, which is enough to ask a router questions with. */
   private val ping: Endpoint.Of[dsl.Payload, (Int, Int), Unit] =
-    endpoint(request(method.get, api.one).queries(api.paging), result(code.noContent).toUnion)
+    endpoint(request(method.get, api.one).queries(api.paging), response(status.noContent).toUnion)
 
   /** `GET /ping` reading a header, which is the one envelope position the other fixtures do not use. */
   private val headed: Endpoint.Of[dsl.Payload, (String, Option[List[String]]), Unit] =
     endpoint(
       request(method.get, __ :* segment("ping")).headers(http.request),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sRoundTripTest")(
@@ -261,8 +261,8 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         """))
       ,
       test("a response under a status no branch names says which it expected"):
-        val report = Http4sResultDecoder(Http4sCirce.Payload)
-          .decode(fetch.responses, Http4sWire.Response(Code(500), Chain.empty, None))
+        val report = Http4sResponseDecoder(Http4sCirce.Payload)
+          .decode(fetch.responses, Http4sWire.Response(Status(500), Chain.empty, None))
           .swap
           .toOption
           .map(Http4s.report)
@@ -305,7 +305,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
           .map((code, _) => assertTrue(code == 400))
       ,
       test("what the answer looks like is the caller's, and the violations reach it whole"):
-        val response = result(Code(418))
+        val rejected = response(Status(418))
           .headers(header("X-Violations", int).toRecord)(body.binary(dsl.mediaType.json))
           .contramap[Failure](failure =>
             (
@@ -313,7 +313,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
               ByteVector.encodeUtf8("""{"error":"invalid"}""").getOrElse(ByteVector.empty)
             )
           )
-        val malformed = Http4sRoundTripTest.errors.copy(validation = response)
+        val malformed = Http4sRoundTripTest.errors.copy(validation = rejected)
 
         answer(configure, malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}"""))
           .map((code, body) => assertTrue(code == 418, body == """{"error":"invalid"}"""))

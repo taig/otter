@@ -8,7 +8,6 @@ import io.taig.otter.component.EnumerationComponent
 import io.taig.otter.component.PrimitiveComponent
 import io.taig.otter.component.RecordComponent
 import io.taig.otter.http.Body
-import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Header
 import io.taig.otter.http.Headers
@@ -19,9 +18,10 @@ import io.taig.otter.http.Path
 import io.taig.otter.http.Queries
 import io.taig.otter.http.Query
 import io.taig.otter.http.Request
-import io.taig.otter.http.Result
-import io.taig.otter.http.Results
+import io.taig.otter.http.Response
+import io.taig.otter.http.Responses
 import io.taig.otter.http.Segment
+import io.taig.otter.http.Status
 import io.taig.otter.http.codec.ParameterPrimitiveEncoder
 import io.taig.otter.http.syntax.EndpointSyntax
 import io.taig.otter.http.syntax.HttpSyntax
@@ -72,8 +72,8 @@ trait HttpComponent
   def request[W, R](method: Method, path: => Path.Node[W, R]): Request.Schema[Nothing, W, R] =
     Request.Schema(Request.Value.Root(method, Reference.later(path)))
 
-  /** One answer, with nothing but a status code. Its parts are added from there. */
-  def result(code: Code): Result.Schema[Nothing, Unit, Unit] = Result.Schema(Result.Value.Root(code))
+  /** One answer, with nothing but a status. Its parts are added from there. */
+  def response(status: Status): Response.Schema[Nothing, Unit, Unit] = Response.Schema(Response.Value.Root(status))
 
   /** An endpoint: what it takes, and what it may answer.
     *
@@ -82,22 +82,22 @@ trait HttpComponent
     */
   def endpoint[S1[-w, +r], S2[-w, +r], AW, AR, BW, BR](
       request: Request.Schema[S1, AW, AR],
-      responses: Results.Schema[S2, BW, BR]
+      responses: Responses.Schema[S2, BW, BR]
   ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
     Endpoint.Schema(Endpoint.Value[Body.Or[S1, S2], AW, AR, BW, BR](request, responses))
 
   /** An endpoint that answers in exactly one way, which is most of them.
     *
-    * The lone result is lifted into the union that holds it, so that the common case is not made to spell out the union
-    * it is a branch of -- the same courtesy `:+` does for the first branch of a chain.
+    * The lone response is lifted into the union that holds it, so that the common case is not made to spell out the
+    * union it is a branch of -- the same courtesy `:+` does for the first branch of a chain.
     */
   def endpoint[S1[-w, +r], S2[-w, +r], AW, AR, BW, BR](
       request: Request.Schema[S1, AW, AR],
-      response: Result.Schema[S2, BW, BR]
+      response: Response.Schema[S2, BW, BR]
   ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
     endpoint[S1, S2, AW, AR, BW, BR](request, response.toUnion)
 
-  object code extends CodeComponent
+  object status extends StatusComponent
 
   object mediaType extends MediaTypeComponent
 

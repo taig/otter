@@ -89,7 +89,7 @@ runs through the middle of a request rather than between two modules:
 Almost every tier is an existing core node rearranged, which is why the module is small: a path is a `Tuple` of
 segments, a static segment is a `Constant` (it writes its literal, requires it on read, and erases to `Unit`, so
 `Append` drops it), a dynamic one is a `Branch`, a query string and a header set are `Record`s of `Field`s, and
-alternatives -- `Bodies`, `Results` -- are `Union`s. `Multipart` is a `Record` of `Part`s, which is the *product* of
+alternatives -- `Bodies`, `Responses` -- are `Union`s. `Multipart` is a `Record` of `Part`s, which is the *product* of
 bodies that makes a file upload describable; a multipart body is not a case of `Body` but a payload for one, exactly as
 it is in HTTP. A streamed body names its element and its framing and contributes nothing to what the endpoint holds:
 what a sequence of elements *is* belongs to whoever has an effect type to say it in, and `Body.Streamed.Schema` keeps
@@ -166,7 +166,7 @@ The two parse differently rather than merely looking different, which is the kin
 model exists to prevent and which building strings would never have caught.
 
 The walks over a `Record` or a `Union` that both renderers need -- `Queries.fields`, `Headers.fields`,
-`Multipart.parts`, `Bodies.branches`, `Results.branches` -- live in `http` beside `Path.segments` rather
+`Multipart.parts`, `Bodies.branches`, `Responses.branches` -- live in `http` beside `Path.segments` rather
 than privately in each renderer, on the reasoning `Path.segments` already records: what is asked of a
 record is always the list of its leaves, and its shape says nothing a caller wants to know.
 
@@ -191,9 +191,9 @@ appending is a tuple or a `Unit`, and a match type cannot reduce against a type 
 says its fields are not covered in the correct order -- which points nowhere near the cause. `opaque type Isbn <:
 String = String` reduces and gives nothing away.
 
-**`.to` needs a branch that carries a body.** Mapping a result union onto a sealed sum -- the thing that turns
+**`.to` needs a branch that carries a body.** Mapping a response union onto a sealed sum -- the thing that turns
 `Either[Either[Loan, Problem], Problem]` into three named cases -- converts each branch first, and that conversion goes
-through the `Profunctor` for `Result.Schema[S, ?, ?]`. A result with no entity has `S = Nothing`, which does not
+through the `Profunctor` for `Response.Schema[S, ?, ?]`. A response with no entity has `S = Nothing`, which does not
 eta-expand to the kind the instance asks for. So an answer with no entity stays a `Unit` inside an `Either`, and a sum
 is worth reaching for once every branch has something to say. `books.create` and `loans.borrow` are the sums;
 `books.delete` and `books.fetch` are the `Either`s.

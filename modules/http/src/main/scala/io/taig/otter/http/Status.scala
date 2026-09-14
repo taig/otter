@@ -4,25 +4,25 @@ import cats.Order
 import cats.Show
 
 /** A response status code. */
-opaque type Code = Int
+opaque type Status = Int
 
-object Code:
-  extension (self: Code)
+object Status:
+  extension (self: Status)
     inline def value: Int = self
 
-    /** Whether the code says the request succeeded, which is the only classification a schema needs: it is what decides
-      * whether a [[Result]] carries what the caller asked for or why it could not have it.
+    /** Whether the status says the request succeeded, which is the only classification a schema needs: it is what
+      * decides whether a [[Response]] carries what the caller asked for or why it could not have it.
       */
     def isSuccess: Boolean = self >= 200 && self < 300
 
-  inline def apply(value: Int): Code = value
+  inline def apply(value: Int): Status = value
 
-  /** The phrase the specification gives this code, where it gives one.
+  /** The phrase the specification gives this status, where it gives one.
     *
-    * Here rather than in a renderer because it is a fact about the code and not about any document: an OpenAPI response
-    * needs a description, a log line wants the same words, and neither should have its own table.
+    * Here rather than in a renderer because it is a fact about the status and not about any document: an OpenAPI
+    * response needs a description, a log line wants the same words, and neither should have its own table.
     */
-  def reason(code: Code): Option[String] = Code.reasons.get(code.value)
+  def reason(status: Status): Option[String] = Status.reasons.get(status.value)
 
   private val reasons: Map[Int, String] = Map(
     200 -> "OK",
@@ -51,6 +51,6 @@ object Code:
     504 -> "Gateway Timeout"
   )
 
-  given order: Order[Code] = Order.by(_.value)
+  given order: Order[Status] = Order.by(_.value)
 
-  given show: Show[Code] = Show.show(_.value.toString)
+  given show: Show[Status] = Show.show(_.value.toString)

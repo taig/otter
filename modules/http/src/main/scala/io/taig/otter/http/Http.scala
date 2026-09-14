@@ -16,7 +16,7 @@ import io.taig.otter.Tolerance
   *
   *   - [[Endpoint]] pairs a [[Request]] with a [[Response]].
   *   - [[Request]] is a [[Method]], a [[Path]], a [[Queries]], a [[Headers]] and at most one body; [[Response]] is a
-  *     [[Results]], one [[Result]] per status [[Code]].
+  *     [[Responses]], one [[Response]] per [[Status]].
   *   - [[Bodies]] chooses between [[Body]] alternatives by media type, and a [[Body]] is a media type over a payload
   *     schema of some other alphabet entirely -- a JSON schema, a CSV schema -- or over bytes, or over [[Multipart]]
   *     parts.

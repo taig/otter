@@ -124,7 +124,7 @@ object OpenApiRendererTest extends ZIOSpecDefault:
           info,
           Chain(
             api.replace,
-            endpoint(request(method.post, __ :* segment("other"))(body.json(conflicting)), result(code.ok).toUnion)
+            endpoint(request(method.post, __ :* segment("other"))(body.json(conflicting)), response(status.ok).toUnion)
           )
         )
 
@@ -281,7 +281,7 @@ object OpenApiRendererTest extends ZIOSpecDefault:
           Chain(
             endpoint(
               request(method.post, __ :* segment("opaque"))(body(mediaType.text, Unknown[String, String]())),
-              result(code.ok).toUnion
+              response(status.ok).toUnion
             )
           )
         )

@@ -35,25 +35,25 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
   private val mixed =
     mixedDsl.endpoint(
       mixedDsl.request(method.post, __)(api.reported :+ mixedDsl.body.csv(csv.book)),
-      mixedDsl.result(code.noContent)
+      mixedDsl.response(status.noContent)
     )
 
   private val jsonEndpoint =
     mixedDsl.endpoint(
       mixedDsl.request(method.post, __ :* segment("json"))(api.reported),
-      mixedDsl.result(code.noContent)
+      mixedDsl.response(status.noContent)
     )
 
   private val csvEndpoint =
     mixedDsl.endpoint(
       mixedDsl.request(method.post, __ :* segment("csv"))(mixedDsl.body.csv(csv.book)),
-      mixedDsl.result(code.noContent)
+      mixedDsl.response(status.noContent)
     )
 
   private val jsonResponse =
     mixedDsl.endpoint(
       mixedDsl.request(method.get, __ :* segment("json-response")),
-      mixedDsl.result(code.ok)(mixedDsl.body.json(api.report)).toUnion
+      mixedDsl.response(status.ok)(mixedDsl.body.json(api.report)).toUnion
     )
 
   private val positional: Csv.Tuple[Book] =

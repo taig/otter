@@ -4,28 +4,38 @@
 
 ## Declared HTTP errors
 
-`ErrorPolicy` declares execution errors using ordinary Otter `Result` schemas. `Api` owns one complete policy and an
-ordered endpoint collection; each endpoint inherits it unless an `ErrorOverrides` value replaces a category:
+`ErrorPolicy` declares execution errors using ordinary Otter `Response` schemas. `Api` owns the global policy and an
+ordered collection for documentation. Endpoints inherit the global policy; `.withErrors` declares the categories an
+endpoint overrides:
 
 ```scala
-val api = for
-  defaults <- Api(errors, health, create)
-  configured <- defaults.withErrors(create, ErrorOverrides(unexpected = Some(unavailable)))
-yield configured
+val create = endpoint(createRequest, createResponse)
+  .withErrors(ErrorOverrides(unexpected = Some(unavailable)))
+val api = Api(errors, health, create)
 
-val routes = api.flatMap { definition =>
-  Route(definition, health, healthHandler).map { healthRoute =>
-    Http4s.routes[IO](Http4sCirce.Payload)(definition, healthRoute)
-  }
-}
+val routes = Http4s.routes[IO](Http4sCirce.Payload)(
+  api,
+  Route(health, healthHandler),
+  Route(create, createHandler)
+)
+val call = Http4s.client[IO, CreateInput, Created](Http4sCirce.Payload, base, client)(api, create)
+val document = OpenApiRenderer.server(OpenApiProfile.V31, payload).render(info, api)
 ```
 
-The handler still returns the domain result `B`. The API-aware client resolves the registered endpoint to
-`Either[E, B]`, where `E` is the policy's decoded error type, and OpenAPI and TypeScript renderers accept the API
-directly. Route construction and serving report an `ApiIssue` for unregistered endpoints; an API may contain endpoints
-the selected backend does not serve. `ErrorPolicy(endpoint)` and `ComposedEndpoint` remain available for local use.
+Consumers apply the global policy and endpoint overrides directly. Construction is total: there is no registration
+lookup, endpoint resolution, or `Either` to unwrap before serving, calling, or rendering. The API's ordered collection
+selects documentation entries; routes and clients may use any statically typed endpoint, including one outside that
+collection. OpenAPI and TypeScript renderers both accept the API directly.
 
-Defaults have no body and decode to their `Code`. Envelope validation and payload syntax errors return 400,
+Handlers still return the domain result `B`. API-aware clients decode `Either[E, B]`, where `E` includes the decoded
+error types from both the global policy and the endpoint's overrides. Payload requirements from both are checked by
+the compiler. `Route(api, endpoint, handler)` also applies the same policy when building an individual route.
+
+Without an API, an endpoint carrying overrides inherits `ErrorPolicy.default` for every omitted category. Standalone
+routes, clients, and renderers all honor those overrides. Plain endpoint clients and renderers retain their domain-only
+behavior. Explicit `ErrorPolicy(endpoint)` composition and `ComposedEndpoint` remain available.
+
+Defaults have no body and decode to their `Status`. Envelope validation and payload syntax errors return 400,
 unsupported content types return 415, and body schema validation returns 422. Entity-read, response-encoding,
 status-conversion, unexpected execution, and defensive interpreter failures return 500. Causes remain diagnostic.
 When request failures accumulate, envelope errors take precedence; a payload alternative with an eligible content
@@ -34,7 +44,7 @@ type supplies the syntax or validation failure instead of an ineligible alternat
 Replace policy entries with schemas, using `dimap` to construct a body from `Failure` while retaining its reader:
 
 ```scala
-val unavailable = result(Code(503))(body.json(problemSchema))
+val unavailable = response(Status(503))(body.json(problemSchema))
   .dimap[Failure, Problem](_ => Problem.unavailable)(identity)
 val errors = ErrorPolicy.default.copy(unexpected = unavailable)
 ```

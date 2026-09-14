@@ -8,11 +8,11 @@ import io.taig.otter.http.Body
 import io.taig.otter.http.Headers
 import io.taig.otter.http.Queries
 import io.taig.otter.http.Request
-import io.taig.otter.http.Result
+import io.taig.otter.http.Response
 
 import scala.annotation.targetName
 
-/** Adding a part to a request or a result.
+/** Adding a part to a request or a response.
   *
   * Extension methods rather than members, for the reason [[io.taig.otter.syntax.OtterSyntax]]'s `:*` is one: appending
   * needs an [[Append.Shape]] for what the schema already holds, and [[Append.Shape]] is invariant, so a contravariant
@@ -22,10 +22,10 @@ import scala.annotation.targetName
   * Each step drops a `Unit`, exactly as `:*` does, so `request(method.get, path).headers(HNil)` holds what the path
   * holds and nothing more, and only the parts that carry something reach the caller.
   *
-  * The entity is added by application rather than by name -- `result(code.ok)(body.json(schema.book))` -- because there
-  * is only ever one of it and its own type already says which of the shapes it is. A whole document, a choice between
-  * alternatives, one that need not be sent, a stream: four types, four overloads, and nothing for the caller to pick.
-  * The parts there may be several of keep their names, since a name is what tells them apart.
+  * The entity is added by application rather than by name -- `response(status.ok)(body.json(schema.book))` -- because
+  * there is only ever one of it and its own type already says which of the shapes it is. A whole document, a choice
+  * between alternatives, one that need not be sent, a stream: four types, four overloads, and nothing for the caller to
+  * pick. The parts there may be several of keep their names, since a name is what tells them apart.
   *
   * The overloads carry a `@targetName` because a by-name parameter erases to `Function0`, so `=> Body.Schema`,
   * `=> Bodies.Schema` and `=> Body.Streamed.Schema` are one signature by the time the JVM sees them. Each is given the
@@ -83,7 +83,7 @@ trait EndpointSyntax:
     ): Request.Schema[S2, Append[W1, W2], Append[R1, R2]] =
       Request.Schema(
         Request.Value.Modify(
-          Request.Value.Payload[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
+          Request.Value.Entity[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
           (values: (R1, R2)) => R.join(values._1, values._2),
           W.split
         )
@@ -104,7 +104,7 @@ trait EndpointSyntax:
     ): Request.Schema[S2, Append[W1, W3], Append[R1, R3]] =
       Request.Schema(
         Request.Value.Modify(
-          Request.Value.OptionalPayload[S2, W1, R1, W2, R2](fa.self.self, value.self),
+          Request.Value.OptionalEntity[S2, W1, R1, W2, R2](fa.self.self, value.self),
           (values: (R1, Option[R2])) => R.join(values._1, O.read(values._2)),
           (appended: Append[W1, W3]) =>
             val (self, body) = W.split(appended)
@@ -117,55 +117,55 @@ trait EndpointSyntax:
     def apply[S2[-w, +r], W2, R2](
         value: => Body.Streamed.Schema[S2, W2, R2]
     ): Request.Schema[Body.Streamed.Requirement[S2], W1, R1] =
-      Request.Schema(Request.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
+      Request.Schema(Request.Value.Streamed[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
-  extension [S[-w, +r], W1, R1](fa: Result.Schema[S, W1, R1])
-    /** The headers this result writes. */
+  extension [S[-w, +r], W1, R1](fa: Response.Schema[S, W1, R1])
+    /** The headers this response writes. */
     def headers[W2, R2](values: => Headers.Node[W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Result.Schema[S, Append[W1, W2], Append[R1, R2]] =
-      Result.Schema(
-        Result.Value.Modify(
-          Result.Value.Headers(fa.self.self, Reference.later(values)),
+    ): Response.Schema[S, Append[W1, W2], Append[R1, R2]] =
+      Response.Schema(
+        Response.Value.Modify(
+          Response.Value.Headers(fa.self.self, Reference.later(values)),
           (values: (R1, R2)) => R.join(values._1, values._2),
           W.split
         )
       )
 
-  /** A result that carries no body yet, for the reason the request counterpart is pinned the same way.
+  /** A response that carries no body yet, for the reason the request counterpart is pinned the same way.
     *
     * There is no overload here taking a [[Bodies.Optional]], and that is the statement: an answer that need not carry
     * its entity is not a thing this library describes, and a caller reaching for one is told so by the compiler.
     */
-  extension [W1, R1](fa: Result.Schema[Nothing, W1, R1])
-    /** The one body this result carries. */
+  extension [W1, R1](fa: Response.Schema[Nothing, W1, R1])
+    /** The one body this response carries. */
     @targetName("body")
     def apply[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Result.Schema[S2, Append[W1, W2], Append[R1, R2]] =
+    ): Response.Schema[S2, Append[W1, W2], Append[R1, R2]] =
       fa.apply(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
 
-    /** The body this result carries, as a choice between alternatives. */
+    /** The body this response carries, as a choice between alternatives. */
     @targetName("bodies")
     def apply[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Result.Schema[S2, Append[W1, W2], Append[R1, R2]] =
-      Result.Schema(
-        Result.Value.Modify(
-          Result.Value.Payload[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
+    ): Response.Schema[S2, Append[W1, W2], Append[R1, R2]] =
+      Response.Schema(
+        Response.Value.Modify(
+          Response.Value.Entity[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
           (values: (R1, R2)) => R.join(values._1, values._2),
           W.split
         )
       )
 
-    /** The streamed body this result carries, which changes what it describes and not what it holds. */
+    /** The streamed body this response carries, which changes what it describes and not what it holds. */
     @targetName("streaming")
     def apply[S2[-w, +r], W2, R2](
         value: => Body.Streamed.Schema[S2, W2, R2]
-    ): Result.Schema[Body.Streamed.Requirement[S2], W1, R1] =
-      Result.Schema(Result.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
+    ): Response.Schema[Body.Streamed.Requirement[S2], W1, R1] =
+      Response.Schema(Response.Value.Streamed[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
 object EndpointSyntax extends EndpointSyntax

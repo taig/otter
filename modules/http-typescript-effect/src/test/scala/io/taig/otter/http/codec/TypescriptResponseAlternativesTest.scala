@@ -3,10 +3,13 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.Keys
-import io.taig.otter.http.Code
+import io.taig.otter.http.Api
+import io.taig.otter.http.Status
 import io.taig.otter.http.Endpoint
+import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.ErrorPolicy
 import io.taig.otter.http.Failure
+import io.taig.otter.http.HttpTypescriptKeys
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
 import io.taig.otter.http.fixture.dsl.*
@@ -30,9 +33,9 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TypescriptResponseAlternativesTest")(
     test("composed errors contribute encoded and decoded types without executing mappings"):
-      val error = result(Code(503))(body.json(payload.string.attr(Keys.name, "ErrorText")))
+      val error = response(Status(503))(body.json(payload.string.attr(Keys.name, "ErrorText")))
         .dimap[Failure, String](TypescriptResponseAlternativesTest.unexpectedMapping)(identity)
-      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, result(code.noContent)))
+      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, response(status.noContent)))
       val module = render(composed.effective)
       val source = module.render
       assertTrue(
@@ -45,11 +48,26 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
         !source.contains("fetch(")
       )
     ,
+    test("standalone endpoint overrides inherit defaults and preserve annotated operation names"):
+      val error = response(Status(503))(body.json(payload.string.attr(Keys.name, "ErrorText")))
+        .dimap[Failure, String](TypescriptResponseAlternativesTest.unexpectedMapping)(identity)
+      val declared = endpoint(requestSchema, response(status.noContent))
+        .withErrors(ErrorOverrides(unexpected = Some(error)))
+        .attr(HttpTypescriptKeys.operationId, "standalone")
+      val module = renderer.render(Chain.one(declared))
+      val expected = renderer.render(Api(ErrorPolicy.default, declared))
+      assertTrue(
+        module == expected,
+        module.render.contains("export const standalone = {"),
+        module.render.contains("\"503\":"),
+        module.render.contains("\"400\":")
+      )
+    ,
     test("one status retains all media types"):
       val module = render(
         endpoint(
           requestSchema,
-          result(code.ok)(body.json(integer)) :+ result(code.ok)(body(mediaType.text, text))
+          response(status.ok)(body.json(integer)) :+ response(status.ok)(body(mediaType.text, text))
         )
       )
       val source = module.render
@@ -63,7 +81,7 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
     test("one media type retains all schemas in an Effect union"):
       val module =
         render(
-          endpoint(requestSchema, result(code.ok)(body.json(integer)) :+ result(code.ok)(body.json(text)))
+          endpoint(requestSchema, response(status.ok)(body.json(integer)) :+ response(status.ok)(body.json(text)))
         )
       val source = module.render
       assertTrue(
@@ -78,20 +96,20 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
     ,
     test("repeating a schema does not add a union"):
       val source = render(
-        endpoint(requestSchema, result(code.ok)(body.json(integer)) :+ result(code.ok)(body.json(integer)))
+        endpoint(requestSchema, response(status.ok)(body.json(integer)) :+ response(status.ok)(body.json(integer)))
       ).render
       assertTrue(source.contains("\"application/json\": Integer"), !source.contains("Schema.Union(Integer, Integer)"))
     ,
-    test("body alternatives within one result use the same media grouping"):
+    test("body alternatives within one response use the same media grouping"):
       val module =
-        render(endpoint(requestSchema, result(code.ok)(body.json(integer) :+ body.json(text)).toUnion))
+        render(endpoint(requestSchema, response(status.ok)(body.json(integer) :+ body.json(text)).toUnion))
       assertTrue(module.issues.isEmpty, module.render.contains("\"application/json\": Schema.Union(Integer, Text)"))
     ,
     test("an undescribed alternative cannot leave a validator for only the known subset"):
       val module = render(
         endpoint(
           requestSchema,
-          result(code.ok)(body.json(integer)) :+ result(code.ok)(
+          response(status.ok)(body.json(integer)) :+ response(status.ok)(
             body(mediaType.json, Unknown[String, String]())
           )
         )
@@ -102,7 +120,8 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
       )
     ,
     test("an empty alternative remains present in the output union"):
-      val source = render(endpoint(requestSchema, result(code.ok) :+ result(code.ok)(body.json(integer)))).render
+      val source =
+        render(endpoint(requestSchema, response(status.ok) :+ response(status.ok)(body.json(integer)))).render
       assertTrue(
         source.contains("{ \"status\": 200 }"),
         source.contains("\"body\": Schema.Schema.Type<typeof Integer>"),

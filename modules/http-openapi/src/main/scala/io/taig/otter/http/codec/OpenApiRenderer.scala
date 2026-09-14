@@ -11,10 +11,8 @@ import io.taig.otter.Metadata
 import io.taig.otter.Side
 import io.taig.otter.codec.JsonSchemaAnnotation
 import io.taig.otter.http.Api
-import io.taig.otter.http.ApiIssue
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
-import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Headers
 import io.taig.otter.http.HttpKeys
@@ -26,8 +24,9 @@ import io.taig.otter.http.OpenApiIssue
 import io.taig.otter.http.OpenApiKeys
 import io.taig.otter.http.Queries
 import io.taig.otter.http.Request
-import io.taig.otter.http.Result
-import io.taig.otter.http.Results
+import io.taig.otter.http.Response as HttpResponse
+import io.taig.otter.http.Responses
+import io.taig.otter.http.Status
 import io.taig.otter.http.component.MediaTypeComponent
 
 import scala.collection.immutable.ListMap
@@ -53,11 +52,11 @@ final class OpenApiRenderer(
 ):
   private val parameter = OpenApiParameterRenderer(profile, namespaces)
 
-  def render(info: OpenApi.Info, endpoints: Chain[Endpoint.Node]): OpenApiDocument =
+  def render(info: OpenApi.Info, endpoints: Chain[Endpoint.Declaration.Node]): OpenApiDocument =
     val (paths, collected) = endpoints.foldLeft((ListMap.empty[String, ListMap[String, CirceJson]], Collected.Empty)):
       (accumulated, endpoint) =>
         val (paths, collected) = accumulated
-        val (template, method, rendered, found) = operation(endpoint)
+        val (template, method, rendered, found) = operation(endpoint.effective)
         val operations = paths.getOrElse(template, ListMap.empty)
 
         if operations.contains(method)
@@ -97,9 +96,9 @@ final class OpenApiRenderer(
 
     OpenApiDocument(document, collected.issues.toList)
 
-  /** Resolve shared error defaults before rendering the operations they govern. */
-  def render(info: OpenApi.Info, api: Api[?, ?]): Either[ApiIssue, OpenApiDocument] =
-    api.effective.map(render(info, _))
+  /** Apply shared error defaults before rendering the operations they govern. */
+  def render(info: OpenApi.Info, api: Api[?, ?]): OpenApiDocument =
+    render(info, api.effective)
 
   /** Reuse complete response objects only after every operation has rendered and merged its alternatives. */
   private def sharedResponses(
@@ -233,23 +232,23 @@ final class OpenApiRenderer(
 
     (rendered, described ++ framed ++ this.encodingAlternatives(operation, entries))
 
-  private def responses(operation: String, schema: Results.Schema[?, ?, ?]): (ListMap[String, CirceJson], Collected) =
-    val (groups, collected) = Results
+  private def responses(operation: String, schema: Responses.Schema[?, ?, ?]): (ListMap[String, CirceJson], Collected) =
+    val (groups, collected) = Responses
       .branches(schema)
-      .foldLeft((ListMap.empty[Int, List[Response]], Collected.Empty)): (accumulated, result) =>
+      .foldLeft((ListMap.empty[Int, List[Response]], Collected.Empty)): (accumulated, branch) =>
         val (responses, collected) = accumulated
-        val (rendered, found) = this.result(operation, result)
-        val code = result.code.value
+        val (rendered, found) = this.answer(operation, branch)
+        val status = branch.status.value
 
-        (responses.updated(code, responses.getOrElse(code, Nil) :+ rendered), collected ++ found)
+        (responses.updated(status, responses.getOrElse(status, Nil) :+ rendered), collected ++ found)
 
     groups.toList.foldLeft((ListMap.empty[String, CirceJson], collected)):
-      case ((responses, collected), (code, alternatives)) =>
-        val (rendered, found) = this.mergedResponse(operation, code, alternatives)
+      case ((responses, collected), (status, alternatives)) =>
+        val (rendered, found) = this.mergedResponse(operation, status, alternatives)
 
-        (responses.updated(code.toString, rendered), collected ++ found)
+        (responses.updated(status.toString, rendered), collected ++ found)
 
-  private def result(operation: String, schema: Result.Schema[?, ?, ?]): (Response, Collected) =
+  private def answer(operation: String, schema: HttpResponse.Schema[?, ?, ?]): (Response, Collected) =
     val (whole, described) = schema.bodies
       .map(reference => this.content(operation, response, reference.value))
       .getOrElse((Nil, Collected.Empty))
@@ -265,12 +264,12 @@ final class OpenApiRenderer(
 
     val entries = whole ++ streamed
 
-    /* A description is required by the specification and there is no honest way to omit it, so a result that says
-     * nothing gets the phrase its own code carries. */
+    /* A description is required by the specification and there is no honest way to omit it, so an answer that says
+     * nothing gets the phrase its own status carries. */
     val description = OpenApiRenderer
       .attr(namespaces, schema.self.metadata, Keys.description)
-      .orElse(Code.reason(schema.code))
-      .getOrElse(schema.code.value.toString)
+      .orElse(Status.reason(schema.status))
+      .getOrElse(schema.status.value.toString)
 
     val unsupported = entries.collect:
       case (media, content) if content.encoding.nonEmpty => OpenApiIssue.Encoding(operation, media)
@@ -280,7 +279,7 @@ final class OpenApiRenderer(
       described ++ framed ++ reported ++ Collected(Chain.fromSeq(unsupported), ListMap.empty)
     )
 
-  private def mergedResponse(operation: String, code: Int, alternatives: List[Response]): (CirceJson, Collected) =
+  private def mergedResponse(operation: String, status: Int, alternatives: List[Response]): (CirceJson, Collected) =
     val entries = alternatives.flatMap(_.content)
     val names = alternatives
       .flatMap(_.headers.keys)
@@ -298,7 +297,7 @@ final class OpenApiRenderer(
       )
     val descriptions = alternatives.map(_.description).distinct.mkString("\n\n")
     val loss = alternatives.map(_.headers).distinct.size > 1 || alternatives.map(_.content.isEmpty).distinct.size > 1
-    val issues = if loss then Collected.issue(OpenApiIssue.ResponseAlternatives(operation, code)) else Collected.Empty
+    val issues = if loss then Collected.issue(OpenApiIssue.ResponseAlternatives(operation, status)) else Collected.Empty
     val rendered = JsonSchema.merge(
       OpenApi.obj("description" -> CirceJson.fromString(descriptions)),
       List(
@@ -315,7 +314,7 @@ final class OpenApiRenderer(
       headers: ListMap[String, CirceJson]
   )
 
-  /** The headers a result writes, which OpenAPI keys by name rather than listing as parameters. */
+  /** The headers an answer writes, which OpenAPI keys by name rather than listing as parameters. */
   private def headers(
       operation: String,
       schema: Headers.Node[?, ?]

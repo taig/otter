@@ -4,6 +4,7 @@ import io.taig.otter.Keys
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
 import io.taig.otter.http.Endpoint
+import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.Frame
 import io.taig.otter.http.Headers
 import io.taig.otter.http.Multipart
@@ -26,13 +27,13 @@ import scodec.bits.ByteVector
   * not compile. No handler in this module ever names a status.
   *
   * Each branch is converted to its own case before the union is converted to the sum, which is the shape
-  * `fixture/json.scala`'s `verdict` already has. Doing that on the [[io.taig.otter.http.Result]] rather than inside the
-  * body's schema is what keeps a named payload named: `schema.book` still reaches `components/schemas` as `Book`, where
-  * converting the JSON record itself would have buried it.
+  * `fixture/json.scala`'s `verdict` already has. Doing that on the [[io.taig.otter.http.Response]] rather than inside
+  * the body's schema is what keeps a named payload named: `schema.book` still reaches `components/schemas` as `Book`,
+  * where converting the JSON record itself would have buried it.
   *
   * The conversion needs a branch that carries a body. `.to` is found through the `Profunctor` for
-  * `Result.Schema[S, ?, ?]`, and a result with no entity has `S = Nothing`, which does not eta-expand to the kind the
-  * instance asks for. So an answer with no entity stays a `Unit` in the union's `Either`, and what can still be
+  * `Response.Schema[S, ?, ?]`, and a response with no entity has `S = Nothing`, which does not eta-expand to the kind
+  * the instance asks for. So an answer with no entity stays a `Unit` in the union's `Either`, and what can still be
   * converted is the union as a whole: [[books.fetch]] maps `Either[Book, Unit]` onto `Option[Book]` with neither branch
   * named. A sum is worth reaching for once every branch has something to say, and [[loans.borrow]] is the three branch
   * case.
@@ -100,7 +101,7 @@ object books:
   val list: Endpoint.Of[dsl.Payload, (Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] =
     endpoint(
       request(method.get, books.all).queries(books.filter).headers(books.tracing),
-      result(code.ok)(body.json(json.collection.list(schema.book)))
+      response(status.ok)(body.json(json.collection.list(schema.book)))
     ).attr(openapi.operationId, "listBooks")
       .attr(openapi.summary, "Every book the catalogue holds")
       .attr(openapi.tags, "books")
@@ -112,8 +113,8 @@ object books:
     */
   val create: Endpoint.Of[dsl.Payload, Book.Create, Created] = endpoint(
     request(method.post, books.all)(body.json(schema.create)),
-    (result(code.created)(body.json(schema.book)).to[Created.Added] :+
-      result(code.conflict)(body.json(schema.problem)).to[Created.Duplicate]).to[Created]
+    (response(status.created)(body.json(schema.book)).to[Created.Added] :+
+      response(status.conflict)(body.json(schema.problem)).to[Created.Duplicate]).to[Created]
   ).attr(openapi.operationId, "createBook")
     .attr(openapi.summary, "Add a book to the catalogue")
     .attr(openapi.tags, "books")
@@ -125,20 +126,20 @@ object books:
     * `Library.fetch` looks a book up in a `Map` and a caller wants an `Option` back. Without it each end pads and
     * unpads, in opposite directions, around a shape neither of them wants.
     *
-    * The document is untouched by it. A conversion is a [[io.taig.otter.http.Result.Value.Modify]], which is what the
+    * The document is untouched by it. A conversion is a [[io.taig.otter.http.Response.Value.Modify]], which is what the
     * handler reads and not what the endpoint describes -- the OpenAPI and TypeScript renderings say `200` and `404`
     * either way.
     */
   val fetch: Endpoint.Of[dsl.Payload, Isbn, Option[Book]] = endpoint(
     request(method.get, books.one),
-    (result(code.ok)(body.json(schema.book)) :+ result(code.notFound)).to[Option[Book]]
+    (response(status.ok)(body.json(schema.book)) :+ response(status.notFound)).to[Option[Book]]
   ).attr(openapi.operationId, "fetchBook")
     .attr(openapi.tags, "books")
 
   /** `PATCH /books/{isbn}`, whose body is where the two sides of one schema differ most. */
   val patch: Endpoint.Of[dsl.Payload, (Isbn, Book.Patch), Option[Book]] = endpoint(
     request(method.patch, books.one)(body.json(schema.patch)),
-    (result(code.ok)(body.json(schema.book)) :+ result(code.notFound)).to[Option[Book]]
+    (response(status.ok)(body.json(schema.book)) :+ response(status.notFound)).to[Option[Book]]
   ).attr(openapi.operationId, "patchBook")
     .attr(openapi.tags, "books")
 
@@ -152,7 +153,7 @@ object books:
     */
   val delete: Endpoint.Of[dsl.Payload, Isbn, Either[Unit, Problem]] = endpoint(
     request(method.delete, books.one),
-    result(code.noContent) :+ result(code.conflict)(body.json(schema.problem))
+    response(status.noContent) :+ response(status.conflict)(body.json(schema.problem))
   ).attr(openapi.operationId, "deleteBook")
     .attr(openapi.tags, "books")
 
@@ -163,7 +164,7 @@ object books:
     */
   val scan: Endpoint.Of[dsl.Payload, (Isbn, ByteVector), ByteVector] = endpoint(
     request(method.post, books.one / "scan")(body.binary(mediaType.pdf)),
-    result(code.ok)(body.binary(mediaType.pdf))
+    response(status.ok)(body.binary(mediaType.pdf))
   ).attr(openapi.operationId, "scanBook")
     .attr(openapi.tags, "books")
 
@@ -180,7 +181,7 @@ object books:
     */
   val intake: Endpoint.Of[dsl.Payload, Option[Either[Book.Create, ByteVector]], Unit] = endpoint(
     request(method.post, __ / "intake")(body.optional(books.submitted)),
-    result(code.accepted)
+    response(status.accepted)
   ).attr(openapi.operationId, "intake")
     .attr(openapi.tags, "books")
 
@@ -197,7 +198,7 @@ object books:
   /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
   val upload: Endpoint.Of[Body.Whole[Multipart.Node], (Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
     request(method.post, books.one / "cover")(body.multipart(books.cover)),
-    result(code.noContent)
+    response(status.noContent)
   ).attr(openapi.operationId, "uploadCover")
     .attr(openapi.tags, "books")
 
@@ -210,7 +211,7 @@ object books:
     */
   val exported: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Json.Node], Unit, Unit] = endpoint(
     request(method.get, books.all / "export"),
-    result(code.ok)(body.ndjson(schema.book))
+    response(status.ok)(body.ndjson(schema.book))
   ).attr(openapi.operationId, "exportBooks")
     .attr(openapi.tags, "books")
 
@@ -222,14 +223,15 @@ object books:
     */
   val report: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Csv.Record.Node], Unit, Unit] = endpoint(
     request(method.get, books.all / "report"),
-    result(code.ok)(body.streamed(mediaType.csv, Frame.Lines, schema.row))
+    response(status.ok)(body.streamed(mediaType.csv, Frame.Lines, schema.row))
   ).attr(openapi.operationId, "reportBooks")
     .attr(openapi.tags, "books")
 
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
-  val catalogue: Endpoint.Of[dsl.Payload, Unit, Category] = endpoint(
+  val catalogue: Endpoint.WithErrors[dsl.Payload, Unit, Unit, Category, Category, Problem] = endpoint(
     request(method.get, __ / "catalogue"),
-    result(code.ok)(body.json(schema.category))
+    response(status.ok)(body.json(schema.category))
   ).attr(openapi.operationId, "catalogue")
     .attr(Keys.description, "Shelves, and the shelves inside them, to any depth")
     .attr(openapi.tags, "catalogue")
+    .withErrors(ErrorOverrides(unexpected = Some(contract.answer(503))))

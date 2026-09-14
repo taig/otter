@@ -4,7 +4,9 @@ import cats.effect.Concurrent
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Route
-import io.taig.otter.sample.api.contract
+import io.taig.otter.sample.api.api
+import io.taig.otter.sample.api.books
+import io.taig.otter.sample.api.loans
 import org.http4s.HttpRoutes
 
 /** The endpoints of [[io.taig.otter.sample.api.api.served]], each paired with what answers it.
@@ -29,15 +31,16 @@ object LibraryRoutes:
   /** Every served endpoint, answered by `library`. */
   def apply[F[_]: Concurrent](library: Library[F]): HttpRoutes[F] =
     Http4s.routes[F](Http4sCirce.Payload)(
-      Route(contract.health, (_: Unit) => library.health),
-      Route(contract.listBooks, input => library.list(input._1, input._2, input._3, input._4)),
-      Route(contract.createBook, library.create),
-      Route(contract.fetchBook, library.fetch),
-      Route(contract.patchBook, library.patch.tupled),
-      Route(contract.deleteBook, library.delete),
-      Route(contract.scanBooks, library.scan.tupled),
-      Route(contract.intakeBooks, library.intake),
-      Route(contract.catalogue, (_: Unit) => library.catalogue),
-      Route(contract.fetchLoans, library.member),
-      Route(contract.borrow, library.borrow.tupled)
+      api.all,
+      Route(loans.health, (_: Unit) => library.health),
+      Route(books.list, input => library.list(input._1, input._2, input._3, input._4)),
+      Route(books.create, library.create),
+      Route(books.fetch, library.fetch),
+      Route(books.patch, library.patch.tupled),
+      Route(books.delete, library.delete),
+      Route(books.scan, library.scan.tupled),
+      Route(books.intake, library.intake),
+      Route(books.catalogue, (_: Unit) => library.catalogue),
+      Route(loans.fetch, library.member),
+      Route(loans.borrow, library.borrow.tupled)
     )

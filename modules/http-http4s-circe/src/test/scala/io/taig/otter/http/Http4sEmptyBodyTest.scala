@@ -30,12 +30,12 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
   private val text: Body.Of[Body.Opaque, ByteVector] = body.binary(dsl.mediaType.text)
   private val bodyFree: Endpoint.Of[Body.Or[Nothing, Nothing], Unit, Unit] = endpoint(
     request(method.get, __),
-    result(code.noContent).toUnion
+    response(status.noContent).toUnion
   )
 
   private val binaryOnly: Endpoint.Of[Body.Or[Body.Opaque, Nothing], ByteVector, Unit] = endpoint(
     request(method.post, __)(png),
-    result(code.noContent).toUnion
+    response(status.noContent).toUnion
   )
 
   private val EmptyEntities: List[(String, Entity[IO])] = List(
@@ -46,17 +46,17 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
 
   private val upload: Endpoint.Of[dsl.Payload, Option[ByteVector], Unit] = endpoint(
     request(method.post, __)(body.optional(png)),
-    result(code.noContent).toUnion
+    response(status.noContent).toUnion
   )
 
   private val download: Endpoint.Of[dsl.Payload, Unit, ByteVector] = endpoint(
     request(method.get, __),
-    result(code.ok)(png).toUnion
+    response(status.ok)(png).toUnion
   )
 
   private val alternatives: Endpoint.Of[dsl.Payload, Unit, Either[ByteVector, ByteVector]] = endpoint(
     request(method.get, __),
-    result(code.ok)(png) :+ result(code.ok)(text)
+    response(status.ok)(png) :+ response(status.ok)(text)
   )
 
   private def headers(contentType: Option[String]): Http4sHeaders =
@@ -178,7 +178,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
     test("an empty JSON response is decoded and rejected as invalid JSON"):
       val endpoint = io.taig.otter.http.fixture.dsl.endpoint(
         request(method.get, __),
-        result(code.ok)(body.json(api.settings)).toUnion
+        response(status.ok)(body.json(api.settings)).toUnion
       )
 
       decoded(endpoint, Http4sResponse[IO](headers = headers(Some("application/json"))))

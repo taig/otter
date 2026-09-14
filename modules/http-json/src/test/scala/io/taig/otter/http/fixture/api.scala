@@ -87,14 +87,14 @@ object api:
   val fetch: Endpoint.Server[dsl.Payload, (Int, Int), Either[Report, Unit]] =
     endpoint(
       request(method.get, api.one).queries(api.paging),
-      result(code.ok)(body.json(api.report)) :+ result(code.notFound)
+      response(status.ok)(body.json(api.report)) :+ response(status.notFound)
     )
 
   /** `POST /reports` taking a multipart upload and answering with the report it made. */
   val create: Endpoint.Server[Body.Whole[Body.Or[Json.Node, Multipart.Node]], Upload, Report] =
     endpoint(
       request(method.post, __ :* segment("reports"))(api.uploaded),
-      result(code.created)(body.json(api.report)).toUnion
+      response(status.created)(body.json(api.report)).toUnion
     )
 
   /** `GET /reports` answering with a stream of reports, which contributes nothing to what the caller is handed here.
@@ -102,7 +102,7 @@ object api:
   val stream: Endpoint.Server[Body.Streamed.Requirement[Json.Node], Unit, Unit] =
     endpoint(
       request(method.get, __ :* segment("reports")),
-      result(code.ok)(api.reports).toUnion
+      response(status.ok)(api.reports).toUnion
     )
 
   /** The same report, named, so a document declares it once under `components/schemas` and refers to it from everywhere
@@ -120,7 +120,7 @@ object api:
       : Endpoint.Server[Body.Whole[Body.Or[Json.Node, Multipart.Node]], (Int, (Report, Option[ByteVector])), Report] =
     endpoint(
       request(method.put, api.one)(body.multipart(api.partial)),
-      result(code.ok)(body.json(api.named)).toUnion
+      response(status.ok)(body.json(api.named)).toUnion
     )
 
   /** A payload with a defaulted field, which is the case where the two sides of a schema genuinely differ: a reader
@@ -132,7 +132,7 @@ object api:
   val configure: Endpoint.Server[dsl.Payload, Settings, Unit] =
     endpoint(
       request(method.put, __ :* segment("settings"))(body.json(api.settings)),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   /** `PATCH /settings`, whose body need not be sent at all.
@@ -143,7 +143,7 @@ object api:
   val amend: Endpoint.Server[dsl.Payload, Option[Settings], Unit] =
     endpoint(
       request(method.patch, __ :* segment("settings"))(body.optional(body.json(api.settings))),
-      result(code.noContent).toUnion
+      response(status.noContent).toUnion
     )
 
   /** A payload that refers to itself, which only works because it is named: a definition is what a `$ref` points at. */
@@ -154,4 +154,4 @@ object api:
 
   /** `GET /trees` answering with one. */
   val trees: Endpoint.Server[dsl.Payload, Unit, Tree] =
-    endpoint(request(method.get, __ :* segment("trees")), result(code.ok)(body.json(api.tree)).toUnion)
+    endpoint(request(method.get, __ :* segment("trees")), response(status.ok)(body.json(api.tree)).toUnion)

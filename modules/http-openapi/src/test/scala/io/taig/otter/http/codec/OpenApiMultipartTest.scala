@@ -17,7 +17,7 @@ object OpenApiMultipartTest extends ZIOSpecDefault:
   private val server = OpenApiRenderer.server(OpenApiProfile.V31, OpenApiPayload.json(OpenApiProfile.V31))
   private val client = OpenApiRenderer.client(OpenApiProfile.V31, OpenApiPayload.json(OpenApiProfile.V31))
   private val upload = request(method.post, __ / "upload")
-  private val done = result(code.noContent).toUnion
+  private val done = response(status.noContent).toUnion
   private val pdf = body.multipart(part("file", body.binary(mediaType.pdf)).filename("report.pdf").toRecord)
 
   private def render(value: Endpoint.Node, renderer: OpenApiRenderer = server): OpenApiDocument =
@@ -130,7 +130,7 @@ object OpenApiMultipartTest extends ZIOSpecDefault:
       )
     ,
     test("multipart response schemas are retained and unsupported encoding is reported"):
-      val document = render(endpoint(request(method.get, __ / "upload"), result(code.ok)(pdf).toUnion))
+      val document = render(endpoint(request(method.get, __ / "upload"), response(status.ok)(pdf).toUnion))
       val value = document.value.hcursor
         .downField("paths")
         .downField("/upload")
