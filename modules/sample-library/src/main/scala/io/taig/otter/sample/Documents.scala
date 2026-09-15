@@ -53,7 +53,7 @@ object Documents extends IOApp:
     val typescript = TypescriptEndpointRenderer.client(TypescriptEffectPayload.json).render(api.all)
     val book = JsonSchemaRenderer.writer(JsonSchemaProfile.Draft202012).render(schema.book)
 
-    write(Target.resolve("openapi.json"), server.value.spaces2) *>
+    write(Target.resolve("openapi-server.json"), server.value.spaces2) *>
       write(Target.resolve("openapi-client.json"), client.value.spaces2) *>
       write(Target.resolve("api.ts"), typescript.render) *>
       write(Target.resolve("book.schema.json"), book.value.spaces2) *>

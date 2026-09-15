@@ -191,16 +191,17 @@ object books:
     * its own media type, and the file part carries the name it claims to have been saved under. A part is a field, so
     * it carries a field's optionality too.
     */
-  val cover: Multipart[(Book.Patch, Option[ByteVector])] =
+  val cover: Multipart[Payload, (Book.Patch, Option[ByteVector])] =
     part("metadata", body.json(schema.patch)) :*
       part("image", body.binary(mediaType.octetStream)).filename("cover.png").optional
 
   /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
-  val upload: Endpoint.Of[Body.Whole[Multipart.Node], (Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
-    request(method.post, books.one / "cover")(body.multipart(books.cover)),
-    response(status.noContent)
-  ).attr(openapi.operationId, "uploadCover")
-    .attr(openapi.tags, "books")
+  val upload: Endpoint.Of[Multipart.Requirement[Payload], (Isbn, (Book.Patch, Option[ByteVector])), Unit] =
+    endpoint(
+      request(method.post, books.one / "cover")(body.multipart(books.cover)),
+      response(status.noContent)
+    ).attr(openapi.operationId, "uploadCover")
+      .attr(openapi.tags, "books")
 
   /** `GET /books/export`, a sequence of books one JSON document per line.
     *

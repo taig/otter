@@ -30,7 +30,7 @@ import org.http4s.HttpRoutes
 object LibraryRoutes:
   /** Every served endpoint, answered by `library`. */
   def apply[F[_]: Concurrent](library: Library[F]): HttpRoutes[F] =
-    Http4s.routes[F](Http4sCirce.Payload)(
+    Http4s.routes[F](
       api.all,
       Route(loans.health, (_: Unit) => library.health),
       Route(books.list, input => library.list(input._1, input._2, input._3, input._4)),
@@ -43,4 +43,4 @@ object LibraryRoutes:
       Route(books.catalogue, (_: Unit) => library.catalogue),
       Route(loans.fetch, library.member),
       Route(loans.borrow, library.borrow.tupled)
-    )
+    )(Http4sCirce.Payload)

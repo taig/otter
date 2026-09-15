@@ -13,12 +13,12 @@ val create = endpoint(createRequest, createResponse)
   .withErrors(ErrorOverrides(unexpected = Some(unavailable)))
 val api = Api(errors, health, create)
 
-val routes = Http4s.routes[IO](Http4sCirce.Payload)(
+val routes = Http4s.routes[IO](
   api,
   Route(health, healthHandler),
   Route(create, createHandler)
-)
-val call = Http4s.client[IO, CreateInput, Created](Http4sCirce.Payload, base, client)(api, create)
+)(Http4sCirce.Payload)
+val call = Http4s.client[IO, CreateInput, Created](api, create)(Http4sCirce.Payload, base, client)
 val document = OpenApiRenderer.server(OpenApiProfile.V31, payload).render(info, api)
 ```
 
@@ -56,7 +56,7 @@ retain priority when decoding overlaps. OpenAPI and TypeScript preserve the decl
 extracts complete response objects repeated by two or more operations into `components.responses`, keeping explicit
 status codes and replacing the operation entries with `$ref` values; different overrides remain inline.
 
-`Http4s.routes[IO](payload, observe = observation => ...)` optionally observes failures, cancellation, and failures
+`Http4s.routes[IO](routes*)(payload, observation => ...)` optionally observes failures, cancellation, and failures
 while producing an error response, with request and endpoint context. It defaults to a no-op. Observer failures
 propagate; they do not select another response. A broken error response is reported and propagated without recursion.
 Cancellation remains cancellation, unmatched routes fall through, and transport failures after handing the response

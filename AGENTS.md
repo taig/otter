@@ -99,7 +99,12 @@ the element type so a backend can pin it in the compiler.
 a caller does the reverse. The two differ wherever a field is optional or holds a default, so the same endpoint value
 renders as two different documents.
 
-`http-json` makes a JSON schema usable as a body payload, and is the shape any second payload alphabet takes.
+`http-json` makes a JSON schema usable as a body payload, and is the shape any second payload alphabet takes. A
+`Multipart` payload carries its parts' requirements too: `Multipart.Schema`'s parameter is the *body* each part holds
+and a body keeps its own requirement, so `:*` was always accumulating them -- `Multipart.Over[S]` is the name a
+definition is ascribed at, and `Multipart.Requirement[S]` what it asks of an interpreter. The `Multipart[A]` and
+`Part[A]` aliases used to widen every part to `Body.Node`, whose requirement is `Any`, which made an upload servable by
+nothing; they take the requirement now, as every other alias in `http` does.
 `http-openapi` renders endpoints as an OpenAPI 3.1 document -- a renderer rather than a pair, on the same reasoning
 `core-json-schema` is one, with `OpenApiProfile.V31` as the `JsonSchemaProfile` value that says which JSON Schema its
 schemas are written in. Payload alphabets are rendered by an `OpenApiPayload`, which dispatches at runtime because a
@@ -115,15 +120,37 @@ crossing is a container conversion and `Http4sEnvelope` is the whole adapter. It
 streamed one ever needs `F`. Nothing is buffered before a route matches -- routing reads the method and the path, and
 the entity is touched afterwards and only if the endpoint describes a body.
 
-Two things there are worth reading before extending it. `Http4sPayload` is `OpenApiPayload` again and for the same
-reason, but *polymorphic* -- `decode[R](payload: Any, bytes: ByteVector)` -- so an instance recovers `R` through the
-type test it was making anyway and the erasure is crossed inside a pattern match, once, in the instance; nothing above
-that line casts, which `DisableSyntax.asInstanceOf` would refuse in any case. And a router asks a different question
-from `PathDecoder`: arity and literals only, via `PathTemplate`, because a decode failure cannot tell "some other
-endpoint" (fall through, 404) from "this endpoint, called wrongly" (stop, 400).
+Three things there are worth reading before extending it. `Http4sPayload` is *not* `OpenApiPayload`, and the
+difference is the point. A renderer holds a payload whose alphabet is genuinely existential, so it dispatches at
+runtime and reports what it does not recognise. A backend does not: the requirement `S` that every body, endpoint and
+route carries accumulates through `Body.Or` and is checked where the routes are built, so an alphabet that reaches the
+interpreter is one somebody registered. `Http4sPayload` is therefore *total* -- `decode[R](payload: P[Nothing, R],
+bytes)` returns a `Validated` and not an `Option[Validated]` -- and the walks are written at `Supported[P]` rather than
+at `Body.Node`, which is what lets `Body.Value.Whole` hand its payload over as a `P`. Scala does invert
+`Whole[S] extends Body.Value[Body.Whole[S], W, R]` to recover `S`, which the erased walk had assumed it would not.
 
-It carries the envelope, `Body.Whole` and `Body.Binary`, both sides. A streamed body and a `Multipart` payload are
-reported as an `Http4sIssue` rather than half served, on the reasoning `OpenApiIssue` is a value. `http-http4s-circe`
+The one runtime question left is which side of a `P[w, r] | Q[w, r]` a payload is, and `Http4sPayload.Alphabet` is
+where it is asked. It is phrased as a choice -- "mine or theirs" -- rather than as `Option`, so the second branch needs
+no test of its own and there is no "neither" for anybody to answer. That is what makes `orElse` compose two total
+interpreters into a total one, and it is the single place the erasure is crossed: a pattern match inside the instance,
+which `DisableSyntax.asInstanceOf` would refuse in any case.
+
+A streamed body and a request carrying one are not cases in those walks at all. Their requirement is
+`Body.Requirement.Streamed`, which no `Supported[P]` admits, so the compiler reports the branches as unreachable and
+the endpoints as unservable. `Http4sIssue` is what is left once `Uninterpreted` and `Streamed` are both impossible: a
+body this interpreter carries and this value gave it nothing to write. `Failure.Category.Interpreter` and
+`ErrorPolicy.interpreter` remain declared, because `Failure.Category` is the `http` tier's vocabulary and not this
+backend's, but nothing in `http-http4s` selects them any more.
+
+And a router asks a different question from `PathDecoder`: arity and literals only, via `PathTemplate`, because a
+decode failure cannot tell "some other endpoint" (fall through, 404) from "this endpoint, called wrongly" (stop, 400).
+
+`Http4s.routes` takes its routes first and its interpreter after them, which is the direction the requirement flows:
+the routes say what is needed, and the interpreter argument is what fails to typecheck when it falls short. Naming the
+interpreter first settled what could be served before a route had been read. `observe` is a second overload of each
+shape rather than a default argument, because Scala permits defaults on only one variant of an overloaded method.
+
+It carries the envelope, `Body.Whole` and `Body.Binary`, both sides. `http-http4s-circe`
 supplies the JSON payload, and is a module of its own where `http-openapi` needed none: there circe *is* the document
 model a JSON Schema is, here it is one of two interpreters of one alphabet and which to reach for is the caller's
 measured trade. `Http4sRoundTripTest` is what the module rests on -- `Client.fromHttpApp` over the same endpoint value
@@ -180,8 +207,9 @@ another module's fixture, and it names `zio-test` itself rather than taking a `t
 What it deliberately does *not* serve is the more useful half. `POST /books/{isbn}/cover` carries a `Multipart`
 payload, `GET /books/export` answers with an ndjson stream, and `GET /books/report` answers with a stream whose
 elements are written in the CSV alphabet -- one payload no interpreter recognises, one shape no interpreter carries,
-and one of each. All three are rendered into both documents and reported by name, and `LibraryShortfallTest` asserts
-that each is *reported* rather than half served. Those tests failing is the signal that a shortfall has been fixed.
+and one of each. All three are rendered into both documents and reported by name there; the http4s backend refuses all
+three where the routes are built, and `LibraryShortfallTest` asserts that of the compiler rather than of a response.
+Those tests failing is the signal that a shortfall has been fixed.
 
 Two sharp edges it ran into are worth knowing before writing anything against this library.
 

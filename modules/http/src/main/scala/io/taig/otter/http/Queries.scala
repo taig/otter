@@ -51,8 +51,7 @@ object Queries:
   object Schema
       extends Wrapper.Record[Parameter.Node, Queries.Schema, Query.Schema](
         [s[-w, +r] <: Parameter.Node[w, r], w, r] =>
-          (annotation: Annotation[Self.Record[Query.Schema[s, *, *], w, r]]) =>
-            new Queries.Schema(annotation),
+          (annotation: Annotation[Self.Record[Query.Schema[s, *, *], w, r]]) => new Queries.Schema(annotation),
         [s[-w, +r] <: Parameter.Node[w, r], w, r] => (querys: Queries.Schema[s, w, r]) => querys.self
       ):
     given recordable: [S[-w, +r] <: Parameter.Node[w, r]]

@@ -61,12 +61,12 @@ object api:
     * The file part carries a `filename`, and its body carries its own media type -- both of which had nowhere to live
     * in a flat form alphabet whose only leaf was a string.
     */
-  val upload: Multipart[Upload] =
+  val upload: Multipart[dsl.Payload, Upload] =
     (part("report", body.json(api.report)) :*
       part("attachment", body.binary(mediaType.pdf)).filename("report.pdf")).to
 
   /** The same upload as a body, which is all a multipart body is: a body whose payload happens to be a set of parts. */
-  val uploaded: Body.Of[Body.Whole[Multipart.Node], Upload] = body.multipart(api.upload)
+  val uploaded: Body.Of[Multipart.Requirement[dsl.Payload], Upload] = body.multipart(api.upload)
 
   /** A stream of documents, one per line. The element type is on the body, so a backend handed it knows what its stream
     * yields; the body itself contributes nothing to what a request reads.
@@ -91,7 +91,7 @@ object api:
     )
 
   /** `POST /reports` taking a multipart upload and answering with the report it made. */
-  val create: Endpoint.Server[Body.Whole[Body.Or[Json.Node, Multipart.Node]], Upload, Report] =
+  val create: Endpoint.Server[Body.Or[Multipart.Requirement[dsl.Payload], Body.Whole[Json.Node]], Upload, Report] =
     endpoint(
       request(method.post, __ :* segment("reports"))(api.uploaded),
       response(status.created)(body.json(api.report)).toUnion
@@ -111,13 +111,16 @@ object api:
   val named: Json.Record[Report] = api.report.attr(Keys.name, "Report")
 
   /** An upload whose attachment need not be sent, to show that a part is a field and carries a field's optionality. */
-  val partial: Multipart[(Report, Option[ByteVector])] =
+  val partial: Multipart[dsl.Payload, (Report, Option[ByteVector])] =
     part("report", body.json(api.named)) :*
       part("attachment", body.binary(mediaType.pdf)).filename("report.pdf").optional
 
   /** `PUT /reports/{id}` taking the partial upload and answering with the named report. */
-  val replace
-      : Endpoint.Server[Body.Whole[Body.Or[Json.Node, Multipart.Node]], (Int, (Report, Option[ByteVector])), Report] =
+  val replace: Endpoint.Server[
+    Body.Or[Multipart.Requirement[dsl.Payload], Body.Whole[Json.Node]],
+    (Int, (Report, Option[ByteVector])),
+    Report
+  ] =
     endpoint(
       request(method.put, api.one)(body.multipart(api.partial)),
       response(status.ok)(body.json(api.named)).toUnion

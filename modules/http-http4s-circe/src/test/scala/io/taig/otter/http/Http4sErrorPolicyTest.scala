@@ -24,8 +24,6 @@ import zio.Task
 import zio.ZIO
 import zio.test.*
 
-import scala.compiletime.asMatchable
-
 object Http4sErrorPolicyTest extends ZIOSpecDefault:
   private val base: Uri = uri"http://otter.test"
   private val domain = endpoint(request(method.get, __), response(status.noContent))
@@ -36,13 +34,9 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
   @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
   private def crash[A]: A = throw cause
 
-  private def refusingPayload(recognize: Boolean): Http4sPayload[Json.Node] =
-    Http4sPayload[Json.Node]([W, R] =>
-      (value: Any) =>
-        value.asMatchable match
-          case schema: Json.Node[W, R] @unchecked if recognize => Some(schema)
-          case _                                               => None
-    )(new Http4sPayload.Codec[Json.Node]:
+  /** Reads every JSON schema and writes none of them, which is the one shortfall an interpreter can still have. */
+  private val refusingPayload: Http4sPayload.Of[Json.Node] =
+    Http4sPayload(Http4sCirce.Alphabet)(new Http4sPayload.Codec[Json.Node]:
       override def decode[R](schema: Json.Node[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
         Http4sErrorPolicyTest.crash
       override def encode[W](schema: Json.Node[W, Any], value: W): Either[String, ByteVector] = Left("Cannot encode"))
@@ -53,9 +47,9 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     for
       events <- IO.ref(List.empty[Http4sObservation.Event])
       response <- Http4s
-        .routes[IO](Http4sPayload.Empty, observation => events.update(_ :+ observation.event))(
+        .routes[IO](
           Route(composed, handler)
-        )
+        )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
         .orNotFound
         .run(Http4sRequest[IO](uri = base))
       bytes <- Http4sEnvelope.toBytes(response.entity)
@@ -125,31 +119,31 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     test("a composed client decodes a framework error as a typed value"):
       val client = Client.fromHttpApp(
         Http4s
-          .routes[IO](Http4sPayload.Empty)(
+          .routes[IO](
             Route(composed, (_: Unit) => IO.raiseError[Unit](cause))
-          )
+          )(Http4sPayload.Empty)
           .orNotFound
       )
-      run(Http4s.client[IO, Unit, Either[Status, Unit]](Http4sPayload.Empty, base, client)(composed.effective)(()))
+      run(Http4s.client[IO, Unit, Either[Status, Unit]](composed.effective)(Http4sPayload.Empty, base, client)(()))
         .map(value => assertTrue(value == Left(Status(500))))
     ,
     test("a composed client keeps a domain answer in the right branch"):
       val client = Client.fromHttpApp(
         Http4s
-          .routes[IO](Http4sPayload.Empty)(
+          .routes[IO](
             Route(composed, (_: Unit) => IO.unit)
-          )
+          )(Http4sPayload.Empty)
           .orNotFound
       )
-      run(Http4s.client[IO, Unit, Either[Status, Unit]](Http4sPayload.Empty, base, client)(composed.effective)(()))
+      run(Http4s.client[IO, Unit, Either[Status, Unit]](composed.effective)(Http4sPayload.Empty, base, client)(()))
         .map(value => assertTrue(value == Right(())))
     ,
     test("overlapping wire responses retain domain priority"):
       val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
         ErrorPolicy.default(endpoint(request(method.get, __), response(Status(500))))
       val client =
-        Client.fromHttpApp(Http4s.routes[IO](Http4sPayload.Empty)(Route(value, (_: Unit) => IO.unit)).orNotFound)
-      run(Http4s.client[IO, Unit, Either[Status, Unit]](Http4sPayload.Empty, base, client)(value.effective)(()))
+        Client.fromHttpApp(Http4s.routes[IO](Route(value, (_: Unit) => IO.unit))(Http4sPayload.Empty).orNotFound)
+      run(Http4s.client[IO, Unit, Either[Status, Unit]](value.effective)(Http4sPayload.Empty, base, client)(()))
         .map(value => assertTrue(value == Right(())))
     ,
     test("a declared JSON error supports a custom status, headers, and typed client value"):
@@ -158,15 +152,15 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         .dimap[Failure, String](_ => (5, "unavailable"))(_._2)
       val policy: ErrorPolicy[Body.Whole[Json.Node], Status | String] = ErrorPolicy.default.copy(unexpected = error)
       val value = policy(domain)
-      val app = Http4s.routes[IO](Http4sCirce.Payload)(Route(value, (_: Unit) => IO.raiseError[Unit](cause))).orNotFound
+      val app = Http4s.routes[IO](Route(value, (_: Unit) => IO.raiseError[Unit](cause)))(Http4sCirce.Payload).orNotFound
       run(
         for
           response <- app.run(Http4sRequest[IO](uri = base))
           bytes <- Http4sEnvelope.toBytes(response.entity)
           decoded <- Http4s
-            .client[IO, Unit, Either[Status | String, Unit]](Http4sCirce.Payload, base, Client.fromHttpApp(app))(
+            .client[IO, Unit, Either[Status | String, Unit]](
               value.effective
-            )(())
+            )(Http4sCirce.Payload, base, Client.fromHttpApp(app))(())
         yield assertTrue(
           response.status.code == 503,
           response.headers.headers.exists(header => header.name.toString == "Retry-After" && header.value == "5"),
@@ -182,9 +176,9 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           events <- IO.ref(List.empty[Http4sObservation.Event])
           called <- IO.ref(false)
           response <- Http4s
-            .routes[IO](Http4sPayload.Empty, observation => events.update(_ :+ observation.event))(
+            .routes[IO](
               Route(value, (_: ByteVector) => called.set(true))
-            )
+            )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
             .orNotFound
             .run(
               Http4sRequest[IO](
@@ -207,7 +201,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         ErrorPolicy.default(endpoint(request(method.get, __), response(Status(-1))))
       run(
         Http4s
-          .routes[IO](Http4sPayload.Empty)(Route(value, (_: Unit) => IO.unit))
+          .routes[IO](Route(value, (_: Unit) => IO.unit))(Http4sPayload.Empty)
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
       ).map(response => assertTrue(response.status.code == 500))
@@ -218,9 +212,9 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       run(for
         events <- IO.ref(List.empty[Http4sObservation.Event])
         response <- Http4s
-          .routes[IO](Http4sPayload.Empty, observation => events.update(_ :+ observation.event))(
+          .routes[IO](
             Route(value, (_: Unit) => IO.raiseError[Unit](new RuntimeException("handler")))
-          )
+          )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
           .attempt
@@ -232,9 +226,9 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         started <- IO.deferred[Unit]
         events <- IO.ref(List.empty[Http4sObservation.Event])
         fiber <- Http4s
-          .routes[IO](Http4sPayload.Empty, observation => events.update(_ :+ observation.event))(
+          .routes[IO](
             Route(composed, (_: Unit) => started.complete(()) *> IO.never[Unit])
-          )
+          )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
           .start
@@ -251,36 +245,35 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       run(for
         events <- IO.ref(List.empty[Http4sObservation.Event])
         response <- Http4s
-          .routes[IO](Http4sCirce.Payload, observation => events.update(_ :+ observation.event))(
+          .routes[IO](
             Route(value, (_: Unit) => IO.unit)
-          )
+          )(Http4sCirce.Payload, observation => events.update(_ :+ observation.event))
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
         seen <- events.get
       yield assertTrue(response.status.code == 500, seen == List(Http4sObservation.Event.Failed(Failure(Failure.Category.Encoding, cause = Some(cause))))))
     ,
-    test("codec refusals and defensive registry defects are distinct internal categories"):
+    // An alphabet the registry does not cover was once reported here too, as a separate internal category. It is not a
+    // case any more: `Http4sPayload.Alphabet` chooses between two alphabets rather than answering whether a payload is
+    // one it knows, so a registry that falls short is rejected where the routes are built. `LibraryShortfallTest` and
+    // `Http4sFs2DataTest` are where that is now asserted, and they assert it of the compiler.
+    test("a codec that recognizes a body and cannot write it is an encoding failure"):
       val value = ErrorPolicy.default(endpoint(request(method.get, __), response(status.ok)(body.json(payload.string))))
-      def answer(recognize: Boolean): IO[(Int, List[Http4sObservation.Event])] =
+      val answer =
         for
           events <- IO.ref(List.empty[Http4sObservation.Event])
           response <- Http4s
-            .routes[IO](refusingPayload(recognize), observation => events.update(_ :+ observation.event))(
+            .routes[IO](
               Route(value, (_: Unit) => IO.pure("value"))
-            )
+            )(refusingPayload, observation => events.update(_ :+ observation.event))
             .orNotFound
             .run(Http4sRequest[IO](uri = base))
           seen <- events.get
         yield (response.status.code, seen)
-      run((answer(true), answer(false)).tupled).map { (encoding, interpreter) =>
+      run(answer).map { (status, events) =>
         def category(events: List[Http4sObservation.Event]): Option[Failure.Category] = events.headOption.collect {
           case Http4sObservation.Event.Failed(failure) => failure.category
         }
-        assertTrue(
-          encoding._1 == 500,
-          interpreter._1 == 500,
-          category(encoding._2).contains(Failure.Category.Encoding),
-          category(interpreter._2).contains(Failure.Category.Interpreter)
-        )
+        assertTrue(status == 500, category(events).contains(Failure.Category.Encoding))
       }
   )

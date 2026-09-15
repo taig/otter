@@ -3,30 +3,24 @@ package io.taig.otter.http
 import cats.Eq
 import cats.Show
 
-/** Something an endpoint describes that this interpreter cannot carry.
+/** A body this interpreter carries, which this value gave it nothing to write.
   *
-  * A value rather than an exception, on the reasoning [[OpenApiIssue]] is one: what an endpoint describes is fixed
-  * before a request ever arrives, so a body written in an alphabet nothing here reads is a fact about the description
-  * and not about the traffic. Reporting it as data is what lets a caller find out at wiring time rather than on the
-  * first request that happens to take that branch.
+  * A value rather than an exception, on the reasoning [[OpenApiIssue]] is one: it does not depend on the traffic, so a
+  * caller can find it at wiring time rather than on the first request that happens to take that branch.
   *
-  * These cases are shortfalls of this module and not of the description. An endpoint that trips one of them is well
-  * formed, renders a correct OpenAPI document, and is simply waiting on an interpreter that goes further.
+  * It used to say more than this. An alphabet no interpreter recognised was reported here as `Uninterpreted`, and a
+  * streamed body as `Streamed`, and both became a `500` describing a gap in the wiring to somebody who could do nothing
+  * about it. Neither is expressible any more: the requirement parameter on every body, endpoint and route is checked
+  * when routes are built, so an unregistered alphabet and a streamed body are both rejected by the compiler, and the
+  * walks that used to report them no longer have a case to report from. What is left depends on the value and on
+  * nothing else.
   */
 enum Http4sIssue:
-  /** A recognized payload could not be encoded. */
+  /** A recognized payload could not be encoded, as a CSV document with no columns cannot be. */
   case Encoding(mediaType: MediaType, reason: String)
-
-  /** A payload in an alphabet no [[io.taig.otter.http.codec.Http4sPayload]] recognises. */
-  case Uninterpreted(mediaType: MediaType)
-
-  /** A streamed body, which this interpreter does not yet carry. */
-  case Streamed(mediaType: MediaType)
 
 object Http4sIssue:
   given eq: Eq[Http4sIssue] = Eq.fromUniversalEquals
 
   given show: Show[Http4sIssue] =
     case Http4sIssue.Encoding(mediaType, reason) => s"Cannot encode ${mediaType.render}: $reason"
-    case Http4sIssue.Uninterpreted(mediaType)    => s"No payload interpreter for ${mediaType.render}"
-    case Http4sIssue.Streamed(mediaType)         => s"Streamed bodies are not interpreted yet: ${mediaType.render}"

@@ -63,7 +63,7 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           val client = Http4sClient.fromHttpApp(LibraryRoutes(library).orNotFound)
 
           Http4s
-            .client[IO, A, B](Http4sCirce.Payload, Base, client)(api.all, endpoint)(value)
+            .client[IO, A, B](api.all, endpoint)(Http4sCirce.Payload, Base, client)(value)
             .flatMap(unwrap)
         .unsafeToFuture()
 
@@ -78,10 +78,10 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           val client = Http4sClient.fromHttpApp(LibraryRoutes(library).orNotFound)
 
           Http4s
-            .client[IO, A1, B1](Http4sCirce.Payload, Base, client)(api.all, first)(a1)
+            .client[IO, A1, B1](api.all, first)(Http4sCirce.Payload, Base, client)(a1)
             .flatMap(unwrap) *>
             Http4s
-              .client[IO, A2, B2](Http4sCirce.Payload, Base, client)(api.all, second)(a2)
+              .client[IO, A2, B2](api.all, second)(Http4sCirce.Payload, Base, client)(a2)
               .flatMap(unwrap)
         .unsafeToFuture()
 
@@ -98,19 +98,19 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryRoundTripTest")(
     test("the catalogue serves and decodes its endpoint-local 503 override"):
       val routes = Http4s
-        .routes[IO](Http4sCirce.Payload)(
+        .routes[IO](
           api.all,
           Route(
             books.catalogue,
             (_: Unit) => IO.raiseError[Category](new IllegalStateException("catalogue unavailable"))
           )
-        )
+        )(Http4sCirce.Payload)
         .orNotFound
       val client = Http4sClient.fromHttpApp(routes)
       ZIO.fromFuture: _ =>
         (for
           response <- routes.run(Http4sRequest[IO](uri = Base / "catalogue"))
-          answer <- Http4s.client[IO, Unit, Category](Http4sCirce.Payload, Base, client)(api.all, books.catalogue)(())
+          answer <- Http4s.client[IO, Unit, Category](api.all, books.catalogue)(Http4sCirce.Payload, Base, client)(())
         yield assertTrue(response.status.code == 503, answer == Left(Problem.malformed(Nil)))).unsafeToFuture()
     ,
     suite("the envelope")(

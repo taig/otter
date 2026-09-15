@@ -4,12 +4,12 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.Keys
 import io.taig.otter.http.Api
-import io.taig.otter.http.Status
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.ErrorPolicy
 import io.taig.otter.http.Failure
 import io.taig.otter.http.HttpTypescriptKeys
+import io.taig.otter.http.Status
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
 import io.taig.otter.http.fixture.dsl.*

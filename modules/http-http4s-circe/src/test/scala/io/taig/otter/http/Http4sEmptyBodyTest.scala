@@ -70,7 +70,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
       IO.ref(Option.empty[A])
         .flatMap: ref =>
           Http4s
-            .routes[IO](Http4sCirce.Payload)(Route(endpoint, (value: A) => ref.set(Some(value))))
+            .routes[IO](Route(endpoint, (value: A) => ref.set(Some(value))))(Http4sCirce.Payload)
             .orNotFound
             .run(request)
             .flatMap(response => ref.get.map((response.status.code, _)))
@@ -83,7 +83,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
     ZIO.fromFuture: _ =>
       val client = Http4sClient.fromHttpApp[IO](org.http4s.HttpApp[IO](_ => IO.pure(response)))
 
-      Http4s.client[IO, Unit, A](Http4sCirce.Payload, Base, client)(endpoint)(()).attempt.unsafeToFuture()
+      Http4s.client[IO, Unit, A](endpoint)(Http4sCirce.Payload, Base, client)(()).attempt.unsafeToFuture()
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sEmptyBodyTest")(
     test("the empty interpreter supports body-free and binary-only routes"):
@@ -92,8 +92,8 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
         import io.taig.otter.http.*
         import io.taig.otter.http.codec.Http4sPayload
         import scodec.bits.ByteVector
-        Http4s.routes[IO](Http4sPayload.Empty)(Route(Http4sEmptyBodyTest.bodyFree, (_: Unit) => IO.unit))
-        Http4s.routes[IO](Http4sPayload.Empty)(Route(Http4sEmptyBodyTest.binaryOnly, (_: ByteVector) => IO.unit))
+        Http4s.routes[IO](Route(Http4sEmptyBodyTest.bodyFree, (_: Unit) => IO.unit))(Http4sPayload.Empty)
+        Http4s.routes[IO](Route(Http4sEmptyBodyTest.binaryOnly, (_: ByteVector) => IO.unit))(Http4sPayload.Empty)
       """))
     ,
     suite("raw empty messages")(
@@ -164,7 +164,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
                     .flatMap(bytes => ref.set(Some((Http4sEnvelope.toMediaType(request.headers), bytes))))
                     .as(Http4sResponse[IO](status = org.http4s.Status.NoContent)))
 
-                Http4s.client[IO, Option[ByteVector], Unit](Http4sCirce.Payload, Base, client)(upload)(value) *> ref.get
+                Http4s.client[IO, Option[ByteVector], Unit](upload)(Http4sCirce.Payload, Base, client)(value) *> ref.get
               .map(seen => assertTrue(seen == Some((value.map(_ => Png), ByteVector.empty))))
               .unsafeToFuture()
         .map(results => results.reduce(_ && _))

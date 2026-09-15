@@ -18,7 +18,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
         val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
-        Http4s.routes[IO](Http4sPayload.Empty)(Route(e, (_: Unit) => IO.unit))
+        Http4s.routes[IO](Route(e, (_: Unit) => IO.unit))(Http4sPayload.Empty)
       """))
     },
     test("composed routes keep domain handler signatures and accept error interpreters") {
@@ -30,7 +30,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
         val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
-        Http4s.routes[IO](Http4sCirce.Payload)(Route(e, (_: Unit) => IO.unit))
+        Http4s.routes[IO](Route(e, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """)
       assertTrue(errors.isEmpty)
     },
@@ -44,7 +44,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
         val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(ErrorOverrides(unexpected = Some(error)))
-        Http4s.routes[IO](Http4sPayload.Empty)(Api(ErrorPolicy.default), Route(e, (_: Unit) => IO.unit))
+        Http4s.routes[IO](Api(ErrorPolicy.default), Route(e, (_: Unit) => IO.unit))(Http4sPayload.Empty)
       """))
     },
     test("endpoint overrides preserve domain handler types") {
@@ -68,7 +68,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(ErrorOverrides(unexpected = Some(error)))
         val client = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
         val call: Unit => IO[Either[Status | String, Unit]] =
-          Http4s.client[IO, Unit, Unit](Http4sCirce.Payload, uri"http://test", client)(Api(ErrorPolicy.default), e)
+          Http4s.client[IO, Unit, Unit](Api(ErrorPolicy.default), e)(Http4sCirce.Payload, uri"http://test", client)
       """)
       assertTrue(errors.isEmpty)
     },
@@ -82,7 +82,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import org.http4s.implicits.*
         val e = endpoint(request(method.post, __)(api.reported), response(status.noContent))
         val client = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
-        Http4s.client[IO, io.taig.otter.http.fixture.Report, Unit](Http4sCirce.Payload, uri"http://test", client)(e)
+        Http4s.client[IO, io.taig.otter.http.fixture.Report, Unit](e)(Http4sCirce.Payload, uri"http://test", client)
       """))
     },
     test("optional request accepts its JSON interpreter") {
@@ -93,7 +93,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.api
         import io.taig.otter.http.fixture.dsl.*
         val e = endpoint(request(method.post, __)(body.optional(api.reported)), response(status.noContent))
-        Http4s.routes[IO](Http4sCirce.Payload)(Route(e, (_: Option[io.taig.otter.http.fixture.Report]) => IO.unit))
+        Http4s.routes[IO](Route(e, (_: Option[io.taig.otter.http.fixture.Report]) => IO.unit))(Http4sCirce.Payload)
       """))
     },
     test("direct whole constructor accepts its JSON interpreter") {
@@ -116,7 +116,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import org.http4s.implicits.*
         val e = endpoint(request(method.post, __)(api.reported), response(status.noContent))
         val client = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
-        Http4s.client[IO, io.taig.otter.http.fixture.Report, Unit](Http4sPayload.Empty, uri"http://test", client)(e)
+        Http4s.client[IO, io.taig.otter.http.fixture.Report, Unit](e)(Http4sPayload.Empty, uri"http://test", client)
       """))
     },
     test("optional request retains JSON requirements") {
@@ -127,7 +127,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.api
         import io.taig.otter.http.fixture.dsl.*
         val e = endpoint(request(method.post, __)(body.optional(api.reported)), response(status.noContent))
-        Http4s.routes[IO](Http4sPayload.Empty)(Route(e, (_: Option[io.taig.otter.http.fixture.Report]) => IO.unit))
+        Http4s.routes[IO](Route(e, (_: Option[io.taig.otter.http.fixture.Report]) => IO.unit))(Http4sPayload.Empty)
       """))
     },
     test("direct whole constructor retains JSON requirement") {

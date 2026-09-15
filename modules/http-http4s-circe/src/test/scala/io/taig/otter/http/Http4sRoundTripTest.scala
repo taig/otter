@@ -96,12 +96,12 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
     endpoint(request(method.get, __ :* segment("reports")), response(status.ok)(api.reports).toUnion)
 
   private def routes[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], handler: A => IO[B]): Http4sClient[IO] =
-    Http4sClient.fromHttpApp(Http4s.routes[IO](Http4sCirce.Payload)(Route(endpoint, handler)).orNotFound)
+    Http4sClient.fromHttpApp(Http4s.routes[IO](Route(endpoint, handler))(Http4sCirce.Payload).orNotFound)
 
   /** The value a caller gets back for the value it sent, having gone the whole way round. */
   private def roundTrip[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], handler: A => IO[B])(value: A): Task[B] =
     ZIO.fromFuture: _ =>
-      Http4s.client[IO, A, B](Http4sCirce.Payload, Base, routes(endpoint, handler))(endpoint)(value).unsafeToFuture()
+      Http4s.client[IO, A, B](endpoint)(Http4sCirce.Payload, Base, routes(endpoint, handler))(value).unsafeToFuture()
 
   /** The request as the handler saw it, which is the half a returned value cannot show. */
   private def received[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], answer: B)(value: A): Task[A] =
@@ -110,14 +110,14 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         .flatMap: ref =>
           val handler = (received: A) => ref.set(Some(received)).as(answer)
 
-          Http4s.client[IO, A, B](Http4sCirce.Payload, Base, routes(endpoint, handler))(endpoint)(value) *> ref.get
+          Http4s.client[IO, A, B](endpoint)(Http4sCirce.Payload, Base, routes(endpoint, handler))(value) *> ref.get
         .map(_.get)
         .unsafeToFuture()
 
   private def send[A](endpoint: Endpoint.Of[dsl.Payload, A, Unit], request: Http4sRequest[IO]): Task[Int] =
     ZIO.fromFuture: _ =>
       Http4s
-        .routes[IO](Http4sCirce.Payload)(Route(endpoint, (_: A) => IO.unit))
+        .routes[IO](Route(endpoint, (_: A) => IO.unit))(Http4sCirce.Payload)
         .orNotFound
         .run(request)
         .map(_.status.code)
@@ -136,7 +136,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   ): Task[(Int, String)] =
     ZIO.fromFuture: _ =>
       Http4s
-        .routes[IO](Http4sCirce.Payload)(Route(errors(endpoint), (_: A) => IO.unit))
+        .routes[IO](Route(errors(endpoint), (_: A) => IO.unit))(Http4sCirce.Payload)
         .orNotFound
         .run(request)
         .flatMap(response =>
@@ -249,7 +249,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         assertTrue(!scala.compiletime.testing.typeChecks("""
           import cats.effect.IO
           import io.taig.otter.http.*
-          Http4s.routes[IO](Http4sCirce.Payload)(Route(Http4sRoundTripTest.streaming, (_: Unit) => IO.unit))
+          Http4s.routes[IO](Route(Http4sRoundTripTest.streaming, (_: Unit) => IO.unit))(Http4sCirce.Payload)
         """))
       ,
       test("a payload alphabet without an interpreter cannot be served"):
@@ -257,7 +257,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
           import cats.effect.IO
           import io.taig.otter.http.*
           import io.taig.otter.http.fixture.Upload
-          Http4s.routes[IO](Http4sCirce.Payload)(Route(Http4sRoundTripTest.multipart, (_: Upload) => IO.unit))
+          Http4s.routes[IO](Route(Http4sRoundTripTest.multipart, (_: Upload) => IO.unit))(Http4sCirce.Payload)
         """))
       ,
       test("a response under a status no branch names says which it expected"):

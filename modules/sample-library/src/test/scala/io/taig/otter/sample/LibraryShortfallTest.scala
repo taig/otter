@@ -23,8 +23,8 @@ object LibraryShortfallTest extends ZIOSpecDefault:
     import io.taig.otter.sample.*
     import io.taig.otter.sample.api.books
     import scodec.bits.ByteVector
-    Http4s.routes[IO](Http4sCirce.Payload)(Route(books.upload,
-      (_: (Isbn, (Book.Patch, Option[ByteVector]))) => IO.unit))
+    Http4s.routes[IO](Route(books.upload,
+      (_: (Isbn, (Book.Patch, Option[ByteVector]))) => IO.unit))(Http4sCirce.Payload)
   """
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryShortfallTest")(
@@ -36,7 +36,7 @@ object LibraryShortfallTest extends ZIOSpecDefault:
         import cats.effect.IO
         import io.taig.otter.http.*
         import io.taig.otter.sample.api.books
-        Http4s.routes[IO](Http4sCirce.Payload)(Route(books.exported, (_: Unit) => IO.unit))
+        Http4s.routes[IO](Route(books.exported, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """))
     ,
     test("a CSV stream cannot be served by a buffered backend"):
@@ -44,7 +44,7 @@ object LibraryShortfallTest extends ZIOSpecDefault:
         import cats.effect.IO
         import io.taig.otter.http.*
         import io.taig.otter.sample.api.books
-        Http4s.routes[IO](Http4sCirce.Payload)(Route(books.report, (_: Unit) => IO.unit))
+        Http4s.routes[IO](Route(books.report, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """))
     ,
     test("the compiler identifies the unsupported requirement"):

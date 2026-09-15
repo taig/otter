@@ -26,35 +26,42 @@ import scala.compiletime.asMatchable
 
 /** Buffered CSV bodies, using fs2-data for the CSV wire syntax and Otter for each row's schema. */
 object Http4sFs2Data:
-  val Payload: Http4sPayload[CsvDocument] = Http4sPayload[CsvDocument]([W, R] =>
-    (payload: Any) =>
-      payload.asMatchable match
-        case csv: CsvDocument[W, R] @unchecked => Some(csv)
-        case _                                 => None
-  )(new Http4sPayload.Codec[CsvDocument]:
-    override def decode[R](payload: CsvDocument[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
-      decodeDetailed(payload, bytes).leftMap(
-        _.violations
-      )
+  val Alphabet: Http4sPayload.Alphabet[CsvDocument] = new Http4sPayload.Alphabet[CsvDocument]:
+    override def select[W, R, Q[-_, +_], A](payload: CsvDocument[W, R] | Q[W, R])(
+        mine: CsvDocument[W, R] => A,
+        theirs: Q[W, R] => A
+    ): A = (payload.asMatchable: @unchecked) match
+      case csv: CsvDocument[W, R] @unchecked => mine(csv)
+      case other: Q[W, R] @unchecked         => theirs(other)
 
-    override def decodeDetailed[R](payload: CsvDocument[Nothing, R], bytes: ByteVector): Validated[DecodingFailure, R] =
-      payload match
-        case CsvDocument.Rows(schema)         => Http4sFs2Data.decodeRows(schema.value, bytes, indexed = true)
-        case row: CsvDocument.Row[Nothing, R] =>
-          Http4sFs2Data
-            .decodeRows(row, bytes, indexed = false)
-            .andThen:
-              case Vector(value) => value.valid
-              case values        =>
-                Http4sFs2Data
-                  .violation("Exactly one CSV data row", values.length.toString)
-                  .invalid
-                  .leftMap(Http4sFs2Data.validation)
+  val Payload: Http4sPayload.Of[CsvDocument] =
+    Http4sPayload(Http4sFs2Data.Alphabet)(new Http4sPayload.Codec[CsvDocument]:
+      override def decode[R](payload: CsvDocument[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
+        decodeDetailed(payload, bytes).leftMap(
+          _.violations
+        )
 
-    override def encode[W](payload: CsvDocument[W, Any], value: W): Either[String, ByteVector] =
-      payload match
-        case CsvDocument.Rows(schema)     => Http4sFs2Data.encodeRows(schema.value, value)
-        case row: CsvDocument.Row[W, Any] => Http4sFs2Data.encodeRows(row, Vector(value)))
+      override def decodeDetailed[R](
+          payload: CsvDocument[Nothing, R],
+          bytes: ByteVector
+      ): Validated[DecodingFailure, R] =
+        payload match
+          case CsvDocument.Rows(schema)         => Http4sFs2Data.decodeRows(schema.value, bytes, indexed = true)
+          case row: CsvDocument.Row[Nothing, R] =>
+            Http4sFs2Data
+              .decodeRows(row, bytes, indexed = false)
+              .andThen:
+                case Vector(value) => value.valid
+                case values        =>
+                  Http4sFs2Data
+                    .violation("Exactly one CSV data row", values.length.toString)
+                    .invalid
+                    .leftMap(Http4sFs2Data.validation)
+
+      override def encode[W](payload: CsvDocument[W, Any], value: W): Either[String, ByteVector] =
+        payload match
+          case CsvDocument.Rows(schema)     => Http4sFs2Data.encodeRows(schema.value, value)
+          case row: CsvDocument.Row[W, Any] => Http4sFs2Data.encodeRows(row, Vector(value)))
 
   private def violation(expected: String, actual: String): Violations =
     Violations(Violation(constraint = Constraint.Generic.Type(expected), actual = actual.asData, hint = none))
