@@ -8,8 +8,7 @@ import io.taig.otter.Constraint
 import io.taig.otter.Violations
 import io.taig.validation.Validation
 
-final class CollectionDecoder[F[-_, +_], T](decoder: Decoder[F, T])
-    extends Decoder[Collection[F, *, *], Seq[T]]:
+final class CollectionDecoder[F[-_, +_], T](decoder: Decoder[F, T]) extends Decoder[Collection[F, *, *], Seq[T]]:
   override def decode[R](schema: Collection[F, Nothing, R], values: Seq[T]): Validated[Violations, R] =
     schema match
       case Collection.Chained(reference, validation) =>

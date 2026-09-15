@@ -46,8 +46,7 @@ object Responses:
   object Schema
       extends Wrapper.Union[Body.Payload, Responses.Schema, Response.Schema](
         [s[-w, +r], w, r] =>
-          (annotation: Annotation[Self.Union[Response.Schema[s, *, *], w, r]]) =>
-            new Responses.Schema(annotation),
+          (annotation: Annotation[Self.Union[Response.Schema[s, *, *], w, r]]) => new Responses.Schema(annotation),
         [s[-w, +r], w, r] => (responses: Responses.Schema[s, w, r]) => responses.self
       ):
     given unionable: [S[-w, +r]]

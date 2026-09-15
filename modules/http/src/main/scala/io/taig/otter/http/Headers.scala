@@ -47,8 +47,7 @@ object Headers:
   object Schema
       extends Wrapper.Record[Parameter.Node, Headers.Schema, Header.Schema](
         [s[-w, +r] <: Parameter.Node[w, r], w, r] =>
-          (annotation: Annotation[Self.Record[Header.Schema[s, *, *], w, r]]) =>
-            new Headers.Schema(annotation),
+          (annotation: Annotation[Self.Record[Header.Schema[s, *, *], w, r]]) => new Headers.Schema(annotation),
         [s[-w, +r] <: Parameter.Node[w, r], w, r] => (headers: Headers.Schema[s, w, r]) => headers.self
       ):
     given recordable: [S[-w, +r] <: Parameter.Node[w, r]]

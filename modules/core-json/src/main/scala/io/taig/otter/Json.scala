@@ -732,8 +732,7 @@ object Json:
     * asks about.
     */
   given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
-    => NotGiven[TupleableOperation[S1, S1]]
-      => AppendableOperation[S1, Json.Tuple.Schema[Json.Or[S1, S2], *, *], S2]:
+    => NotGiven[TupleableOperation[S1, S1]] => AppendableOperation[S1, Json.Tuple.Schema[Json.Or[S1, S2], *, *], S2]:
     override def lift[W, R](fa: S1[W, R]): Json.Tuple.Schema[Json.Or[S1, S2], W, R] =
       Json.Tuple.Schema.apply[Json.Or[S1, S2], W, R](Self.Tuple.Root(Reference.now(fa)))
 

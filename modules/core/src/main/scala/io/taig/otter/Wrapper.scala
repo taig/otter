@@ -167,8 +167,7 @@ object Wrapper:
       override def lift[W, R](field: Reference[G[S, *, *], W, R]): Outer[S, W, R] =
         Record.this.apply[S, W, R](Self.Record.Root(field))
 
-      extension [W, R](fa: Outer[S, W, R])
-        override def fields: Chain[Reference[G[S, *, *], ?, ?]] = node(fa).fields
+      extension [W, R](fa: Outer[S, W, R]) override def fields: Chain[Reference[G[S, *, *], ?, ?]] = node(fa).fields
 
   abstract class Branch[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_]](
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Branch[s, w, r]] => Outer[s, w, r],

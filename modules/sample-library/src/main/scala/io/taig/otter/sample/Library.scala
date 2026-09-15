@@ -36,30 +36,26 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
         .sortBy(_.isbn.value)
         .slice((page - 1).max(0) * size, (page - 1).max(0) * size + size)
 
-  def create(create: Book.Create): F[Created] =
-    state.modify: current =>
-      if current.books.contains(create.isbn) then
-        (current, Created.Duplicate(Problem.conflict(s"${create.isbn.value} is already in the catalogue")))
-      else
-        val book = create.toBook
-        (current.copy(books = current.books.updated(book.isbn, book)), Created.Added(book))
+  def create(create: Book.Create): F[Created] = state.modify: current =>
+    if current.books.contains(create.isbn) then
+      (current, Created.Duplicate(Problem.conflict(s"${create.isbn.value} is already in the catalogue")))
+    else
+      val book = create.toBook
+      (current.copy(books = current.books.updated(book.isbn, book)), Created.Added(book))
 
   def fetch(isbn: Isbn): F[Option[Book]] = state.get.map(_.books.get(isbn))
 
-  def patch(isbn: Isbn, patch: Book.Patch): F[Option[Book]] =
-    state.modify: current =>
-      current.books.get(isbn) match
-        case None       => (current, None)
-        case Some(book) =>
-          val patched = patch(book)
-          (current.copy(books = current.books.updated(isbn, patched)), Some(patched))
+  def patch(isbn: Isbn, patch: Book.Patch): F[Option[Book]] = state.modify: current =>
+    current.books.get(isbn) match
+      case None       => (current, None)
+      case Some(book) =>
+        val patched = patch(book)
+        (current.copy(books = current.books.updated(isbn, patched)), Some(patched))
 
   /** Idempotent: a book that is not there is already gone. A book somebody is holding cannot be removed at all. */
-  def delete(isbn: Isbn): F[Either[Unit, Problem]] =
-    state.modify: current =>
-      if current.loans.values.exists(_.isbn == isbn) then
-        (current, Right(Problem.conflict(s"${isbn.value} is on loan")))
-      else (current.copy(books = current.books.removed(isbn)), Left(()))
+  def delete(isbn: Isbn): F[Either[Unit, Problem]] = state.modify: current =>
+    if current.loans.values.exists(_.isbn == isbn) then (current, Right(Problem.conflict(s"${isbn.value} is on loan")))
+    else (current.copy(books = current.books.removed(isbn)), Left(()))
 
   /** Bytes in, bytes out. Nothing is stored, because what a scan *is* is not this sample's subject.
     *

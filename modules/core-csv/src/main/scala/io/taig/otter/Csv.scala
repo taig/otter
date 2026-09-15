@@ -361,8 +361,7 @@ object Csv:
     object Schema
         extends Wrapper.Record[Csv.Cell.Node, Csv.Record.Schema, Csv.Field.Schema](
           [s[-w, +r] <: Csv.Cell.Node[w, r], w, r] =>
-            (annotation: Annotation[Self.Record[Csv.Field.Schema[s, *, *], w, r]]) =>
-              new Csv.Record.Schema(annotation),
+            (annotation: Annotation[Self.Record[Csv.Field.Schema[s, *, *], w, r]]) => new Csv.Record.Schema(annotation),
           [s[-w, +r] <: Csv.Cell.Node[w, r], w, r] => (csv: Csv.Record.Schema[s, w, r]) => csv.self
         ):
       given recordable: [S[-w, +r] <: Csv.Cell.Node[w, r]]
