@@ -46,7 +46,6 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
       answer(500),
       answer(500),
       answer(500),
-      answer(500),
       answer(500)
     )
 

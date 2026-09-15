@@ -77,10 +77,9 @@ object Route:
       evaluate(observe(Http4sObservation(request, route.endpoint, event))).flatten
     def failure(cause: Throwable): Failure = cause match
       case Http4sFailure.Execution(refused) => refused
-      // Every issue this backend can still raise is a body it carries and could not write.
-      case Http4sFailure.Interpreter(_) => Failure(Failure.Category.Encoding, cause = Some(cause))
-      case _: Http4sFailure.Status      => Failure(Failure.Category.Status, cause = Some(cause))
-      case _                            => Failure(Failure.Category.Unexpected, cause = Some(cause))
+      case _: Http4sFailure.Encoding        => Failure(Failure.Category.Encoding, cause = Some(cause))
+      case _: Http4sFailure.Status          => Failure(Failure.Category.Status, cause = Some(cause))
+      case _                                => Failure(Failure.Category.Unexpected, cause = Some(cause))
 
     val execute = evaluate(Route.bytes(route.endpoint, request)).flatten.attempt.flatMap:
       case Left(cause)  => F.pure(Left(Failure(Failure.Category.EntityRead, cause = Some(cause))))

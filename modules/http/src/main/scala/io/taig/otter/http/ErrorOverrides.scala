@@ -9,8 +9,7 @@ final case class ErrorOverrides[+S[-_, +_], +E](
     entityRead: Option[Response.Schema[S, Failure, E]] = None,
     encoding: Option[Response.Schema[S, Failure, E]] = None,
     status: Option[Response.Schema[S, Failure, E]] = None,
-    unexpected: Option[Response.Schema[S, Failure, E]] = None,
-    interpreter: Option[Response.Schema[S, Failure, E]] = None
+    unexpected: Option[Response.Schema[S, Failure, E]] = None
 ):
   def apply[T[-w, +r] >: S[w, r], F](defaults: ErrorPolicy[T, F]): ErrorPolicy[T, E | F] = ErrorPolicy(
     envelope.getOrElse(defaults.envelope),
@@ -20,6 +19,5 @@ final case class ErrorOverrides[+S[-_, +_], +E](
     entityRead.getOrElse(defaults.entityRead),
     encoding.getOrElse(defaults.encoding),
     status.getOrElse(defaults.status),
-    unexpected.getOrElse(defaults.unexpected),
-    interpreter.getOrElse(defaults.interpreter)
+    unexpected.getOrElse(defaults.unexpected)
   )

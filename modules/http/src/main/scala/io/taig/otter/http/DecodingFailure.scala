@@ -17,11 +17,10 @@ object DecodingFailure:
   given Semigroup[DecodingFailure]:
     override def combine(left: DecodingFailure, right: DecodingFailure): DecodingFailure =
       def priority(category: Failure.Category): Int = category match
-        case Failure.Category.Interpreter => 0
-        case Failure.Category.Envelope    => 1
-        case Failure.Category.Syntax      => 2
-        case Failure.Category.Validation  => 3
-        case Failure.Category.ContentType => 4
-        case _                            => 5
+        case Failure.Category.Envelope    => 0
+        case Failure.Category.Syntax      => 1
+        case Failure.Category.Validation  => 2
+        case Failure.Category.ContentType => 3
+        case _                            => 4
       val selected = if priority(left.category) <= priority(right.category) then left else right
       selected.copy(violations = left.violations |+| right.violations)

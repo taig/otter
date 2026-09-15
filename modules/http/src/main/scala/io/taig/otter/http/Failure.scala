@@ -11,4 +11,4 @@ final case class Failure(
 
 object Failure:
   enum Category:
-    case Envelope, Syntax, ContentType, Validation, EntityRead, Encoding, Status, Unexpected, Interpreter
+    case Envelope, Syntax, ContentType, Validation, EntityRead, Encoding, Status, Unexpected
