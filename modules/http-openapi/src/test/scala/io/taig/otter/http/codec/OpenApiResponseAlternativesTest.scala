@@ -5,7 +5,6 @@ import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.taig.otter.Keys
 import io.taig.otter.http.Api
-import io.taig.otter.http.Status
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.ErrorPolicy
@@ -14,6 +13,7 @@ import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
 import io.taig.otter.http.OpenApiProfile
+import io.taig.otter.http.Status
 import io.taig.otter.http.fixture.dsl
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.fixture.payload
