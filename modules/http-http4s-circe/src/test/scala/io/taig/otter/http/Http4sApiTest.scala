@@ -29,7 +29,6 @@ object Http4sApiTest extends ZIOSpecDefault:
     serverError,
     serverError,
     serverError,
-    serverError,
     serverError
   )
   private val api = Api(policy)

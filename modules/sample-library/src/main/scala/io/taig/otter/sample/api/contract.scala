@@ -25,6 +25,5 @@ object contract:
     answer(500),
     answer(500),
     answer(500),
-    answer(500),
     answer(500)
   )

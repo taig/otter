@@ -37,7 +37,7 @@ behavior. Explicit `ErrorPolicy(endpoint)` composition and `ComposedEndpoint` re
 
 Defaults have no body and decode to their `Status`. Envelope validation and payload syntax errors return 400,
 unsupported content types return 415, and body schema validation returns 422. Entity-read, response-encoding,
-status-conversion, unexpected execution, and defensive interpreter failures return 500. Causes remain diagnostic.
+status-conversion, and unexpected execution failures return 500. Causes remain diagnostic.
 When request failures accumulate, envelope errors take precedence; a payload alternative with an eligible content
 type supplies the syntax or validation failure instead of an ineligible alternative's content-type mismatch.
 

@@ -22,8 +22,13 @@ object Http4sFailure:
   final case class Response(violations: Violations)
       extends Http4sFailure(show"Response does not match the endpoint:\n${Http4s.report(violations)}")
 
-  /** Something the endpoint describes that this interpreter cannot carry. */
-  final case class Interpreter(issue: Http4sIssue) extends Http4sFailure(issue.show)
+  /** A body this interpreter carries, which the value it was given nothing to write.
+    *
+    * It was `Interpreter` while an alphabet nothing recognised could reach here. Nothing unrecognised can: the
+    * requirement on every route is checked where the routes are built, so what is left is an encoding failure and is
+    * named one.
+    */
+  final case class Encoding(issue: Http4sIssue) extends Http4sFailure(issue.show)
 
   /** A method http4s will not send. */
   final case class Method(method: io.taig.otter.http.Method, reason: String)

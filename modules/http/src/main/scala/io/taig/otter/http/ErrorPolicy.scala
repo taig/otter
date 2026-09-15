@@ -12,8 +12,7 @@ final case class ErrorPolicy[+S[-_, +_], +E](
     entityRead: Response.Schema[S, Failure, E],
     encoding: Response.Schema[S, Failure, E],
     status: Response.Schema[S, Failure, E],
-    unexpected: Response.Schema[S, Failure, E],
-    interpreter: Response.Schema[S, Failure, E]
+    unexpected: Response.Schema[S, Failure, E]
 ):
   /** Selection is encoded into the schema, so the wire encoder needs no response-producing callback. */
   val responses: Responses.Schema[S, Failure, E] =
@@ -36,8 +35,7 @@ final case class ErrorPolicy[+S[-_, +_], +E](
       Failure.Category.EntityRead -> entityRead,
       Failure.Category.Encoding -> encoding,
       Failure.Category.Status -> status,
-      Failure.Category.Unexpected -> unexpected,
-      Failure.Category.Interpreter -> interpreter
+      Failure.Category.Unexpected -> unexpected
     )
     Responses.Schema(entries.foldLeft(leaf(envelope)) { case (self, (category, response)) =>
       append(self, category, response)
@@ -57,7 +55,6 @@ object ErrorPolicy:
       response(400),
       response(415),
       response(422),
-      response(500),
       response(500),
       response(500),
       response(500),

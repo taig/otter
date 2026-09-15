@@ -9,9 +9,9 @@ import scala.compiletime.testing.typeChecks
 /** The endpoints this repository can describe and cannot carry.
   *
   * They are here because being told is the feature. A backend that met a payload it did not understand could quietly
-  * send an empty body, or throw something with no name on it; this one stops and says which media type it was and on
-  * which endpoint. `OpenApiIssue` and `TypescriptIssue` take the same stand as values, and `Http4sFailure.Interpreter`
-  * is that stand where an effect is available to take it in.
+  * send an empty body, or throw something with no name on it; this one is not handed the endpoint at all. Each claim
+  * below is made of the compiler, and the requirement on the interpreter argument is what refuses it. `OpenApiIssue`
+  * and `TypescriptIssue` take the same stand where a document is wanted for an endpoint nothing here can serve.
   *
   * Every claim below is therefore a *guarantee* and not a regret: what changes when a streamed body becomes servable is
   * that these tests fail, which is exactly when somebody should look at them.

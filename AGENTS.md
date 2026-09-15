@@ -138,9 +138,13 @@ which `DisableSyntax.asInstanceOf` would refuse in any case.
 A streamed body and a request carrying one are not cases in those walks at all. Their requirement is
 `Body.Requirement.Streamed`, which no `Supported[P]` admits, so the compiler reports the branches as unreachable and
 the endpoints as unservable. `Http4sIssue` is what is left once `Uninterpreted` and `Streamed` are both impossible: a
-body this interpreter carries and this value gave it nothing to write. `Failure.Category.Interpreter` and
-`ErrorPolicy.interpreter` remain declared, because `Failure.Category` is the `http` tier's vocabulary and not this
-backend's, but nothing in `http-http4s` selects them any more.
+body this interpreter carries and this value gave it nothing to write. `Http4sFailure.Encoding` is what raises it, and
+was `Http4sFailure.Interpreter` while there was anything else for it to carry.
+
+`Failure.Category` lost `Interpreter` with them, and `ErrorPolicy` and `ErrorOverrides` their ninth field. The category
+existed to answer a request that had reached a body nothing could read, and nothing can now reach one: the eight that
+remain are each raised by something a request or a handler does. A category no backend selects would be a response
+every consumer had to declare and none would ever send.
 
 And a router asks a different question from `PathDecoder`: arity and literals only, via `PathTemplate`, because a
 decode failure cannot tell "some other endpoint" (fall through, 404) from "this endpoint, called wrongly" (stop, 400).

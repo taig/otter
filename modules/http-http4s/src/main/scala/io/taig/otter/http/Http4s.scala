@@ -165,10 +165,10 @@ object Http4s:
   private[http] def respond[F[_]](
       response: Either[Http4sIssue, Http4sWire.Response]
   )(using F: Concurrent[F]): F[Http4sResponse[F]] =
-    response.leftMap(Http4sFailure.Interpreter.apply).flatMap(Http4s.respondable[F]).liftTo[F]
+    response.leftMap(Http4sFailure.Encoding.apply).flatMap(Http4s.respondable[F]).liftTo[F]
 
   private def raise[F[_], A](value: Either[Http4sIssue, A])(using F: Concurrent[F]): F[A] =
-    value.leftMap(Http4sFailure.Interpreter.apply).liftTo[F]
+    value.leftMap(Http4sFailure.Encoding.apply).liftTo[F]
 
   private def toHttp4sRequest[F[_]](
       method: org.http4s.Method,
