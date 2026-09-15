@@ -36,8 +36,9 @@ object api:
 
   /** The endpoints nothing here answers, and why each one cannot be.
     *
-    *   - [[books.upload]] carries a [[io.taig.otter.http.Multipart]] payload, which the http4s interpreter reports as
-    *     `Http4sIssue.Uninterpreted` and the TypeScript renderer as `TypescriptIssue.Multipart`.
+    *   - [[books.upload]] carries a [[io.taig.otter.http.Multipart]] payload, which no interpreter here reads. The
+    *     http4s backend refuses it where the routes are built rather than on the request that first takes that branch,
+    *     and the TypeScript renderer reports it as `TypescriptIssue.Multipart`.
     *   - [[books.exported]] answers with a streamed body. What a sequence of elements is belongs to whoever has an
     *     effect type to say it in, and `otter-http` deliberately has none, so every interpreter here reports it.
     *   - [[books.report]] answers with a stream whose elements are written in the CSV alphabet, which is a payload

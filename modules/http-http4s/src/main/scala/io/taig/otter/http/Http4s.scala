@@ -7,10 +7,10 @@ import cats.syntax.all.*
 import io.taig.otter.Step
 import io.taig.otter.Violations
 import io.taig.otter.http.codec.Http4sPayload
-import io.taig.otter.http.codec.Http4sRequestDecoderUnchecked
+import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sRequestEncoder
 import io.taig.otter.http.codec.Http4sResponseDecoder
-import io.taig.otter.http.codec.Http4sResponseEncoderUnchecked
+import io.taig.otter.http.codec.Http4sResponseEncoder
 import io.taig.otter.http.component.MediaTypeComponent
 import org.http4s.Entity
 import org.http4s.HttpRoutes
@@ -32,32 +32,50 @@ object Http4s:
     * `HttpRoutes` and not `HttpApp`, because falling through is the honest answer to a path none of these describe:
     * composing with `<+>` is then somebody else's decision, and so is what a `404` looks like.
     *
-    * Each route carries its declared error policy. `observe` receives diagnostics without choosing responses.
+    * The routes are named first and the interpreter after them, which is the direction the requirement actually flows:
+    * each route says which payload alphabets answering it needs, [[Body.Or]] accumulates them across the whole set, and
+    * the interpreter is what has to cover the total. Naming the interpreter first settled what could be served before a
+    * single route had been read, and reported a registry that falls short as a complaint about whichever route first
+    * noticed rather than about the interpreter that is missing.
+    *
+    * Each route carries its declared error policy. `observe` receives diagnostics without choosing responses. It is a
+    * second overload of each shape rather than a default argument, because Scala permits default arguments on only one
+    * variant of an overloaded method.
     */
   def routes[F[_]: Concurrent]: Http4s.RoutesBuilder[F] = new Http4s.RoutesBuilder[F]
 
   final class RoutesBuilder[F[_]: Concurrent]:
-    def apply[P[-_, +_]](
-        payload: Http4sPayload[P],
-        observe: Http4sObservation[F] => F[Unit] = (_: Http4sObservation[F]) => Concurrent[F].unit
-    ): Http4s.RoutesWithPayload[F, P] = new Http4s.RoutesWithPayload(payload, observe)
+    def apply[P[-_, +_]](routes: Route[F, Http4sPayload.Supported[P], ?, ?]*)(
+        payload: Http4sPayload[P]
+    ): HttpRoutes[F] = apply(Routes(routes*))(payload)
 
-  final class RoutesWithPayload[F[_]: Concurrent, P[-_, +_]](
-      payload: Http4sPayload[P],
-      observe: Http4sObservation[F] => F[Unit]
-  ):
-    def apply(routes: Route[F, Http4sPayload.Supported[P], ?, ?]*): HttpRoutes[F] = apply(Routes(routes*))
+    def apply[P[-_, +_]](routes: Route[F, Http4sPayload.Supported[P], ?, ?]*)(
+        payload: Http4sPayload[P],
+        observe: Http4sObservation[F] => F[Unit]
+    ): HttpRoutes[F] = apply(Routes(routes*))(payload, observe)
 
     /** Apply the API defaults and each route's endpoint-local overrides. */
-    def apply[E](
+    def apply[P[-_, +_], E](
         api: Api[Http4sPayload.Supported[P], E],
         routes: Route[F, Http4sPayload.Supported[P], ?, ?]*
-    ): HttpRoutes[F] =
-      apply(routes.map(route => route.copy(errors = route.overrides(api.errors)))*)
+    )(payload: Http4sPayload[P]): HttpRoutes[F] = apply(Http4s.composed(api, routes))(payload)
 
-    def apply(routes: Routes[F, Http4sPayload.Supported[P]]): HttpRoutes[F] =
-      val decoder = Http4sRequestDecoderUnchecked(payload)
-      val encoder = Http4sResponseEncoderUnchecked(payload)
+    def apply[P[-_, +_], E](
+        api: Api[Http4sPayload.Supported[P], E],
+        routes: Route[F, Http4sPayload.Supported[P], ?, ?]*
+    )(payload: Http4sPayload[P], observe: Http4sObservation[F] => F[Unit]): HttpRoutes[F] =
+      apply(Http4s.composed(api, routes))(payload, observe)
+
+    def apply[P[-_, +_]](routes: Routes[F, Http4sPayload.Supported[P]])(
+        payload: Http4sPayload[P]
+    ): HttpRoutes[F] = apply(routes)(payload, (_: Http4sObservation[F]) => Concurrent[F].unit)
+
+    def apply[P[-_, +_]](routes: Routes[F, Http4sPayload.Supported[P]])(
+        payload: Http4sPayload[P],
+        observe: Http4sObservation[F] => F[Unit]
+    ): HttpRoutes[F] =
+      val decoder = Http4sRequestDecoder(payload)
+      val encoder = Http4sResponseEncoder(payload)
 
       HttpRoutes[F]: request =>
         val method = Http4sEnvelope.toMethod(request.method)
@@ -65,37 +83,42 @@ object Http4s:
 
         OptionT
           .fromOption[F](routes.values.find(_.matches(method, segments)))
-          .semiflatMap(_.run(decoder, encoder, observe, request, segments))
+          .semiflatMap(Route.run(_, decoder, encoder, observe, request, segments))
+
+  /** Each route under the API's global policy, which its own overrides are applied on top of. */
+  private def composed[F[_], P[-_, +_], E](
+      api: Api[Http4sPayload.Supported[P], E],
+      routes: Seq[Route[F, Http4sPayload.Supported[P], ?, ?]]
+  ): Routes[F, Http4sPayload.Supported[P]] =
+    Routes(routes.map(route => route.copy(errors = route.overrides(api.errors)))*)
 
   /** An endpoint, as a function that calls it.
     *
     * The endpoint is read as a caller sees it -- it writes the request and reads the response -- which is why the same
     * value cannot be handed to [[Http4s.routes]] and this without saying which side it is. That is [[Endpoint.Server]]
     * and [[Endpoint.Client]], and it is checked by the compiler rather than remembered.
+    *
+    * The endpoint comes first and the interpreter after it, for the reason [[Http4s.routes]] takes its routes first.
     */
   def client[F[_]: Concurrent, A, B]: Http4s.ClientBuilder[F, A, B] = new Http4s.ClientBuilder[F, A, B]
 
   final class ClientBuilder[F[_]: Concurrent, A, B]:
     def apply[P[-_, +_], E, D](
-        payload: Http4sPayload[P],
-        base: Uri,
-        client: Http4sClient[F]
-    )(
         api: Api[Http4sPayload.Supported[P], E],
         endpoint: Endpoint.Declaration[Http4sPayload.Supported[P], A, Any, Nothing, B, D]
-    ): A => F[Either[E | D, B]] =
+    )(payload: Http4sPayload[P], base: Uri, client: Http4sClient[F]): A => F[Either[E | D, B]] =
       new Http4s.ClientBuilder[F, A, Either[E | D, B]]
-        .apply(payload, base, client)(endpoint.compose(api.errors).client)
+        .apply(endpoint.compose(api.errors).client)(payload, base, client)
 
-    def apply[P[-_, +_], E](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
+    def apply[P[-_, +_], E](
         endpoint: Endpoint.WithErrors[Http4sPayload.Supported[P], A, Any, Nothing, B, E]
-    ): A => F[Either[E | Status, B]] =
+    )(payload: Http4sPayload[P], base: Uri, client: Http4sClient[F]): A => F[Either[E | Status, B]] =
       new Http4s.ClientBuilder[F, A, Either[E | Status, B]]
-        .apply(payload, base, client)(endpoint.compose(ErrorPolicy.default).client)
+        .apply(endpoint.compose(ErrorPolicy.default).client)(payload, base, client)
 
-    def apply[P[-_, +_]](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
+    def apply[P[-_, +_]](
         endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
-    ): A => F[B] =
+    )(payload: Http4sPayload[P], base: Uri, client: Http4sClient[F]): A => F[B] =
       val encoder = Http4sRequestEncoder(payload)
       val decoder = Http4sResponseDecoder(payload)
 

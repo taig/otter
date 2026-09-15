@@ -78,12 +78,12 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
         .flatMap: ref =>
           val routes =
             Http4s
-              .routes[IO](payloads)(
+              .routes[IO](
                 Route(mixed, (received: Either[Report, Book]) => ref.set(Some(received)))
-              )
+              )(payloads)
               .orNotFound
           val client = Http4sClient.fromHttpApp(routes)
-          Http4s.client[IO, Either[Report, Book], Unit](payloads, uri"http://otter.test", client)(mixed)(value) *>
+          Http4s.client[IO, Either[Report, Book], Unit](mixed)(payloads, uri"http://otter.test", client)(value) *>
             ref.get.map(_.get)
         .unsafeToFuture()
 
@@ -98,21 +98,20 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
 
       assertTrue(documents.forall: document =>
         val singles = values.forall: value =>
-          val encoded = Http4sFs2Data.Payload.encode(document, value).flatMap(_.toOption)
-          encoded.flatMap(Http4sFs2Data.Payload.decode[String](document, _)).flatMap(_.toOption).contains(value)
+          val encoded = Http4sFs2Data.Payload.encode(document, value).toOption
+          encoded.flatMap(Http4sFs2Data.Payload.decode[String](document, _).toOption).contains(value)
         val collection = CsvDocument.Rows(Reference.now(document))
-        val encoded = Http4sFs2Data.Payload.encode(collection, values).flatMap(_.toOption)
+        val encoded = Http4sFs2Data.Payload.encode(collection, values).toOption
         val decoded = encoded
-          .flatMap(Http4sFs2Data.Payload.decode[Vector[String]](collection, _))
-          .flatMap(_.toOption)
+          .flatMap(Http4sFs2Data.Payload.decode[Vector[String]](collection, _).toOption)
         singles && decoded.contains(values))
     ,
     test("an empty record header is preserved"):
       val document = CsvDocument.Record(
         Reference.now(CsvComponent.RNil :* CsvComponent.field("", CsvComponent.string))
       )
-      val encoded = Http4sFs2Data.Payload.encode(document, "value").flatMap(_.toOption)
-      val decoded = encoded.flatMap(Http4sFs2Data.Payload.decode[String](document, _)).flatMap(_.toOption)
+      val encoded = Http4sFs2Data.Payload.encode(document, "value").toOption
+      val decoded = encoded.flatMap(Http4sFs2Data.Payload.decode[String](document, _).toOption)
 
       assertTrue(decoded.contains("value"))
     ,
@@ -124,8 +123,8 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.dsl.*
         import io.taig.otter.fixture.csv
         val endpoint = Http4sFs2DataTest.mixed
-        Http4s.routes[IO](Http4sCirce.Payload.orElse(Http4sFs2Data.Payload))(Route(endpoint,
-          (_: Either[Report, io.taig.otter.fixture.Book]) => IO.unit))
+        Http4s.routes[IO](Route(endpoint,
+          (_: Either[Report, io.taig.otter.fixture.Book]) => IO.unit))(Http4sCirce.Payload.orElse(Http4sFs2Data.Payload))
       """))
     ,
     test("a JSON request selects the JSON interpreter"):
@@ -139,8 +138,8 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
         import cats.effect.IO
         import io.taig.otter.http.*
         val endpoint = Http4sFs2DataTest.mixed
-        Http4s.routes[IO](Http4sCirce.Payload)(Route(endpoint,
-          (_: Either[io.taig.otter.http.fixture.Report, io.taig.otter.fixture.Book]) => IO.unit))
+        Http4s.routes[IO](Route(endpoint,
+          (_: Either[io.taig.otter.http.fixture.Report, io.taig.otter.fixture.Book]) => IO.unit))(Http4sCirce.Payload)
       """))
     ,
     test("response requirements are checked too"):
@@ -148,22 +147,22 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
         import cats.effect.IO
         import io.taig.otter.http.*
         val endpoint = Http4sFs2DataTest.jsonResponse
-        Http4s.routes[IO](Http4sFs2Data.Payload)(Route(endpoint,
-          (_: Unit) => IO.pure(io.taig.otter.http.fixture.Report("Quarterly", 12))))
+        Http4s.routes[IO](Route(endpoint,
+          (_: Unit) => IO.pure(io.taig.otter.http.fixture.Report("Quarterly", 12))))(Http4sFs2Data.Payload)
       """))
     ,
     test("independently composed route groups retain their combined requirements"):
       assertTrue(typeChecks("""
         import cats.effect.IO
         import io.taig.otter.http.*
-        Http4s.routes[IO](Http4sFs2DataTest.payloads)(Http4sFs2DataTest.routeGroups)
+        Http4s.routes[IO](Http4sFs2DataTest.routeGroups)(Http4sFs2DataTest.payloads)
       """))
     ,
     test("a route group cannot be mounted with only one interpreter"):
       assertTrue(!typeChecks("""
         import cats.effect.IO
         import io.taig.otter.http.*
-        Http4s.routes[IO](Http4sCirce.Payload)(Http4sFs2DataTest.routeGroups)
+        Http4s.routes[IO](Http4sFs2DataTest.routeGroups)(Http4sCirce.Payload)
       """))
     ,
     test("the CSV interpreter preserves quoted cells"):
@@ -173,12 +172,12 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
         CsvDocument.Record(io.taig.otter.Reference.now(schema)),
         ByteVector.encodeUtf8(text).toOption.get
       )
-      assertTrue(decoded.flatMap(_.toOption).contains(Book("Dune, Frank", 412, true)))
+      assertTrue(decoded.toOption.contains(Book("Dune, Frank", 412, true)))
     ,
     test("a record body writes and reads its header"):
       val document = CsvDocument.Record(Reference.now(csv.book))
-      val encoded = Http4sFs2Data.Payload.encode(document, Book("Dune", 412, true)).flatMap(_.toOption)
-      val decoded = encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Book](document, bytes).flatMap(_.toOption))
+      val encoded = Http4sFs2Data.Payload.encode(document, Book("Dune", 412, true)).toOption
+      val decoded = encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Book](document, bytes).toOption)
 
       assertTrue(
         encoded.flatMap(_.decodeUtf8.toOption) == Some("title,pages,read\nDune,412,true\n"),
@@ -188,9 +187,9 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
     test("a collection writes multiple positional rows"):
       val document = CsvDocument.Rows(Reference.now(CsvDocument.Tuple(Reference.now(positional))))
       val values = Vector(Book("Dune", 412, true), Book("Emma", 160, false))
-      val encoded = Http4sFs2Data.Payload.encode(document, values).flatMap(_.toOption)
+      val encoded = Http4sFs2Data.Payload.encode(document, values).toOption
       val decoded =
-        encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Vector[Book]](document, bytes).flatMap(_.toOption))
+        encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Vector[Book]](document, bytes).toOption)
 
       assertTrue(
         encoded.flatMap(_.decodeUtf8.toOption) == Some("Dune,412,true\nEmma,160,false\n"),
@@ -199,28 +198,28 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
     ,
     test("an empty record collection still emits its header"):
       val document = CsvDocument.Rows(Reference.now(CsvDocument.Record(Reference.now(csv.book))))
-      val encoded = Http4sFs2Data.Payload.encode(document, Vector.empty[Book]).flatMap(_.toOption)
+      val encoded = Http4sFs2Data.Payload.encode(document, Vector.empty[Book]).toOption
       val decoded =
-        encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Vector[Book]](document, bytes).flatMap(_.toOption))
+        encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Vector[Book]](document, bytes).toOption)
 
       assertTrue(encoded.flatMap(_.decodeUtf8.toOption) == Some("title,pages,read\n"), decoded == Some(Vector.empty))
     ,
     test("a single positional body has exactly one row"):
       val document = CsvDocument.Tuple(Reference.now(positional))
-      val encoded = Http4sFs2Data.Payload.encode(document, Book("Dune", 412, true)).flatMap(_.toOption)
-      val decoded = encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Book](document, bytes).flatMap(_.toOption))
+      val encoded = Http4sFs2Data.Payload.encode(document, Book("Dune", 412, true)).toOption
+      val decoded = encoded.flatMap(bytes => Http4sFs2Data.Payload.decode[Book](document, bytes).toOption)
       val tooFew = Http4sFs2Data.Payload.decode[Book](document, ByteVector.encodeUtf8("Dune,412\n").toOption.get)
       val tooMany = Http4sFs2Data.Payload
         .decode[Book](document, ByteVector.encodeUtf8("Dune,412,true\nEmma,160,false\n").toOption.get)
 
-      assertTrue(decoded == Some(Book("Dune", 412, true)), tooFew.exists(_.isInvalid), tooMany.exists(_.isInvalid))
+      assertTrue(decoded == Some(Book("Dune", 412, true)), tooFew.isInvalid, tooMany.isInvalid)
     ,
     test("quoted cells may contain embedded newlines"):
       val document = CsvDocument.Record(Reference.now(csv.book))
       val text = "title,pages,read\n\"Dune\nFrank\",412,true\n"
       val decoded = Http4sFs2Data.Payload.decode[Book](document, ByteVector.encodeUtf8(text).toOption.get)
 
-      assertTrue(decoded.flatMap(_.toOption).contains(Book("Dune\nFrank", 412, true)))
+      assertTrue(decoded.toOption.contains(Book("Dune\nFrank", 412, true)))
     ,
     test("malformed input and invalid UTF-8 are violations"):
       val document = CsvDocument.Record(Reference.now(csv.book))
@@ -230,14 +229,14 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
       assertTrue(
         Http4sFs2Data.Payload
           .decode[Book](document, malformed)
-          .exists(
-            _.swap.toOption.exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty)
-          ),
+          .swap
+          .toOption
+          .exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty),
         Http4sFs2Data.Payload
           .decode[Book](document, invalidUtf8)
-          .exists(
-            _.swap.toOption.exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty)
-          )
+          .swap
+          .toOption
+          .exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty)
       )
     ,
     test("collection row failures include their row index"):
@@ -246,13 +245,9 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
       val result = Http4sFs2Data.Payload.decode[Vector[Book]](document, ByteVector.encodeUtf8(text).toOption.get)
 
       assertTrue(
-        result.exists(
-          _.fold(
-            error =>
-              error.category == Failure.Category.Validation &&
-                Http4s.report(error.violations).contains("[1]"),
-            _ => false
-          )
+        result.fold(
+          error => error.category == Failure.Category.Validation && Http4s.report(error.violations).contains("[1]"),
+          _ => false
         )
       )
     ,
@@ -263,9 +258,9 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
       val requestIssue = Http4sBodyEncoder(Http4sFs2Data.Payload).encode(body, ())
 
       assertTrue(
-        Http4sFs2Data.Payload.encode(record, ()) == Some(Left("A CSV record must have at least one column")),
+        Http4sFs2Data.Payload.encode(record, ()) == Left("A CSV record must have at least one column"),
         Http4sFs2Data.Payload.encode(tupleRows, Vector.empty[Unit]) ==
-          Some(Left("A CSV tuple must have at least one column")),
+          Left("A CSV tuple must have at least one column"),
         requestIssue == Left(
           Http4sIssue.Encoding(MediaType("text", "csv"), "A CSV record must have at least one column")
         )

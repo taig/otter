@@ -17,17 +17,22 @@ import scala.compiletime.asMatchable
 
 /** JSON bodies, read and written by io.circe.
   *
-  * The one alphabet every API has at least one body in, and the shape any second one takes: recognise the schemas you
-  * know by the single type test the erasure leaves possible, answer `None` for everything else, and let
-  * [[Http4sPayload.orElse]] put the instances in an order.
+  * The one alphabet every API has at least one body in, and the shape any second one takes: a type test that tells your
+  * own schemas from somebody else's, a codec that implements all of yours, and [[Http4sPayload.Of.orElse]] to put two
+  * instances in an order. The test says which of the two a payload is rather than whether it is one of yours, because a
+  * payload that is not JSON is the other alphabet's by construction -- there is no third answer, and so no way for a
+  * request to arrive at a body nothing here can read.
   */
 object Http4sCirce:
-  val Payload: Http4sPayload[Json.Node] = Http4sPayload[Json.Node]([W, R] =>
-    (payload: Any) =>
-      payload.asMatchable match
-        case json: Json.Node[W, R] @unchecked => Some[Json.Node[W, R]](json)
-        case _                                => None
-  )(new Http4sPayload.Codec[Json.Node]:
+  val Alphabet: Http4sPayload.Alphabet[Json.Node] = new Http4sPayload.Alphabet[Json.Node]:
+    override def select[W, R, Q[-_, +_], A](payload: Json.Node[W, R] | Q[W, R])(
+        mine: Json.Node[W, R] => A,
+        theirs: Q[W, R] => A
+    ): A = (payload.asMatchable: @unchecked) match
+      case json: Json.Node[W, R] @unchecked => mine(json)
+      case other: Q[W, R] @unchecked        => theirs(other)
+
+  val Payload: Http4sPayload.Of[Json.Node] = Http4sPayload(Http4sCirce.Alphabet)(new Http4sPayload.Codec[Json.Node]:
     override def decode[R](payload: Json.Node[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
       Http4sCirce.parse(bytes).andThen(JsonCirceDecoder.decode[R](payload, _))
 

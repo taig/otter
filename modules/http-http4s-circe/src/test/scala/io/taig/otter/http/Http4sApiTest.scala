@@ -43,17 +43,17 @@ object Http4sApiTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sApiTest")(
     test("API routes apply defaults and local overrides without documentation membership"):
       val routes = Http4s
-        .routes[IO](Http4sCirce.Payload)(
+        .routes[IO](
           api,
           Route(inherited, (_: Unit) => IO.raiseError[Unit](cause)),
           Route(overridden, (_: Int) => IO.raiseError[Unit](cause))
-        )
+        )(Http4sCirce.Payload)
         .orNotFound
       val client = Client.fromHttpApp(routes)
       run:
         for
-          global <- Http4s.client[IO, Unit, Unit](Http4sCirce.Payload, base, client)(api, inherited)(())
-          local <- Http4s.client[IO, Int, Unit](Http4sCirce.Payload, base, client)(api, overridden)(1)
+          global <- Http4s.client[IO, Unit, Unit](api, inherited)(Http4sCirce.Payload, base, client)(())
+          local <- Http4s.client[IO, Int, Unit](api, overridden)(Http4sCirce.Payload, base, client)(1)
           globalStatus <- routes.run(Http4sRequest[IO](uri = base)).map(_.status.code)
           localStatus <- routes.run(Http4sRequest[IO](uri = base / "1")).map(_.status.code)
           malformed <- routes.run(Http4sRequest[IO](uri = base / "invalid"))
@@ -70,23 +70,23 @@ object Http4sApiTest extends ZIOSpecDefault:
     ,
     test("individual API routes use the same composition as the route collection"):
       val routes = Http4s
-        .routes[IO](Http4sCirce.Payload)(
+        .routes[IO](
           Route(api, overridden, (_: Int) => IO.raiseError[Unit](cause))
-        )
+        )(Http4sCirce.Payload)
         .orNotFound
       val client = Client.fromHttpApp(routes)
-      run(Http4s.client[IO, Int, Unit](Http4sCirce.Payload, base, client)(api, overridden)(1))
+      run(Http4s.client[IO, Int, Unit](api, overridden)(Http4sCirce.Payload, base, client)(1))
         .map(answer => assertTrue(answer == Left("local server error")))
     ,
     test("standalone overrides inherit bodyless defaults and clients retain both error types"):
       val routes = Http4s
-        .routes[IO](Http4sCirce.Payload)(
+        .routes[IO](
           Route(overridden, (_: Int) => IO.raiseError[Unit](cause))
-        )
+        )(Http4sCirce.Payload)
         .orNotFound
       val client = Client.fromHttpApp(routes)
       val call: Int => IO[Either[String | Status, Unit]] =
-        Http4s.client[IO, Int, Unit](Http4sCirce.Payload, base, client)(overridden)
+        Http4s.client[IO, Int, Unit](overridden)(Http4sCirce.Payload, base, client)
       run:
         for
           local <- call(1)

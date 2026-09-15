@@ -8,8 +8,8 @@ import io.taig.otter.Reference
 import io.taig.otter.Wrapper
 import io.taig.otter.operation.*
 
-/** A set of body parts that round trips `A`. */
-type Multipart[A] = Multipart.Of[Body.Node, A]
+/** A set of body parts whose bodies require `S`, round tripping `A`. */
+type Multipart[S[-w, +r], A] = Multipart.Of[S, A]
 
 object Multipart:
   /** Parts holding the body `B` and round tripping `A`.
@@ -22,23 +22,46 @@ object Multipart:
     * This is the `×` the body algebra needed. Alternatives were always expressible -- [[Bodies]] is a union -- but a
     * product of bodies was not, and a multipart body is nothing else.
     */
-  type Of[B[-w, +r], A] = Multipart.Schema[B, A, A]
+  /** Parts whose bodies require `S`, which is both what a definition ascribes and what an interpreter covers.
+    *
+    * The parameter [[Multipart.Schema]] itself takes is the *body* each part holds, and a body keeps its own
+    * requirement, so `:*` was already accumulating what the parts need -- `Multipart.Or` unions the body functors, and
+    * the requirement rides along inside them. What was missing was a name for the accumulated total that a definition
+    * could be ascribed at. `Multipart[A]` used to widen every part to [[Body.Node]], whose requirement is
+    * [[Body.Payload]] and therefore `Any`, and an upload written that way could be served by nothing at all.
+    */
+  type Over[S[-w, +r]] = [w, r] =>> Multipart.Schema[Body.Schema[S, *, *], w, r]
+
+  /** What a multipart body over `S` asks of an interpreter: the multipart structure, and every part's own payload.
+    *
+    * Nested rather than laid beside the parts' requirement, because
+    * [[io.taig.otter.http.codec.Http4sPayload.Of.orElse]] unions at the top:
+    * `Body.Or[Body.Whole[Multipart.Requirement], S]` would let a CSV part be answered for by a CSV entry the multipart
+    * interpreter had never been handed. Saying it this way, an interpreter for multipart bodies names in its own type
+    * the registry it will read the parts with, so supplying one is necessary and not sufficient.
+    */
+  type Requirement[S[-w, +r]] = Body.Whole[Multipart.Over[S]]
+
+  type Of[S[-w, +r], A] = Multipart.Over[S][A, A]
 
   /** Holding anything, which is the form an interpreter is written against. */
   type Node = [w, r] =>> Multipart.Schema[Body.Node, w, r]
 
-  /** The `S` of a node holding both a `B1` and a `B2`, which is what `:*` accumulates over parts. */
+  /** The `B` of a node holding both a `B1` and a `B2`, which is what `:*` accumulates over parts.
+    *
+    * Over body functors, and what that carries is the union of the requirements those bodies hold.
+    */
   type Or[B1[-w, +r], B2[-w, +r]] = [w, r] =>> B1[w, r] | B2[w, r]
 
-  type Reader[+A] = Multipart.Reader.Of[Body.Node, A]
+  type Reader[+A] = Multipart.Reader.Of[Body.Payload, A]
 
   object Reader:
-    type Of[B[-w, +r], +A] = Multipart.Schema[B, Nothing, A]
+    type Of[S[-w, +r], +A] = Multipart.Over[S][Nothing, A]
 
-  type Writer[-A] = Multipart.Writer.Of[Body.Node, A]
+  type Writer[-A] = Multipart.Writer.Of[Body.Payload, A]
 
   object Writer:
-    type Of[B[-w, +r], -A] = Multipart.Schema[B, A, Any]
+    type Of[S[-w, +r], -A] = Multipart.Over[S][A, Any]
 
   /** Every part, with the metadata it carries of its own.
     *
@@ -62,8 +85,7 @@ object Multipart:
   object Schema
       extends Wrapper.Record[Body.Node, Multipart.Schema, Part.Schema](
         [b[-w, +r] <: Body.Node[w, r], w, r] =>
-          (annotation: Annotation[Self.Record[Part.Schema[b, *, *], w, r]]) =>
-            new Multipart.Schema(annotation),
+          (annotation: Annotation[Self.Record[Part.Schema[b, *, *], w, r]]) => new Multipart.Schema(annotation),
         [b[-w, +r] <: Body.Node[w, r], w, r] => (multipart: Multipart.Schema[b, w, r]) => multipart.self
       ):
     given recordable: [B[-w, +r] <: Body.Node[w, r]]

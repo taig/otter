@@ -6,8 +6,8 @@ import io.taig.otter.Reference
 import io.taig.otter.Wrapper
 import io.taig.otter.operation.*
 
-/** One part of a [[Multipart]] body, round tripping `A`. */
-type Part[A] = Part.Of[Body.Node, A]
+/** One part of a [[Multipart]] body, whose body requires `S`, round tripping `A`. */
+type Part[S[-w, +r], A] = Part.Of[S, A]
 
 object Part:
   /** A part holding the body `B` and round tripping `A`.
@@ -17,20 +17,23 @@ object Part:
     * own, which is where a per part `Content-Type` comes from -- there is nowhere else for it to live, and its absence
     * from a flat form alphabet is why neither earlier attempt could describe a file upload.
     */
-  type Of[B[-w, +r], A] = Part.Schema[B, A, A]
+  /** A part whose body requires `S`, which is what [[Multipart.Over]] is one of. */
+  type Over[S[-w, +r]] = [w, r] =>> Part.Schema[Body.Schema[S, *, *], w, r]
+
+  type Of[S[-w, +r], A] = Part.Over[S][A, A]
 
   /** Holding anything, which is the form an interpreter is written against. */
   type Node = [w, r] =>> Part.Schema[Body.Node, w, r]
 
-  type Reader[+A] = Part.Reader.Of[Body.Node, A]
+  type Reader[+A] = Part.Reader.Of[Body.Payload, A]
 
   object Reader:
-    type Of[B[-w, +r], +A] = Part.Schema[B, Nothing, A]
+    type Of[S[-w, +r], +A] = Part.Over[S][Nothing, A]
 
-  type Writer[-A] = Part.Writer.Of[Body.Node, A]
+  type Writer[-A] = Part.Writer.Of[Body.Payload, A]
 
   object Writer:
-    type Of[B[-w, +r], -A] = Part.Schema[B, A, Any]
+    type Of[S[-w, +r], -A] = Part.Over[S][A, Any]
 
   final case class Schema[+B[-_, +_], -W, +R](self: Annotation[Self.Field[B, W, R]])
 
