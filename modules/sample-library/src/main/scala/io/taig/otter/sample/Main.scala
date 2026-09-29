@@ -17,13 +17,10 @@ import org.typelevel.log4cats.noop.NoOpFactory
   * here the caller is fifteen lines. `orNotFound` is where falling through stops being an option and becomes an answer.
   */
 object Main extends IOApp:
-  /** Ember asks for one, and this sample has nothing to say through it. It comes with `log4cats-core`, which arrives
-    * with the server, so saying so costs no dependency.
-    */
-  private given LoggerFactory[IO] = NoOpFactory[IO]
-
   override def run(arguments: List[String]): IO[ExitCode] = Library[IO]()
     .flatMap: library =>
+      given LoggerFactory[IO] = NoOpFactory[IO]
+
       EmberServerBuilder
         .default[IO]
         .withHost(host"0.0.0.0")
