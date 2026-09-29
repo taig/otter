@@ -6,8 +6,9 @@ Extensible schema definition library for serialization formats (e.g. JSON, XML a
 
 Modules: `core`, `core-json`, `core-json-borer`, `core-json-circe`, `core-json-schema`, `core-csv`,
 `core-csv-fs2-data`, `core-iron`, `core-java-time`, `core-case-insensitive`, `core-typescript`,
-`core-typescript-effect`, `core-json-typescript`, `core-json-typescript-effect`, `http`, `http-json`,
-`http-http4s`, `http-http4s-circe`, `http-openapi`, `http-typescript`, `http-typescript-effect`.
+`core-typescript-effect`, `core-json-typescript`, `core-json-typescript-effect`, `http`, `http-json`, `http-csv`,
+`http-http4s`, `http-http4s-circe`, `http-http4s-fs2-data`, `http-openapi`, `http-typescript`,
+`http-typescript-effect`.
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
@@ -17,7 +18,7 @@ Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS`
 `benchmark` is apart from all of them: JVM only, published nowhere, and not run by `testJVM`. It holds the JMH
 benchmarks that say where a read and a write actually spend their time -- `sbt "benchmark/Jmh/run -wi 3 -i 5 -f 1"`,
 and add `-prof gc` for `gc.alloc.rate.norm`, which is deterministic and so says more than a timing does. It measures
-the `core-json-circe` fixtures, which is why it depends on that module's test sources.
+the JSON fixtures in `core-json`'s test sources, which is why it depends on them.
 
 How to read a result. On **reads**, `parseText` is the document model on its own. On **writes** there are two halves
 and neither `encodeDocument` nor `printDocument` is one of them: `encodeDocument` walks the schema *and* builds the
@@ -29,9 +30,8 @@ schema interpreter is the other 14-29% of a write and allocates almost nothing (
 39KB for the whole write). That asymmetry is why `core-json-borer` exists and why its encoder carries a deferred write
 rather than a document.
 
-Reads are the other way round and used to be worse: the interpreter was 72-90% of a read and allocated 0.9-3.4KB *per
-node*. It is now 493ns and 3.3KB for a fifteen field record where it was 2070ns and 16.2KB, so parsing is 21% to 53% of
-a read rather than 10% to 28%, and for a small record the read is essentially the parse.
+Reads are the other way round: the interpreter costs 493ns and 3.3KB for a fifteen field record, so parsing is 21% to
+53% of a read, and for a small record the read is essentially the parse.
 
 **Read allocation before you read timings, and only count allocation that escapes.** `-prof gc`'s
 `gc.alloc.rate.norm` is exact -- it reproduces to the byte across runs and fork counts -- but it is measured *after*
@@ -103,8 +103,8 @@ renders as two different documents.
 `Multipart` payload carries its parts' requirements too: `Multipart.Schema`'s parameter is the *body* each part holds
 and a body keeps its own requirement, so `:*` was always accumulating them -- `Multipart.Over[S]` is the name a
 definition is ascribed at, and `Multipart.Requirement[S]` what it asks of an interpreter. The `Multipart[A]` and
-`Part[A]` aliases used to widen every part to `Body.Node`, whose requirement is `Any`, which made an upload servable by
-nothing; they take the requirement now, as every other alias in `http` does.
+`Part[A]` aliases take the requirement, as every other alias in `http` does: widening a part to `Body.Node`, whose
+requirement is `Any`, would make an upload servable by nothing.
 `http-openapi` renders endpoints as an OpenAPI 3.1 document -- a renderer rather than a pair, on the same reasoning
 `core-json-schema` is one, with `OpenApiProfile.V31` as the `JsonSchemaProfile` value that says which JSON Schema its
 schemas are written in. Payload alphabets are rendered by an `OpenApiPayload`, which dispatches at runtime because a
@@ -127,7 +127,7 @@ route carries accumulates through `Body.Or` and is checked where the routes are 
 interpreter is one somebody registered. `Http4sPayload` is therefore *total* -- `decode[R](payload: P[Nothing, R],
 bytes)` returns a `Validated` and not an `Option[Validated]` -- and the walks are written at `Supported[P]` rather than
 at `Body.Node`, which is what lets `Body.Value.Whole` hand its payload over as a `P`. Scala does invert
-`Whole[S] extends Body.Value[Body.Whole[S], W, R]` to recover `S`, which the erased walk had assumed it would not.
+`Whole[S] extends Body.Value[Body.Whole[S], W, R]` to recover `S`.
 
 The one runtime question left is which side of a `P[w, r] | Q[w, r]` a payload is, and `Http4sPayload.Alphabet` is
 where it is asked. It is phrased as a choice -- "mine or theirs" -- rather than as `Option`, so the second branch needs
@@ -137,14 +137,12 @@ which `DisableSyntax.asInstanceOf` would refuse in any case.
 
 A streamed body and a request carrying one are not cases in those walks at all. Their requirement is
 `Body.Requirement.Streamed`, which no `Supported[P]` admits, so the compiler reports the branches as unreachable and
-the endpoints as unservable. `Http4sIssue` is what is left once `Uninterpreted` and `Streamed` are both impossible: a
-body this interpreter carries and this value gave it nothing to write. `Http4sFailure.Encoding` is what raises it, and
-was `Http4sFailure.Interpreter` while there was anything else for it to carry.
+the endpoints as unservable. `Http4sIssue` therefore has one case: a body this interpreter carries and this value
+gave it nothing to write. `Http4sFailure.Encoding` is what raises it.
 
-`Failure.Category` lost `Interpreter` with them, and `ErrorPolicy` and `ErrorOverrides` their ninth field. The category
-existed to answer a request that had reached a body nothing could read, and nothing can now reach one: the eight that
-remain are each raised by something a request or a handler does. A category no backend selects would be a response
-every consumer had to declare and none would ever send.
+Each `Failure.Category` is raised by something a request or a handler does, and there is none for a body nothing can
+read, because no request can reach one. Add a category only for a failure some backend selects: one none selects would
+be a response every consumer had to declare and none would ever send.
 
 And a router asks a different question from `PathDecoder`: arity and literals only, via `PathTemplate`, because a
 decode failure cannot tell "some other endpoint" (fall through, 404) from "this endpoint, called wrongly" (stop, 400).
@@ -160,6 +158,10 @@ model a JSON Schema is, here it is one of two interpreters of one alphabet and w
 measured trade. `Http4sRoundTripTest` is what the module rests on -- `Client.fromHttpApp` over the same endpoint value
 read as both sides, so neither half can agree by being written twice the same wrong way, and no socket means it runs on
 Scala.js too.
+
+`http-csv` is the second payload alphabet, beside `http-json`: a `CsvDocument` is exactly one row or a finite collection
+of rows. `http-http4s-fs2-data` interprets it for http4s, buffered, with fs2-data writing the CSV wire syntax and
+Otter's schema writing each row, as `http-http4s-circe` does for JSON.
 
 The four typescript modules are a lattice, not a chain: `core-typescript` is the TypeScript source
 model and printer, `core-typescript-effect` the vocabulary of one target library, `core-json-typescript`
@@ -188,10 +190,10 @@ Response headers are deliberately not in a generated answer type. A descriptor d
 are text the caller reads off the `Response` -- and a type claiming a header is a `number` would be
 describing a value nothing produces.
 
-`core-typescript` grew the nodes a descriptor needs, all additive: `Expression.Function` (an arrow whose
-parameters carry types), `Index` (how a member is read, since every key the printer writes is quoted),
-`Undefined`, `AsConst`, `Statement.Import` and `Type.Function`. One of those additions uncovered a bug
-worth remembering: an arrow whose body is an object literal has to be parenthesised, because
+The nodes of `core-typescript` a descriptor needs are `Expression.Function` (an arrow whose parameters
+carry types), `Index` (how a member is read, since every key the printer writes is quoted), `Undefined`,
+`AsConst`, `Statement.Import` and `Type.Function`. The printer parenthesises an arrow whose body is an
+object literal, because
 `(value) => { "a": 1 }` is a function whose body is a labelled statement and not one returning an object.
 The two parse differently rather than merely looking different, which is the kind of mistake the source
 model exists to prevent and which building strings would never have caught.
