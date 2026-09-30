@@ -60,7 +60,7 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
         .flatMap: library =>
-          val client = Http4sClient.fromHttpApp(LibraryRoutes(library).orNotFound)
+          val client = Http4sClient.fromHttpApp(LibraryRoutes(library))
 
           Http4s
             .client[IO, A, B](api.all, endpoint)(Http4sCirce.Payload, Base, client)(value)
@@ -75,7 +75,7 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
         .flatMap: library =>
-          val client = Http4sClient.fromHttpApp(LibraryRoutes(library).orNotFound)
+          val client = Http4sClient.fromHttpApp(LibraryRoutes(library))
 
           Http4s
             .client[IO, A1, B1](api.all, first)(Http4sCirce.Payload, Base, client)(a1)
@@ -112,6 +112,17 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           response <- routes.run(Http4sRequest[IO](uri = Base / "catalogue"))
           answer <- Http4s.client[IO, Unit, Category](api.all, books.catalogue)(Http4sCirce.Payload, Base, client)(())
         yield assertTrue(response.status.code == 503, answer == Left(Problem.malformed(Nil)))).unsafeToFuture()
+    ,
+    test("a caller out of step with the server reads an unrouted 404 as its own, and can tell by the kind"):
+      val app = Http4s.app[IO](api.all, Route(loans.health, (_: Unit) => IO.unit))(Http4sCirce.Payload)
+      val client = Http4sClient.fromHttpApp(app)
+      ZIO.fromFuture: _ =>
+        Http4s
+          .client[IO, (UUID, Loan.Request), Borrowed](api.all, loans.borrow)(Http4sCirce.Payload, Base, client)(
+            (ada, Loan.Request(hobbit, None))
+          )
+          .map(answer => assertTrue(answer == Right(Borrowed.Unknown(Problem.notFound))))
+          .unsafeToFuture()
     ,
     suite("the envelope")(
       test("an answer with no entity round trips as a unit"):

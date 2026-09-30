@@ -6,10 +6,19 @@ import io.taig.otter.http.Failure
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Response
 import io.taig.otter.http.Status
+import io.taig.otter.http.Unrouted
+import io.taig.otter.http.UnroutedPolicy
 import io.taig.otter.sample.Problem
 import io.taig.otter.sample.api.dsl.*
 
-/** The same declared error responses are served, documented, and decoded by callers. */
+/** The same declared error responses are served, documented, and decoded by callers.
+  *
+  * The unrouted answers are served in the same [[Problem]] shape and are neither documented nor decoded, because no
+  * endpoint owns them: a caller meets one only when it and the server disagree about what exists. One consequence is
+  * worth knowing. [[io.taig.otter.sample.api.loans.borrow]] declares a `404` of its own carrying a [[Problem]], so a
+  * caller out of step with the server reads an unrouted `404` as `Borrowed.Unknown` -- which is why its kind is
+  * [[Problem.Kind.Unrouted]] and not [[Problem.Kind.Missing]].
+  */
 object contract:
   def answer(status: Int): Response.Schema[dsl.Payload, Failure, Problem] =
     response(Status(status))(body.json(schema.problem)).dimap[Failure, Problem](failure =>
@@ -26,4 +35,13 @@ object contract:
     answer(500),
     answer(500),
     answer(500)
+  )
+
+  val unrouted: UnroutedPolicy[dsl.Payload] = UnroutedPolicy(
+    response(status.notFound)(body.json(schema.problem)).dimap[Unrouted.NotFound, Problem](_ => Problem.notFound)(
+      identity
+    ),
+    response(status.methodNotAllowed)(body.json(schema.problem)).dimap[Unrouted.MethodNotAllowed, Problem](unrouted =>
+      Problem.methodNotAllowed(unrouted.allowed.toChain.toList.map(_.name))
+    )(identity)
   )

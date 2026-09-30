@@ -29,7 +29,7 @@ object LibraryTypescriptTest extends ZIOSpecDefault:
     test("catalogue declares its local 503 response alongside inherited errors"):
       val catalogue = TypescriptEndpointRenderer
         .client(TypescriptEffectPayload.json)
-        .render(Api(contract.errors, books.catalogue))
+        .render(Api(contract.errors, contract.unrouted, books.catalogue))
         .render
       assertTrue(
         catalogue.contains("export const catalogue = {"),

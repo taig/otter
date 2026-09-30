@@ -224,6 +224,14 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         send(ping, Http4sRequest[IO](method = org.http4s.Method.DELETE, uri = uri"http://otter.test/reports/42"))
           .map(code => assertTrue(code == 404))
       ,
+      test("and a terminal app tells the wrong method from the wrong path, which falling through cannot"):
+        ZIO.fromFuture: _ =>
+          Http4s
+            .app[IO](Route(ping, (_: (Int, Int)) => IO.unit))(Http4sCirce.Payload)
+            .run(Http4sRequest[IO](method = org.http4s.Method.DELETE, uri = uri"http://otter.test/reports/42"))
+            .map(response => assertTrue(response.status.code == 405))
+            .unsafeToFuture()
+      ,
       test("a path that matches but does not hold what it describes is a bad request"):
         send(ping, Http4sRequest[IO](uri = uri"http://otter.test/reports/not-a-number"))
           .map(code => assertTrue(code == 400))

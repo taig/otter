@@ -19,27 +19,34 @@ import zio.test.*
 
 /** What the routes answer a request they did not describe.
   *
-  * Three different things go wrong here and they get three different answers, which is the distinction the router
-  * exists to draw: a path nothing describes is a `404`, a path this endpoint describes but the request does not hold is
-  * a `400`, and a body that parsed and then broke the schema is a `422`. The first is "you wanted someone else"; the
-  * other two are "you wanted me, and got it wrong" -- and only the third could be answered at all without reading the
-  * envelope twice.
+  * Four different things go wrong here and they get four different answers, which is the distinction the router exists
+  * to draw: a path nothing describes is a `404`, a path something describes under another method is a `405`, a path
+  * this endpoint describes but the request does not hold is a `400`, and a body that parsed and then broke the schema
+  * is a `422`. The first two are "you wanted someone else"; the other two are "you wanted me, and got it wrong" -- and
+  * only the last could be answered at all without reading the envelope twice.
   *
-  * Every one of them comes back as a [[Problem]] document, which is the whole reason `Http4s.routes` takes a renderer
-  * for a malformed request rather than deciding for itself.
+  * Every one of them comes back as a [[Problem]] document, which is the whole reason the API declares an error policy
+  * and an unrouted policy rather than leaving either to the interpreter.
   */
 object LibraryRoutesTest extends ZIOSpecDefault:
   /** The status and the body together, so an answer can be asked both questions at once. */
   private def answer(request: Http4sRequest[IO]): Task[(Int, String)] =
+    respond(request).map((code, _, body) => (code, body))
+
+  /** The status, the `Allow` header and the body, for the answers where which methods a path takes is the point. */
+  private def respond(request: Http4sRequest[IO]): Task[(Int, Option[String], String)] =
     ZIO.fromFuture: _ =>
       Library[IO]()
         .flatMap: library =>
-          LibraryRoutes(library).orNotFound
+          LibraryRoutes(library)
             .run(request)
             .flatMap: response =>
               Http4sEnvelope
                 .toBytes(response.entity)
-                .map(bytes => (response.status.code, bytes.decodeUtf8.getOrElse("")))
+                .map: bytes =>
+                  val allow = response.headers.headers.collectFirst:
+                    case header if header.name == CIString("Allow") => header.value
+                  (response.status.code, allow, bytes.decodeUtf8.getOrElse(""))
         .unsafeToFuture()
 
   private def get(uri: Uri): Http4sRequest[IO] = Http4sRequest[IO](uri = uri)
@@ -56,15 +63,39 @@ object LibraryRoutesTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryRoutesTest")(
     suite("a path no endpoint describes")(
-      test("falls through, and is not a bad request"):
-        answer(get(uri"http://library.test/orders/42")).map((code, _) => assertTrue(code == 404))
+      test("is the API's own not found, and not a bad request"):
+        respond(get(uri"http://library.test/orders/42")).map((code, allow, body) =>
+          assertTrue(code == 404, allow.isEmpty, body.contains("\"kind\":\"unrouted\""))
+        )
       ,
       test("a segment too many is a different path rather than a malformed one"):
-        answer(get(uri"http://library.test/books/9780261102217/pages/2")).map((code, _) => assertTrue(code == 404))
+        answer(get(uri"http://library.test/books/9780261102217/pages/2")).map((code, body) =>
+          assertTrue(code == 404, body.contains("\"kind\":\"unrouted\""))
+        )
+    ),
+    suite("a path an endpoint describes under another method")(
+      test("the method is part of what a route matches on, and the answer names the methods that are"):
+        respond(Http4sRequest[IO](method = Http4sMethod.PUT, uri = uri"http://library.test/books/9780261102217"))
+          .map((code, allow, body) =>
+            assertTrue(
+              code == 405,
+              allow.contains("GET, PATCH, DELETE"),
+              body.contains("\"kind\":\"unrouted\""),
+              body.contains("\"detail\":[\"GET\",\"PATCH\",\"DELETE\"]")
+            )
+          )
       ,
-      test("the method is part of what a route matches on"):
-        answer(Http4sRequest[IO](method = Http4sMethod.PUT, uri = uri"http://library.test/books/9780261102217"))
-          .map((code, _) => assertTrue(code == 404))
+      test("the path is matched on its arity and literals alone, so a value that does not parse is still a 405"):
+        respond(Http4sRequest[IO](method = Http4sMethod.PUT, uri = uri"http://library.test/books/not-an-isbn"))
+          .map((code, allow, _) => assertTrue(code == 405, allow.contains("GET, PATCH, DELETE")))
+      ,
+      test("a collection lists its own methods"):
+        respond(Http4sRequest[IO](method = Http4sMethod.DELETE, uri = uri"http://library.test/books"))
+          .map((code, allow, _) => assertTrue(code == 405, allow.contains("GET, POST")))
+      ,
+      test("a literal path lists the one method it takes"):
+        respond(Http4sRequest[IO](method = Http4sMethod.DELETE, uri = uri"http://library.test/health"))
+          .map((code, allow, _) => assertTrue(code == 405, allow.contains("GET")))
     ),
     suite("a request this API described but did not hold")(
       test("a path segment that does not parse is a bad request, and says where"):
@@ -137,8 +168,16 @@ object LibraryRoutesTest extends ZIOSpecDefault:
           assertTrue(code == 400, body.contains("isbn"))
         )
       ,
-      test("a literal one segment longer is not shadowed, and falls through"):
+      test("so is a delete, by /books/{isbn} under the same method"):
+        answer(Http4sRequest[IO](method = Http4sMethod.DELETE, uri = uri"http://library.test/books/export"))
+          .map((code, body) => assertTrue(code == 400, body.contains("isbn")))
+      ,
+      test("and the shadowing decides which methods a method not allowed names"):
+        respond(Http4sRequest[IO](method = Http4sMethod.PUT, uri = uri"http://library.test/books/export"))
+          .map((code, allow, _) => assertTrue(code == 405, allow.contains("GET, PATCH, DELETE")))
+      ,
+      test("a literal one segment longer is not shadowed, and is not found"):
         answer(Http4sRequest[IO](method = Http4sMethod.POST, uri = uri"http://library.test/books/9780261102217/cover"))
-          .map((code, _) => assertTrue(code == 404))
+          .map((code, body) => assertTrue(code == 404, body.contains("\"kind\":\"unrouted\"")))
     )
   )

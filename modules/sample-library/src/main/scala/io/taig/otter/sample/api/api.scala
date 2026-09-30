@@ -54,5 +54,6 @@ object api:
     */
   val unserved: Chain[Endpoint.Declaration.Node] = Chain(books.upload, books.exported, books.report)
 
-  /** Everything, with the global error policy shared by every consumer. */
-  val all = Api(served ++ unserved, contract.errors)
+  /** Everything, with the global error policy shared by every consumer and the answers to a request none of it names.
+    */
+  val all = Api(served ++ unserved, contract.errors, contract.unrouted)

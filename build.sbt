@@ -255,9 +255,8 @@ lazy val httpCsv = module(identifier = Some("http-csv"))
   * `Headers` is a list of raw name and value pairs, which is what `http`'s codecs already speak. That they line up this
   * exactly is the evidence the wire slices were drawn in the right place.
   *
-  * `http4s-server` is deliberately absent. `HttpRoutes` lives in `http4s-core`, and nothing here builds a server or
-  * routes between several -- what to listen on is the caller's, and one fewer dependency is one fewer thing pinned to a
-  * milestone.
+  * `http4s-server` is deliberately absent. `HttpRoutes` and `HttpApp` live in `http4s-core`, and nothing here builds a
+  * server -- what to listen on is the caller's, and one fewer dependency is one fewer thing pinned to a milestone.
   */
 lazy val httpHttp4s = module(identifier = Some("http-http4s"))
   .settings(
@@ -338,9 +337,9 @@ lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect
   * thing a reader had to reconstruct.
   *
   * JVM only, because it binds a socket -- the one thing no other module here does. `http-http4s` hands back an
-  * `HttpRoutes` and stops, on the reasoning that what to listen on is the caller's, and this is the caller. That is
-  * also the whole of the new dependency: `http4s-ember-server` and nothing else, since iron and `CIString` arrive with
-  * the component modules and the round trip tests call `Client.fromHttpApp` rather than a port.
+  * `HttpApp` and stops, on the reasoning that what to listen on is the caller's, and this is the caller. That is also
+  * the whole of the new dependency: `http4s-ember-server` and nothing else, since iron and `CIString` arrive with the
+  * component modules and the round trip tests call `Client.fromHttpApp` rather than a port.
   *
   * The test framework is named here rather than inherited through a `test->test` edge, which every other module uses.
   * That edge would bring the fixtures of six modules into scope, and a reader who found `api.report` in a sample's test

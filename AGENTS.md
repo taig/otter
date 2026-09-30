@@ -145,7 +145,23 @@ read, because no request can reach one. Add a category only for a failure some b
 be a response every consumer had to declare and none would ever send.
 
 And a router asks a different question from `PathDecoder`: arity and literals only, via `PathTemplate`, because a
-decode failure cannot tell "some other endpoint" (fall through, 404) from "this endpoint, called wrongly" (stop, 400).
+decode failure cannot tell "some other endpoint" (fall through, 404 or 405) from "this endpoint, called wrongly"
+(stop, 400).
+
+`Http4s.routes` still falls through, because that is what composes with `<+>`, but falling through destroys the one
+fact only the router has: that the path is one some route spells, under other methods. `Http4s.app` is the terminal
+form that keeps it -- a `405` carrying `Allow` where a route spells the path, a `404` otherwise -- and
+`Http4s.fallback` is that answer alone, as total `HttpRoutes`, for composing last behind foreign routes. Both write
+through `Api.unrouted`, an `UnroutedPolicy` beside `errors` and not in it: an unrouted request belongs to no endpoint,
+so a `Failure.Category` for it would be the removed `Interpreter` again. The policy is write only and has no `E`,
+because nothing decodes or documents it -- a client meets one only when it and the server disagree about what exists,
+and OpenAPI has no response that belongs to no operation -- which is also what lets `UnroutedPolicy.default` be
+bodyless beside any error type. Its requirement still joins the `Api`'s `S`, so whatever serves or calls the `Api`
+must cover it; the renderers take any `Api` and check nothing. `Allow` is written by the interpreter on every `405`,
+replacing any the declaration wrote, and lists what is routed and never what is only documented; a fallback asks only
+the routes it is given. `HEAD` is not synthesised, `OPTIONS` is not answered, and an unknown method on a path some
+route spells is a `405` rather than a `501`. `DefaultHead` retries a `HEAD` as a `GET` only when what it wraps falls
+through, so it wraps `routes` with `fallback` composed after it -- one more reason `routes` must keep falling through.
 
 `Http4s.routes` takes its routes first and its interpreter after them, which is the direction the requirement flows:
 the routes say what is needed, and the interpreter argument is what fails to typecheck when it falls short. Naming the
@@ -234,7 +250,9 @@ is worth reaching for once every branch has something to say. `books.create` and
 
 A third thing it records rather than leaves to be discovered: **a placeholder shadows a literal of the same arity**.
 `/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever is registered first wins, and a
-literal path must come before the placeholder path that would otherwise swallow it.
+literal path must come before the placeholder path that would otherwise swallow it. The shadowing decides `Allow` too:
+`GET` and `DELETE /books/export` are both `400`s for an ISBN that does not parse, and `PUT /books/export` is a `405`
+naming the methods of `/books/{isbn}`, exactly as `PUT /books/{isbn}` is.
 
 ### Fast loop
 

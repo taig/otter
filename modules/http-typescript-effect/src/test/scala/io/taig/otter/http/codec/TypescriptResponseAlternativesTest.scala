@@ -12,6 +12,7 @@ import io.taig.otter.http.HttpTypescriptKeys
 import io.taig.otter.http.Status
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
+import io.taig.otter.http.UnroutedPolicy
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.fixture.payload
 import zio.Scope
@@ -55,7 +56,7 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
         .withErrors(ErrorOverrides(unexpected = Some(error)))
         .attr(HttpTypescriptKeys.operationId, "standalone")
       val module = renderer.render(Chain.one(declared))
-      val expected = renderer.render(Api(ErrorPolicy.default, declared))
+      val expected = renderer.render(Api(ErrorPolicy.default, UnroutedPolicy.default, declared))
       assertTrue(
         module == expected,
         module.render.contains("export const standalone = {"),

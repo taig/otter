@@ -4,16 +4,16 @@
 
 ## Declared HTTP errors
 
-`ErrorPolicy` declares execution errors using ordinary Otter `Response` schemas. `Api` owns the global policy and an
-ordered collection for documentation. Endpoints inherit the global policy; `.withErrors` declares the categories an
-endpoint overrides:
+`ErrorPolicy` declares execution errors using ordinary Otter `Response` schemas. `Api` owns the global policy, the
+answers to a request no endpoint is addressed to, and an ordered collection for documentation. Endpoints inherit the
+global policy; `.withErrors` declares the categories an endpoint overrides:
 
 ```scala
 val create = endpoint(createRequest, createResponse)
   .withErrors(ErrorOverrides(unexpected = Some(unavailable)))
-val api = Api(errors, health, create)
+val api = Api(errors, unrouted, health, create)
 
-val routes = Http4s.routes[IO](
+val app = Http4s.app[IO](
   api,
   Route(health, healthHandler),
   Route(create, createHandler)
@@ -67,6 +67,31 @@ helpers. `Http4s.report` still formats violations for custom bodies. JSON syntax
 422, unsupported content types to 415, and default responses no longer include a plain-text report. Existing payload
 codecs can override `decodeDetailed` to distinguish syntax from validation. It returns `DecodingFailure`, with a
 required violation tree and an optional diagnostic cause; `decode` retains the violation-only API.
+
+## Unrouted requests
+
+`Http4s.routes` returns `HttpRoutes` that fall through, so they compose with `<+>`. `Http4s.app` returns a terminal
+`HttpApp` that answers what no route matched: a path some route spells under other methods is a `405` carrying
+`Allow`, and any other is a `404`. Both are written through the API's `UnroutedPolicy`, whose schemas consume an
+`Unrouted` value (the method, the path and, for a `405`, the methods it takes):
+
+```scala
+val unrouted = UnroutedPolicy(
+  response(status.notFound)(body.json(problemSchema)).dimap[Unrouted.NotFound, Problem](_ => Problem.notFound)(identity),
+  response(status.methodNotAllowed)(body.json(problemSchema))
+    .dimap[Unrouted.MethodNotAllowed, Problem](unrouted =>
+      Problem.methodNotAllowed(unrouted.allowed.toChain.toList.map(_.name))
+    )(identity)
+)
+```
+
+`UnroutedPolicy.default` answers both without a body, and is what an app built without an API uses. The policy is
+write only: clients do not decode it and renderers do not document it, because it belongs to no endpoint. `Allow` is
+written by the interpreter from the routes it serves. To mount other routes beside Otter's, compose
+`Http4s.fallback` last: `(health <+> Http4s.routes[IO](api, served*)(payload) <+> Http4s.fallback[IO](api,
+served*)(payload)).orNotFound`. `HEAD` is not synthesised from `GET` and `OPTIONS` is not answered; both are middleware
+concerns, and `DefaultHead` has to wrap `Http4s.routes` with the fallback composed after it.
+
 Extensible schema definition library for serialization formats (e.g. JSON, XML and CSV) with self-documenting API
 definition capabilities.
 

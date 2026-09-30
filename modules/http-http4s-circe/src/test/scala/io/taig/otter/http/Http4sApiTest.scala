@@ -31,7 +31,7 @@ object Http4sApiTest extends ZIOSpecDefault:
     serverError,
     serverError
   )
-  private val api = Api(policy)
+  private val api = Api(policy, UnroutedPolicy.default)
   private val inherited = endpoint(request(method.get, __), response(status.noContent))
   private val overridden = endpoint(request(method.get, __ / segment("id", int)), response(status.noContent))
     .withErrors(ErrorOverrides(unexpected = Some(answer(503, "local server error"))))

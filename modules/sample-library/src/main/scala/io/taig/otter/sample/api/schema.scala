@@ -150,6 +150,7 @@ object schema:
       case Problem.Kind.Internal  => "internal"
       case Problem.Kind.Conflict  => "conflict"
       case Problem.Kind.Missing   => "missing"
+      case Problem.Kind.Unrouted  => "unrouted"
     .attr(Keys.name, "ProblemKind")
 
   /** The error shape declared by the composed contract and the domain responses.

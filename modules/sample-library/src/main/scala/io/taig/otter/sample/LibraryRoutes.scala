@@ -7,7 +7,7 @@ import io.taig.otter.http.Route
 import io.taig.otter.sample.api.api
 import io.taig.otter.sample.api.books
 import io.taig.otter.sample.api.loans
-import org.http4s.HttpRoutes
+import org.http4s.HttpApp
 
 /** The endpoints of [[io.taig.otter.sample.api.api.served]], each paired with what answers it.
   *
@@ -17,20 +17,21 @@ import org.http4s.HttpRoutes
   *
   * Routing asks a deliberately narrow question: the method, the number of path segments, and the literals among them. A
   * decode failure cannot tell "some other endpoint" from "this endpoint, called wrongly", and those need different
-  * answers -- the first falls through to a `404`, the second stops here as a `400` -- so the decision is made on the
-  * part of a path that cannot vary.
+  * answers -- the first is the API's own `404`, or a `405` naming the methods where another route spells the path, and
+  * the second stops here as a `400` -- so the decision is made on the part of a path that cannot vary.
   *
   * The consequence is worth knowing before adding a route: **a placeholder shadows a literal of the same arity**.
   * `/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever of the two is listed first
   * wins, and a literal path must be registered before the placeholder path it would otherwise be swallowed by. Neither
   * `/books/export` nor `/books/report` is served here -- see [[io.taig.otter.sample.api.api.unserved]] -- so both are
-  * caught by `books.fetch` and answered `400` for an ISBN that does not parse, which is what `LibraryRoutesTest`
-  * records rather than leaves to be discovered.
+  * caught by `books.fetch` and answered `400` for an ISBN that does not parse, and the shadowing decides `Allow` too: a
+  * `PUT` to either is a `405` listing the methods of `/books/{isbn}`. `LibraryRoutesTest` records both rather than
+  * leaves them to be discovered.
   */
 object LibraryRoutes:
-  /** Every served endpoint, answered by `library`. */
-  def apply[F[_]: Concurrent](library: Library[F]): HttpRoutes[F] =
-    Http4s.routes[F](
+  /** Every served endpoint, answered by `library`, and every other request answered as the API declares. */
+  def apply[F[_]: Concurrent](library: Library[F]): HttpApp[F] =
+    Http4s.app[F](
       api.all,
       Route(loans.health, (_: Unit) => library.health),
       Route(books.list, input => library.list(input._1, input._2, input._3, input._4)),

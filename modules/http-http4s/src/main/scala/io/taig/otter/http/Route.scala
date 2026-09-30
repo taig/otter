@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import cats.effect.Concurrent
 import cats.syntax.all.*
 import io.taig.otter.http.codec.Http4sPayload
@@ -23,20 +24,21 @@ final case class Route[F[_], +S[-_, +_], A, B](
     errors: ErrorPolicy[S, Any] = ErrorPolicy.default,
     overrides: ErrorOverrides[S, Any] = ErrorOverrides()
 ):
-  /** Whether this route is the one an incoming method and path is addressed to.
+  /** Whether this route is the one an incoming method and path is addressed to. */
+  def matches(method: Method, segments: Vector[String]): Boolean =
+    endpoint.request.method == method && addresses(segments)
+
+  /** Whether this route spells an incoming path, whatever method it arrived under.
     *
     * Arity and literals, and deliberately nothing else. [[io.taig.otter.http.codec.PathDecoder]] would answer a
     * stricter question and answer it in one piece -- a tuple decoder rejects the wrong number of segments, a `Constant`
     * rejects a mis-spelled literal, and a parameter that will not parse fails alongside both -- so a router that asked
     * it could not tell "this is some other endpoint" from "this endpoint, called wrongly". The first must fall through
-    * to the next route and end as a `404`; the second must stop here and be reported as a `400`. Deciding on the part
-    * of a path that cannot vary is what separates them.
+    * to the next route and end as a `404`, or as a `405` where another route spells the path; the second must stop here
+    * and be reported as a `400`. Deciding on the part of a path that cannot vary is what separates them.
     */
-  def matches(method: Method, segments: Vector[String]): Boolean =
-    endpoint.request.method == method &&
-      PathTemplate(endpoint.request.path.value).toList.corresponds(segments):
-        case (Left(literal), segment) => literal == segment
-        case (Right(_), _)            => true
+  def addresses(segments: Vector[String]): Boolean =
+    Route.addresses(PathTemplate(endpoint.request.path.value), segments)
 
 object Route:
   def apply[F[_], S[-_, +_], A, B, E, D](
@@ -116,6 +118,16 @@ object Route:
           notify(Http4sObservation.Event.Failed(refused)) *> render
 
     F.onCancel(respond, notify(Http4sObservation.Event.Cancelled))
+
+  /** Whether a path template spells an incoming path, which is [[Route.addresses]] for a template already taken apart.
+    */
+  private[http] def addresses(
+      template: Chain[Either[String, (String, Parameter.Node[?, ?])]],
+      segments: Vector[String]
+  ): Boolean =
+    template.toList.corresponds(segments):
+      case (Left(literal), segment) => literal == segment
+      case (Right(_), _)            => true
 
   /** The request's bytes, read only if the endpoint describes something to read them as.
     *

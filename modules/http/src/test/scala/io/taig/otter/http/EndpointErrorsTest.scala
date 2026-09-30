@@ -18,4 +18,9 @@ object EndpointErrorsTest extends ZIOSpecDefault:
         declared.compose(ErrorPolicy.default).errors == ErrorPolicy.default,
         domain.effective == domain
       )
+    ,
+    test("the default unrouted answers are a not found and a method not allowed, and nothing else"):
+      assertTrue(
+        Responses.branches(UnroutedPolicy.default.responses).map(_.status).toList == List(Status(404), Status(405))
+      )
   )
