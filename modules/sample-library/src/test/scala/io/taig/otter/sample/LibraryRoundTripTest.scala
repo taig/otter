@@ -6,6 +6,7 @@ import io.github.iltotore.iron.autoRefine
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
+import io.taig.otter.http.Http4sEnvelope
 import io.taig.otter.http.Route
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
@@ -102,7 +103,10 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           api.all,
           Route(
             books.catalogue,
-            (_: Unit) => IO.raiseError[Category](new IllegalStateException("catalogue unavailable"))
+            (_: Unit) =>
+              IO.raiseError[Category](
+                new IllegalStateException("catalogue unavailable", new RuntimeException("private catalogue cause"))
+              )
           )
         )(Http4sCirce.Payload)
         .orNotFound
@@ -110,8 +114,46 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
       ZIO.fromFuture: _ =>
         (for
           response <- routes.run(Http4sRequest[IO](uri = Base / "catalogue"))
+          bytes <- Http4sEnvelope.toBytes(response.entity)
+          body = bytes.decodeUtf8.getOrElse("")
           answer <- Http4s.client[IO, Unit, Category](api.all, books.catalogue)(Http4sCirce.Payload, Base, client)(())
-        yield assertTrue(response.status.code == 503, answer == Left(Problem.malformed(Nil)))).unsafeToFuture()
+        yield assertTrue(
+          response.status.code == 503,
+          answer == Left(Problem.internal),
+          body.contains("\"kind\":\"internal\""),
+          body.contains("\"detail\":[]"),
+          !body.contains("catalogue unavailable"),
+          !body.contains("private catalogue cause")
+        )).unsafeToFuture()
+    ,
+    test("a global unexpected failure is an internal problem without exception details"):
+      val routes = Http4s
+        .routes[IO](
+          api.all,
+          Route(
+            loans.health,
+            (_: Unit) =>
+              IO.raiseError[Unit](
+                new IllegalStateException("health unavailable", new RuntimeException("private health cause"))
+              )
+          )
+        )(Http4sCirce.Payload)
+        .orNotFound
+      val client = Http4sClient.fromHttpApp(routes)
+      ZIO.fromFuture: _ =>
+        (for
+          response <- routes.run(Http4sRequest[IO](uri = Base / "health"))
+          bytes <- Http4sEnvelope.toBytes(response.entity)
+          body = bytes.decodeUtf8.getOrElse("")
+          answer <- Http4s.client[IO, Unit, Unit](api.all, loans.health)(Http4sCirce.Payload, Base, client)(())
+        yield assertTrue(
+          response.status.code == 500,
+          answer == Left(Problem.internal),
+          body.contains("\"kind\":\"internal\""),
+          body.contains("\"detail\":[]"),
+          !body.contains("health unavailable"),
+          !body.contains("private health cause")
+        )).unsafeToFuture()
     ,
     test("a caller out of step with the server reads an unrouted 404 as its own, and can tell by the kind"):
       val app = Http4s.app[IO](api.all, Route(loans.health, (_: Unit) => IO.unit))(Http4sCirce.Payload)

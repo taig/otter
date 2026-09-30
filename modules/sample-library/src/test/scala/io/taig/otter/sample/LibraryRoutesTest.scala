@@ -105,14 +105,14 @@ object LibraryRoutesTest extends ZIOSpecDefault:
       ,
       test("a missing required header is a bad request and names the header"):
         answer(get(uri"http://library.test/books")).map((code, body) =>
-          assertTrue(code == 400, body.contains("X-Request-Id"))
+          assertTrue(code == 400, body.contains("X-Request-Id"), body.contains("\"kind\":\"malformed\""))
         )
       ,
       test("a query that does not hold what it describes is a bad request"):
         answer(Http4sRequest[IO](uri = uri"http://library.test/books?page=soon", headers = tracing))
           .map((code, body) => assertTrue(code == 400, body.contains("$.query.page")))
       ,
-      test("a body that parses and breaks the schema is unprocessable, not malformed"):
+      test("a body that parses and breaks the schema is a malformed problem with status 422"):
         answer(
           json(
             Http4sMethod.POST,
@@ -120,7 +120,14 @@ object LibraryRoutesTest extends ZIOSpecDefault:
             """{"isbn":"9780000000000","title":"","pages":0,"published":"2020-01-01"}"""
           )
         )
-          .map((code, body) => assertTrue(code == 422, body.contains("$.body.title"), body.contains("$.body.pages")))
+          .map((code, body) =>
+            assertTrue(
+              code == 422,
+              body.contains("$.body.title"),
+              body.contains("$.body.pages"),
+              body.contains("\"kind\":\"malformed\"")
+            )
+          )
       ,
       test("a refinement on a collection is checked like any other, and names the field"):
         val genres = List.fill(11)("\"poetry\"").mkString(",")
@@ -135,7 +142,17 @@ object LibraryRoutesTest extends ZIOSpecDefault:
       ,
       test("a body that is not a document is a syntax failure"):
         answer(json(Http4sMethod.POST, uri"http://library.test/books", "not json"))
-          .map((code, _) => assertTrue(code == 400))
+          .map((code, body) => assertTrue(code == 400, body.contains("\"kind\":\"malformed\"")))
+      ,
+      test("an unsupported content type is a malformed problem with status 415"):
+        answer(
+          Http4sRequest[IO](
+            method = Http4sMethod.POST,
+            uri = uri"http://library.test/books",
+            headers = Http4sHeaders(Http4sHeader.Raw(CIString("Content-Type"), "application/pdf")),
+            entity = Entity.strict(ByteVector(0x25, 0x50, 0x44, 0x46))
+          )
+        ).map((code, body) => assertTrue(code == 415, body.contains("\"kind\":\"malformed\"")))
       ,
       test("a violation in the envelope alongside one in the body drops the answer back to a bad request"):
         answer(json(Http4sMethod.PATCH, uri"http://library.test/books/nope", """{"pages":0}"""))

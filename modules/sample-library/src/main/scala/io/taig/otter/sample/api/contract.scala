@@ -22,19 +22,24 @@ import io.taig.otter.sample.api.dsl.*
 object contract:
   def answer(status: Int): Response.Schema[dsl.Payload, Failure, Problem] =
     response(Status(status))(body.json(schema.problem)).dimap[Failure, Problem](failure =>
-      if status == 500 then Problem.internal
-      else Problem.malformed(failure.violations.fold(List.empty[String])(Http4s.report(_).linesIterator.toList))
+      failure.category match
+        case Failure.Category.Envelope | Failure.Category.Syntax | Failure.Category.ContentType |
+            Failure.Category.Validation =>
+          Problem.malformed(failure.violations.fold(List.empty[String])(Http4s.report(_).linesIterator.toList))
+        case Failure.Category.EntityRead | Failure.Category.Encoding | Failure.Category.Status |
+            Failure.Category.Unexpected =>
+          Problem.internal
     )(identity)
 
   val errors: ErrorPolicy[dsl.Payload, Problem] = ErrorPolicy(
-    answer(400),
-    answer(400),
-    answer(415),
-    answer(422),
-    answer(500),
-    answer(500),
-    answer(500),
-    answer(500)
+    envelope = answer(400),
+    syntax = answer(400),
+    contentType = answer(415),
+    validation = answer(422),
+    entityRead = answer(500),
+    encoding = answer(500),
+    status = answer(500),
+    unexpected = answer(500)
   )
 
   val unrouted: UnroutedPolicy[dsl.Payload] = UnroutedPolicy(
