@@ -29,7 +29,7 @@ object Responses:
   type Writer[-A] = Responses.Writer.Of[Body.Payload, A]
 
   object Writer:
-    type Of[S[-w, +r], -A] = Responses.Schema[S, A, Any]
+    type Of[+S[-w, +r], -A] = Responses.Schema[S, A, Any]
 
   /** Every answer, in the order the endpoint names them. */
   def branches(schema: Responses.Node[?, ?]): Chain[Response.Schema[?, ?, ?]] = Responses.walk(schema.self.self)
@@ -48,11 +48,25 @@ object Responses:
         [s[-w, +r], w, r] =>
           (annotation: Annotation[Self.Union[Response.Schema[s, *, *], w, r]]) => new Responses.Schema(annotation),
         [s[-w, +r], w, r] => (responses: Responses.Schema[s, w, r]) => responses.self
-      ):
+      ),
+        Responses.AlternableInstances:
     given unionable: [S[-w, +r]]
       => UnionableOperation[Responses.Schema[S, *, *], Responses.Schema[S, *, *]] =
       UnionableOperation.identity
 
+    /** Appending another bodyless response keeps the bottom requirement. */
+    given alternableEmpty: AlternableOperation[
+      Responses.Schema[Nothing, *, *],
+      Responses.Schema[Nothing, *, *],
+      Response.Schema[Nothing, *, *]
+    ]:
+      override def lift[W, R](fa: Responses.Schema[Nothing, W, R]): Responses.Schema[Nothing, W, R] = fa
+
+      override def element[W, R](fb: => Response.Schema[Nothing, W, R]): Responses.Schema[Nothing, W, R] =
+        Responses.Schema.apply[Nothing, W, R](Self.Union.Root(Reference.later(fb)))
+
+  /** Lower priority than the bodyless instance, as in [[Response.AlternableInstances]]. */
+  private[http] trait AlternableInstances:
     /** `responses :+ response`. */
     given alternable: [S1[-w, +r], S2[-w, +r]]
         => AlternableOperation[

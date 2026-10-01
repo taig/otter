@@ -31,16 +31,17 @@ import scodec.bits.ByteVector
   * the body's schema is what keeps a named payload named: `schema.book` still reaches `components/schemas` as `Book`,
   * where converting the JSON record itself would have buried it.
   *
-  * The conversion needs a branch that carries a body. `.to` is found through the `Profunctor` for
-  * `Response.Schema[S, ?, ?]`, and a response with no entity has `S = Nothing`, which does not eta-expand to the kind
-  * the instance asks for. So an answer with no entity stays a `Unit` in the union's `Either`, and what can still be
-  * converted is the union as a whole: [[books.fetch]] maps `Either[Book, Unit]` onto `Option[Book]` with neither branch
-  * named. A sum is worth reaching for once every branch has something to say, and [[loans.borrow]] is the three branch
-  * case.
+  * A branch with no body converts `Unit` to a parameterless case in the same way: [[Deleted.Removed]] names the
+  * successful deletion without adding anything to its HTTP response.
   */
 enum Created:
   case Added(book: Book)
   case Duplicate(problem: Problem)
+
+/** What answers `DELETE /books/{isbn}`: removal, or the reason a book must stay. */
+enum Deleted:
+  case Removed
+  case Conflict(problem: Problem)
 
 /** Everything about a book. */
 object books:
@@ -146,14 +147,13 @@ object books:
   /** `DELETE /books/{isbn}`, which is idempotent: a book that is not there is already gone, and 204 is the honest
     * answer rather than a 404. What it cannot do is remove a book somebody is holding, and that is the conflict.
     *
-    * The one two branch answer left as a plain `Either`, and the contrast [[books.fetch]] is worth reading against: the
-    * branch carrying nothing here is the *success*, so `Option[Problem]` would name the failure as the thing that is
-    * present and get the endpoint exactly backwards. Not a sum either -- see [[Created]] for why a branch with no
-    * entity cannot be converted on its own.
+    * The empty success branch maps to a singleton case, and the conflict carries its problem. Both the handler and the
+    * Scala client use [[Deleted]]; the wire still carries an empty 204 or a JSON 409.
     */
-  val delete: Endpoint.Of[dsl.Payload, Isbn, Either[Unit, Problem]] = endpoint(
+  val delete: Endpoint.Of[dsl.Payload, Isbn, Deleted] = endpoint(
     request(method.delete, books.one),
-    response(status.noContent) :+ response(status.conflict)(body.json(schema.problem))
+    (response(status.noContent).to[Deleted.Removed.type] :+
+      response(status.conflict)(body.json(schema.problem)).to[Deleted.Conflict]).to[Deleted]
   ).attr(openapi.operationId, "deleteBook")
     .attr(openapi.tags, "books")
 

@@ -241,12 +241,15 @@ appending is a tuple or a `Unit`, and a match type cannot reduce against a type 
 says its fields are not covered in the correct order -- which points nowhere near the cause. `opaque type Isbn <:
 String = String` reduces and gives nothing away.
 
-**`.to` needs a branch that carries a body.** Mapping a response union onto a sealed sum -- the thing that turns
-`Either[Either[Loan, Problem], Problem]` into three named cases -- converts each branch first, and that conversion goes
-through the `Profunctor` for `Response.Schema[S, ?, ?]`. A response with no entity has `S = Nothing`, which does not
-eta-expand to the kind the instance asks for. So an answer with no entity stays a `Unit` inside an `Either`, and a sum
-is worth reaching for once every branch has something to say. `books.create` and `loans.borrow` are the sums;
-`books.delete` and `books.fetch` are the `Either`s.
+**A bodyless response can name its domain case with `.to`.** `Convert.product0` maps `Unit` to a parameterless
+case, so `response(status.noContent).to[Deleted.Removed.type]` names a successful deletion without adding an entity.
+Convert each branch to its case before converting the union to the enum. `books.delete` is the example with a bodyless
+success and a JSON conflict; `books.create` and `loans.borrow` carry bodies in every branch. `books.fetch` keeps
+`Option[Book]` because absence is what that endpoint means. These conversions preserve the body requirements and the
+HTTP contract in both directions. All-bodyless alternatives keep `Nothing` through specialized `AlternableOperation`
+instances in `Response` and `Responses`: applying `Body.Or` to two bottom constructors otherwise exposes a Scala
+kind-checking failure. The general instances have lower priority and still accumulate requirements as soon as a body
+is present. No conversion changes the body requirement.
 
 A third thing it records rather than leaves to be discovered: **a placeholder shadows a literal of the same arity**.
 `/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever is registered first wins, and a

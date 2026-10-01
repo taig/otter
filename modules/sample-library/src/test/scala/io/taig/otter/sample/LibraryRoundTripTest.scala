@@ -10,6 +10,7 @@ import io.taig.otter.http.Http4sEnvelope
 import io.taig.otter.http.Route
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
+import io.taig.otter.sample.api.Deleted
 import io.taig.otter.sample.api.api
 import io.taig.otter.sample.api.books
 import io.taig.otter.sample.api.dsl
@@ -247,11 +248,16 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         )
       ,
       test("deleting a book nobody is holding answers with no entity at all"):
-        call(books.delete)(hobbit).map(answer => assertTrue(answer == Left(())))
+        call(books.delete)(hobbit).map(answer => assertTrue(answer == Deleted.Removed))
+      ,
+      test("deleting an already removed book still succeeds"):
+        calls(books.delete, books.delete)(hobbit, hobbit).map(answer => assertTrue(answer == Deleted.Removed))
       ,
       test("deleting a book somebody is holding is refused, and answers with a document"):
         calls(loans.borrow, books.delete)((ada, Loan.Request(hobbit, None)), hobbit).map(answer =>
-          assertTrue(answer.toOption.map(_.kind) == Some(Problem.Kind.Conflict))
+          assertTrue(answer match
+            case Deleted.Conflict(problem) => problem.kind == Problem.Kind.Conflict
+            case _                         => false)
         )
       ,
       test("a loan is granted, and the period it was granted for is the member's own"):

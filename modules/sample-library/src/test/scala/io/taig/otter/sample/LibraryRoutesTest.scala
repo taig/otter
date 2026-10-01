@@ -62,6 +62,39 @@ object LibraryRoutesTest extends ZIOSpecDefault:
   private val tracing: Http4sHeaders = Http4sHeaders(Http4sHeader.Raw(CIString("X-Request-Id"), "abc-123"))
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryRoutesTest")(
+    test("deletion writes an empty 204"):
+      answer(Http4sRequest[IO](method = Http4sMethod.DELETE, uri = uri"http://library.test/books/9780261102217"))
+        .map((code, body) => assertTrue(code == 204, body.isEmpty))
+    ,
+    test("a deletion conflict writes a JSON problem under 409"):
+      ZIO.fromFuture: _ =>
+        Library[IO]()
+          .flatMap: library =>
+            library
+              .borrow(
+                java.util.UUID.fromString("6f2a5c1e-0b3d-4f7a-9c8e-1d2b3a4c5d6e"),
+                Loan.Request(Isbn.digits("9780261102217"), None)
+              )
+              .flatMap: _ =>
+                LibraryRoutes(library)
+                  .run(
+                    Http4sRequest[IO](method = Http4sMethod.DELETE, uri = uri"http://library.test/books/9780261102217")
+                  )
+                  .flatMap: response =>
+                    Http4sEnvelope
+                      .toBytes(response.entity)
+                      .map: bytes =>
+                        val problem = io.circe.parser.parse(bytes.decodeUtf8.getOrElse("")).toOption
+                        assertTrue(
+                          response.status.code == 409,
+                          response.headers.headers.exists(header =>
+                            header.name == CIString("Content-Type") && header.value == "application/json"
+                          ),
+                          problem.flatMap(_.hcursor.get[String]("kind").toOption).contains("conflict"),
+                          problem.flatMap(_.hcursor.get[String]("title").toOption).contains("9780261102217 is on loan")
+                        )
+          .unsafeToFuture()
+    ,
     suite("a path no endpoint describes")(
       test("is the API's own not found, and not a bad request"):
         respond(get(uri"http://library.test/orders/42")).map((code, allow, body) =>

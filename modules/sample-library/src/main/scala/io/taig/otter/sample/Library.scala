@@ -5,6 +5,7 @@ import cats.effect.Sync
 import cats.syntax.all.*
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
+import io.taig.otter.sample.api.Deleted
 import scodec.bits.ByteVector
 
 import java.time.Clock
@@ -53,9 +54,10 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
         (current.copy(books = current.books.updated(isbn, patched)), Some(patched))
 
   /** Idempotent: a book that is not there is already gone. A book somebody is holding cannot be removed at all. */
-  def delete(isbn: Isbn): F[Either[Unit, Problem]] = state.modify: current =>
-    if current.loans.values.exists(_.isbn == isbn) then (current, Right(Problem.conflict(s"${isbn.value} is on loan")))
-    else (current.copy(books = current.books.removed(isbn)), Left(()))
+  def delete(isbn: Isbn): F[Deleted] = state.modify: current =>
+    if current.loans.values.exists(_.isbn == isbn) then
+      (current, Deleted.Conflict(Problem.conflict(s"${isbn.value} is on loan")))
+    else (current.copy(books = current.books.removed(isbn)), Deleted.Removed)
 
   /** Bytes in, bytes out. Nothing is stored, because what a scan *is* is not this sample's subject.
     *
