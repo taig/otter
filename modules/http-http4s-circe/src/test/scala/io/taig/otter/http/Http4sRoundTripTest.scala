@@ -135,7 +135,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   ): Task[(Int, String)] =
     ZIO.fromFuture: _ =>
       Http4s
-        .routes[IO](Route(errors(endpoint), (_: A) => IO.unit))(Http4sCirce.Payload)
+        .routes[IO](Route.composed(errors(endpoint), (_: A) => IO.unit))(Http4sCirce.Payload)
         .orNotFound
         .run(request)
         .flatMap(response =>

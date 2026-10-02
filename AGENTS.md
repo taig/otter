@@ -2,6 +2,12 @@
 
 Extensible schema definition library for serialization formats (e.g. JSON, XML and CSV) with self-documenting API definition capabilities.
 
+## Project maturity
+
+Otter is a highly experimental work in progress. When making changes or reviewing the design, prefer fundamental
+improvements—even when they require breaking APIs—over workarounds that preserve prior design mistakes. Do not treat
+existing APIs or architecture as settled when a cleaner design would produce a better result.
+
 ## Development workflow
 
 Modules: `core`, `core-json`, `core-json-borer`, `core-json-circe`, `core-json-schema`, `core-csv`,
@@ -243,12 +249,27 @@ accumulator is flattened. The sample's `opaque type Isbn = String` therefore sta
 by its domain API rather than inherited from `String`. Generic combinators must pass the shape evidence through to keep
 the shape selected at their call site.
 
-**`.to` needs a branch that carries a body.** Mapping a response union onto a sealed sum -- the thing that turns
-`Either[Either[Loan, Problem], Problem]` into three named cases -- converts each branch first, and that conversion goes
-through the `Profunctor` for `Response.Schema[S, ?, ?]`. A response with no entity has `S = Nothing`, which does not
-eta-expand to the kind the instance asks for. So an answer with no entity stays a `Unit` inside an `Either`, and a sum
-is worth reaching for once every branch has something to say. `books.create` and `loans.borrow` are the sums;
-`books.delete` and `books.fetch` are the `Either`s.
+**A bodyless response can name its domain case with `.to`.** `Convert.product0` maps `Unit` to a parameterless
+case, so `response(status.noContent).to[Deleted.Removed.type]` names a successful deletion without adding an entity.
+Convert each branch to its case before converting the union to the enum. `books.delete` is the example with a bodyless
+success and a JSON conflict; `books.create` and `loans.borrow` carry bodies in every branch. `books.fetch` keeps
+`Option[Book]` because absence is what that endpoint means. These conversions preserve the body requirements and the
+HTTP contract in both directions. All-bodyless alternatives keep `Nothing` through specialized `AlternableOperation`
+instances in `Response` and `Responses`: applying `Body.Or` to two bottom constructors otherwise exposes a Scala
+kind-checking failure. The general instances have lower priority and still accumulate requirements as soon as a body
+is present. No conversion changes the body requirement.
+
+**A request names its input with `.to` too**, since `Queries`, `Headers` and `Request.Schema` are profunctors
+like any other schema. `books.list` names its query string `BookFilter` and its headers `Tracing` where each is
+defined, so its input is `(BookFilter, Tracing)`. Name the parts before composing them: `Append` adds a named value as
+a single member, while a `.headers` added after a request's `.to` goes beside the named value rather than inside it.
+The handler untuples that pair, `(filter, _) => library.list(filter)`, and it can only because `Route` has exactly one
+`apply` per arity. Scala types a lambda against its expected type only once overloading has settled, so a second
+two-argument `apply` leaves `(filter, _) => ...` nothing to untuple against. That is why `Route`'s constructor is
+private outright, since a case class constructor is a candidate wherever it is visible, `private[http]` included, and
+why a `ComposedEndpoint` is served through `Route.composed`. `Convert` matches by position and type, not by name, so a case class declaring two `Int`s in the
+wrong order still compiles. Names protect every call site, not the one declaration. `LibraryFilterContractTest`
+asserts that the wire and both documents are unchanged.
 
 A third thing it records rather than leaves to be discovered: **a placeholder shadows a literal of the same arity**.
 `/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever is registered first wins, and a

@@ -40,7 +40,7 @@ object Response:
   final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Response.Value[S, W, R]]):
     export self.self.{bodies, headers, status, streamed}
 
-  object Schema:
+  object Schema extends Response.AlternableInstances:
     def apply[S[-_, +_], W, R](self: Response.Value[S, W, R]): Response.Schema[S, W, R] =
       new Response.Schema(Annotation(self))
 
@@ -68,6 +68,22 @@ object Response:
       => UnionableOperation[Response.Schema[S, *, *], Responses.Schema[S, *, *]] =
       UnionableOperation.derived
 
+    /** Scala cannot kind-check the inferred constructor in `Body.Or[Nothing, Nothing]`. Keep the bottom requirement
+      * directly; the general instance below still accumulates requirements when either branch has a body.
+      */
+    given alternableEmpty: AlternableOperation[
+      Response.Schema[Nothing, *, *],
+      Responses.Schema[Nothing, *, *],
+      Response.Schema[Nothing, *, *]
+    ]:
+      override def lift[W, R](fa: Response.Schema[Nothing, W, R]): Responses.Schema[Nothing, W, R] =
+        Responses.Schema.apply[Nothing, W, R](Self.Union.Root(Reference.now(fa)))
+
+      override def element[W, R](fb: => Response.Schema[Nothing, W, R]): Responses.Schema[Nothing, W, R] =
+        Responses.Schema.apply[Nothing, W, R](Self.Union.Root(Reference.later(fb)))
+
+  /** Lower priority than the bodyless instance, whose result must stay `Nothing`. */
+  private[http] trait AlternableInstances:
     /** `response :+ response`. */
     given alternable: [S1[-w, +r], S2[-w, +r]]
         => AlternableOperation[

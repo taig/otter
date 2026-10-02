@@ -215,7 +215,7 @@ object Http4s:
       api: Api[Http4sPayload.Supported[P], E],
       routes: Seq[Route[F, Http4sPayload.Supported[P], ?, ?]]
   ): Routes[F, Http4sPayload.Supported[P]] =
-    Routes(routes.map(route => route.copy(errors = route.overrides(api.errors)))*)
+    Routes(routes.map(_.under(api.errors))*)
 
   /** An endpoint, as a function that calls it.
     *

@@ -3,8 +3,10 @@ package io.taig.otter.sample
 import cats.effect.Ref
 import cats.effect.Sync
 import cats.syntax.all.*
+import io.taig.otter.sample.api.BookFilter
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
+import io.taig.otter.sample.api.Deleted
 import scodec.bits.ByteVector
 
 import java.time.Clock
@@ -28,13 +30,14 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
   private def reference: F[UUID] = Sync[F].delay(UUID.randomUUID())
 
   /** Paged, filtered and sorted by ISBN, which is the order the catalogue is kept in. */
-  def list(page: Int, size: Int, genres: List[Genre], available: Boolean): F[List[Book]] =
+  def list(filter: BookFilter): F[List[Book]] =
     state.get.map: current =>
+      val offset = (filter.page - 1).max(0) * filter.size
       current.books.values.toList
-        .filter(book => genres.isEmpty || genres.exists(book.genres.contains))
-        .filter(book => !available || !current.loans.values.exists(_.isbn == book.isbn))
+        .filter(book => filter.genres.isEmpty || filter.genres.exists(book.genres.contains))
+        .filter(book => !filter.available || !current.loans.values.exists(_.isbn == book.isbn))
         .sortBy(_.isbn.value)
-        .slice((page - 1).max(0) * size, (page - 1).max(0) * size + size)
+        .slice(offset, offset + filter.size)
 
   def create(create: Book.Create): F[Created] = state.modify: current =>
     if current.books.contains(create.isbn) then
@@ -53,9 +56,10 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
         (current.copy(books = current.books.updated(isbn, patched)), Some(patched))
 
   /** Idempotent: a book that is not there is already gone. A book somebody is holding cannot be removed at all. */
-  def delete(isbn: Isbn): F[Either[Unit, Problem]] = state.modify: current =>
-    if current.loans.values.exists(_.isbn == isbn) then (current, Right(Problem.conflict(s"${isbn.value} is on loan")))
-    else (current.copy(books = current.books.removed(isbn)), Left(()))
+  def delete(isbn: Isbn): F[Deleted] = state.modify: current =>
+    if current.loans.values.exists(_.isbn == isbn) then
+      (current, Deleted.Conflict(Problem.conflict(s"${isbn.value} is on loan")))
+    else (current.copy(books = current.books.removed(isbn)), Deleted.Removed)
 
   /** Bytes in, bytes out. Nothing is stored, because what a scan *is* is not this sample's subject.
     *

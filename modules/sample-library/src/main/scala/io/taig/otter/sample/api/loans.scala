@@ -11,10 +11,10 @@ import java.util.UUID
 
 /** What answers `POST /members/{reference}/loans`.
   *
-  * The three branch case, and the one where a sum earns its keep: every branch carries a body, so every branch converts
-  * -- and `:+` nests to the left, which means the raw shape is `Either[Either[Loan, Problem], Problem]` and the two
-  * `Problem`s in it are told apart by nothing at all. A caller matching on that would be guessing. Matching on
-  * [[Borrowed.Unknown]] against [[Borrowed.Unavailable]] is not guessing.
+  * The three branch case, and the one where a sum earns its keep: `:+` nests to the left, which means the raw shape is
+  * `Either[Either[Loan, Problem], Problem]` and the two `Problem`s in it are told apart by nothing at all. A caller
+  * matching on that would be guessing. Matching on [[Borrowed.Unknown]] against [[Borrowed.Unavailable]] is not
+  * guessing.
   */
 enum Borrowed:
   case Lent(loan: Loan)

@@ -48,7 +48,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       events <- IO.ref(List.empty[Http4sObservation.Event])
       response <- Http4s
         .routes[IO](
-          Route(composed, handler)
+          Route.composed(composed, handler)
         )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
         .orNotFound
         .run(Http4sRequest[IO](uri = base))
@@ -120,7 +120,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       val client = Client.fromHttpApp(
         Http4s
           .routes[IO](
-            Route(composed, (_: Unit) => IO.raiseError[Unit](cause))
+            Route.composed(composed, (_: Unit) => IO.raiseError[Unit](cause))
           )(Http4sPayload.Empty)
           .orNotFound
       )
@@ -131,7 +131,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       val client = Client.fromHttpApp(
         Http4s
           .routes[IO](
-            Route(composed, (_: Unit) => IO.unit)
+            Route.composed(composed, (_: Unit) => IO.unit)
           )(Http4sPayload.Empty)
           .orNotFound
       )
@@ -142,7 +142,9 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
         ErrorPolicy.default(endpoint(request(method.get, __), response(Status(500))))
       val client =
-        Client.fromHttpApp(Http4s.routes[IO](Route(value, (_: Unit) => IO.unit))(Http4sPayload.Empty).orNotFound)
+        Client.fromHttpApp(
+          Http4s.routes[IO](Route.composed(value, (_: Unit) => IO.unit))(Http4sPayload.Empty).orNotFound
+        )
       run(Http4s.client[IO, Unit, Either[Status, Unit]](value.effective)(Http4sPayload.Empty, base, client)(()))
         .map(value => assertTrue(value == Right(())))
     ,
@@ -152,7 +154,9 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         .dimap[Failure, String](_ => (5, "unavailable"))(_._2)
       val policy: ErrorPolicy[Body.Whole[Json.Node], Status | String] = ErrorPolicy.default.copy(unexpected = error)
       val value = policy(domain)
-      val app = Http4s.routes[IO](Route(value, (_: Unit) => IO.raiseError[Unit](cause)))(Http4sCirce.Payload).orNotFound
+      val app = Http4s
+        .routes[IO](Route.composed(value, (_: Unit) => IO.raiseError[Unit](cause)))(Http4sCirce.Payload)
+        .orNotFound
       run(
         for
           response <- app.run(Http4sRequest[IO](uri = base))
@@ -177,7 +181,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           called <- IO.ref(false)
           response <- Http4s
             .routes[IO](
-              Route(value, (_: ByteVector) => called.set(true))
+              Route.composed(value, (_: ByteVector) => called.set(true))
             )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
             .orNotFound
             .run(
@@ -201,7 +205,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         ErrorPolicy.default(endpoint(request(method.get, __), response(Status(-1))))
       run(
         Http4s
-          .routes[IO](Route(value, (_: Unit) => IO.unit))(Http4sPayload.Empty)
+          .routes[IO](Route.composed(value, (_: Unit) => IO.unit))(Http4sPayload.Empty)
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
       ).map(response => assertTrue(response.status.code == 500))
@@ -213,7 +217,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         events <- IO.ref(List.empty[Http4sObservation.Event])
         response <- Http4s
           .routes[IO](
-            Route(value, (_: Unit) => IO.raiseError[Unit](new RuntimeException("handler")))
+            Route.composed(value, (_: Unit) => IO.raiseError[Unit](new RuntimeException("handler")))
           )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
@@ -227,7 +231,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         events <- IO.ref(List.empty[Http4sObservation.Event])
         fiber <- Http4s
           .routes[IO](
-            Route(composed, (_: Unit) => started.complete(()) *> IO.never[Unit])
+            Route.composed(composed, (_: Unit) => started.complete(()) *> IO.never[Unit])
           )(Http4sPayload.Empty, observation => events.update(_ :+ observation.event))
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
@@ -246,7 +250,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         events <- IO.ref(List.empty[Http4sObservation.Event])
         response <- Http4s
           .routes[IO](
-            Route(value, (_: Unit) => IO.unit)
+            Route.composed(value, (_: Unit) => IO.unit)
           )(Http4sCirce.Payload, observation => events.update(_ :+ observation.event))
           .orNotFound
           .run(Http4sRequest[IO](uri = base))
@@ -264,7 +268,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           events <- IO.ref(List.empty[Http4sObservation.Event])
           response <- Http4s
             .routes[IO](
-              Route(value, (_: Unit) => IO.pure("value"))
+              Route.composed(value, (_: Unit) => IO.pure("value"))
             )(refusingPayload, observation => events.update(_ :+ observation.event))
             .orNotFound
             .run(Http4sRequest[IO](uri = base))
