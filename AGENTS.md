@@ -2,6 +2,12 @@
 
 Extensible schema definition library for serialization formats (e.g. JSON, XML and CSV) with self-documenting API definition capabilities.
 
+## Project maturity
+
+Otter is a highly experimental work in progress. When making changes or reviewing the design, prefer fundamental
+improvements—even when they require breaking APIs—over workarounds that preserve prior design mistakes. Do not treat
+existing APIs or architecture as settled when a cleaner design would produce a better result.
+
 ## Development workflow
 
 Modules: `core`, `core-json`, `core-json-borer`, `core-json-circe`, `core-json-schema`, `core-csv`,
