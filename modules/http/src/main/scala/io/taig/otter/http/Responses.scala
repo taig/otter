@@ -29,7 +29,7 @@ object Responses:
   type Writer[-A] = Responses.Writer.Of[Body.Payload, A]
 
   object Writer:
-    type Of[S[-w, +r], -A] = Responses.Schema[S, A, Any]
+    type Of[+S[-w, +r], -A] = Responses.Schema[S, A, Any]
 
   /** Every answer, in the order the endpoint names them. */
   def branches(schema: Responses.Node[?, ?]): Chain[Response.Schema[?, ?, ?]] = Responses.walk(schema.self.self)
