@@ -34,7 +34,7 @@ object LibraryRoutes:
     Http4s.app[F](
       api.all,
       Route(loans.health, (_: Unit) => library.health),
-      Route(books.list, input => library.list(input._1, input._2, input._3, input._4)),
+      Route(books.list, (filter, _) => library.list(filter)),
       Route(books.create, library.create),
       Route(books.fetch, library.fetch),
       Route(books.patch, library.patch.tupled),

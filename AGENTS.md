@@ -257,6 +257,18 @@ instances in `Response` and `Responses`: applying `Body.Or` to two bottom constr
 kind-checking failure. The general instances have lower priority and still accumulate requirements as soon as a body
 is present. No conversion changes the body requirement.
 
+**A request names its input with `.to` too**, since `Queries`, `Headers` and `Request.Schema` are profunctors
+like any other schema. `books.list` names its query string `BookFilter` and its headers `Tracing` where each is
+defined, so its input is `(BookFilter, Tracing)`. Name the parts before composing them: `Append` adds a named value as
+a single member, while a `.headers` added after a request's `.to` goes beside the named value rather than inside it.
+The handler untuples that pair, `(filter, _) => library.list(filter)`, and it can only because `Route` has exactly one
+`apply` per arity. Scala types a lambda against its expected type only once overloading has settled, so a second
+two-argument `apply` leaves `(filter, _) => ...` nothing to untuple against. That is why `Route`'s constructor is
+private outright, since a case class constructor is a candidate wherever it is visible, `private[http]` included, and
+why a `ComposedEndpoint` is served through `Route.composed`. `Convert` matches by position and type, not by name, so a case class declaring two `Int`s in the
+wrong order still compiles. Names protect every call site, not the one declaration. `LibraryFilterContractTest`
+asserts that the wire and both documents are unchanged.
+
 A third thing it records rather than leaves to be discovered: **a placeholder shadows a literal of the same arity**.
 `/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever is registered first wins, and a
 literal path must come before the placeholder path that would otherwise swallow it. The shadowing decides `Allow` too:

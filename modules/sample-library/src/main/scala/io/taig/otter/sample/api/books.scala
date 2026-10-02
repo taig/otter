@@ -43,6 +43,21 @@ enum Deleted:
   case Removed
   case Conflict(problem: Problem)
 
+/** What `GET /books` asks of the catalogue: which page, how large, of which genres, and whether only what is on the
+  * shelf.
+  *
+  * The query string reads a four tuple and `.to` names it, which is the same conversion a response uses -- a
+  * [[io.taig.otter.http.Queries.Schema]] is a profunctor like any other schema. `page` and `size` are both `Int`, so a
+  * tuple would let every caller swap them unnoticed; a field name will not. What the names do not check is this
+  * declaration: [[io.taig.otter.Convert]] matches members by position and type, so declaring `size` before `page` would
+  * compile and swap them once, here, for everybody. The query string itself is untouched: the defaults, the repeated
+  * `genre` and the bare `available` flag are each still their own parameter's business.
+  */
+final case class BookFilter(page: Int, size: Int, genres: List[Genre], available: Boolean)
+
+/** The headers `GET /books` reads, named for the same reason [[BookFilter]] is. */
+final case class Tracing(requestId: String, languages: Option[List[String]])
+
 /** Everything about a book. */
 object books:
   /** `/books`, written the way a URL is written.
@@ -65,24 +80,24 @@ object books:
     * parameter reads that as absence before the value is looked at -- right for `?page=`, wrong here, where giving the
     * name *is* the assertion. `strict` is what lets the empty text through to be read as `true`.
     */
-  val filter: Queries[(Int, Int, List[Genre], Boolean)] =
-    query("page", int).optional(1) :*
+  val filter: Queries[BookFilter] =
+    (query("page", int).optional(1) :*
       query("size", int).optional(20) :*
       query("genre", collection.list(enumerated)) :*
-      query("available", coerce(boolean)).strict.optional(false)
+      query("available", coerce(boolean)).strict.optional(false)).to[BookFilter]
 
   /** One header that has to be there and one list valued one that need not be.
     *
     * This is as far as an endpoint description goes towards authentication: there is no security scheme vocabulary in
     * this library, and a header a handler reads is the honest whole of what can be said.
     */
-  val tracing: Headers[(String, Option[List[String]])] =
-    header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optional
+  val tracing: Headers[Tracing] =
+    (header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optional).to[Tracing]
 
   /** The genre spelling the query string uses, which is the JSON one: an enumeration is a mapping and the mapping does
     * not change with the position it is read in.
     */
-  private def enumerated: Parameter.Enumeration[Genre] =
+  private[sample] def enumerated: Parameter.Enumeration[Genre] =
     dsl.enumeration[Parameter.Primitive.Text.Schema, String, Genre](dsl.string):
       case Genre.Biography => "biography"
       case Genre.Children  => "children"
@@ -94,12 +109,16 @@ object books:
 
   /** `GET /books`
     *
-    * The input is a five tuple whose last member is a pair, and not a flat six, which is worth reading twice:
-    * [[io.taig.otter.Append]] appends what it is given as *one* member rather than concatenating it. The query string
-    * contributes four values and the header set contributes one pair. `++` is the operator that concatenates instead,
-    * and neither is a mistake for the other -- a header set is not four more query parameters.
+    * The input is a [[BookFilter]] beside a [[Tracing]], each named where it is defined rather than the request named
+    * as a whole. [[io.taig.otter.Append]] appends what it is given as *one* member, so a named query string stays one
+    * value rather than spilling its fields into the request, and each part stays reusable on its own. A pair of named
+    * values is also all a handler needs: `(filter, _) => ...` untuples it, which [[io.taig.otter.http.Route]] keeps
+    * possible by having one `apply` of each arity.
+    *
+    * None of it reaches the documents. A conversion is a `Modify`, which is what the handler reads and not what the
+    * endpoint describes, so the OpenAPI and TypeScript renderings are the ones the tuples produced.
     */
-  val list: Endpoint.Of[dsl.Payload, (Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] =
+  val list: Endpoint.Of[dsl.Payload, (BookFilter, Tracing), List[Book]] =
     endpoint(
       request(method.get, books.all).queries(books.filter).headers(books.tracing),
       response(status.ok)(body.json(json.collection.list(schema.book)))

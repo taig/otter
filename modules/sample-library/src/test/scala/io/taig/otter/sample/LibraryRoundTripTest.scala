@@ -8,9 +8,11 @@ import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Http4sEnvelope
 import io.taig.otter.http.Route
+import io.taig.otter.sample.api.BookFilter
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
 import io.taig.otter.sample.api.Deleted
+import io.taig.otter.sample.api.Tracing
 import io.taig.otter.sample.api.api
 import io.taig.otter.sample.api.books
 import io.taig.otter.sample.api.dsl
@@ -56,6 +58,8 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
   private val hobbit: Isbn = Isbn.digits("9780261102217")
 
   private val austen: Isbn = Isbn.digits("9780141439518")
+
+  private val tracing: Tracing = Tracing(requestId = "abc-123", languages = None)
 
   /** A fresh catalogue per call, so no test can see what another one wrote. */
   private def call[A, B](endpoint: Endpoint.Declaration[dsl.Payload, A, A, B, B, Problem])(value: A): Task[B] =
@@ -172,23 +176,33 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         call(loans.health)(()).map(answer => assertTrue(answer == ()))
       ,
       test("a defaulted query reaches the handler as its default, and the whole catalogue comes back"):
-        call(books.list)((1, 20, Nil, false, ("abc-123", None))).map(books => assertTrue(books.length == 3))
-      ,
-      test("a repeated query parameter is read as every value that was given"):
-        call(books.list)((1, 20, List(Genre.Romance), false, ("abc-123", None))).map(books =>
-          assertTrue(books.map(_.isbn) == List(austen))
-        )
-      ,
-      test("paging is the caller's, and a size of one yields one"):
-        call(books.list)((1, 1, Nil, false, ("abc-123", None))).map(books => assertTrue(books.length == 1))
-      ,
-      test("a bare flag is true because the name was given at all"):
-        call(books.list)((1, 20, Nil, true, ("abc-123", None))).map(books => assertTrue(books.length == 3))
-      ,
-      test("an optional list valued header round trips every value"):
-        call(books.list)((1, 20, Nil, false, ("abc-123", Some(List("en", "de"))))).map(books =>
+        call(books.list)((BookFilter(page = 1, size = 20, genres = Nil, available = false), tracing)).map(books =>
           assertTrue(books.length == 3)
         )
+      ,
+      test("a repeated query parameter is read as every value that was given"):
+        call(books.list)(
+          (BookFilter(page = 1, size = 20, genres = List(Genre.Romance), available = false), tracing)
+        )
+          .map(books => assertTrue(books.map(_.isbn) == List(austen)))
+      ,
+      test("paging is the caller's, and a size of one yields one"):
+        call(books.list)((BookFilter(page = 1, size = 1, genres = Nil, available = false), tracing)).map(books =>
+          assertTrue(books.length == 1)
+        )
+      ,
+      test("a bare flag is true because the name was given at all"):
+        call(books.list)((BookFilter(page = 1, size = 20, genres = Nil, available = true), tracing)).map(books =>
+          assertTrue(books.length == 3)
+        )
+      ,
+      test("an optional list valued header round trips every value"):
+        call(books.list)(
+          (
+            BookFilter(page = 1, size = 20, genres = Nil, available = false),
+            Tracing(requestId = "abc-123", languages = Some(List("en", "de")))
+          )
+        ).map(books => assertTrue(books.length == 3))
       ,
       test("a path placeholder that parses hands the handler the parsed value and not the text"):
         call(books.fetch)(hobbit).map(answer => assertTrue(answer.map(_.title) == Some("The Hobbit")))
