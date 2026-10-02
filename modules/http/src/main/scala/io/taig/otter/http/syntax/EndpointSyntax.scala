@@ -37,7 +37,7 @@ trait EndpointSyntax:
     def queries[W2, R2](values: => Queries.Node[W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Request.Schema[S, Append[W1, W2], Append[R1, R2]] =
+    ): Request.Schema[S, W.Out, R.Out] =
       Request.Schema(
         Request.Value.Modify(
           Request.Value.Queries(fa.self.self, Reference.later(values)),
@@ -50,7 +50,7 @@ trait EndpointSyntax:
     def headers[W2, R2](values: => Headers.Node[W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Request.Schema[S, Append[W1, W2], Append[R1, R2]] =
+    ): Request.Schema[S, W.Out, R.Out] =
       Request.Schema(
         Request.Value.Modify(
           Request.Value.Headers(fa.self.self, Reference.later(values)),
@@ -72,7 +72,7 @@ trait EndpointSyntax:
     def apply[S2[-_, +_], W2, R2](value: => Body.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Request.Schema[S2, Append[W1, W2], Append[R1, R2]] =
+    ): Request.Schema[S2, W.Out, R.Out] =
       fa.apply(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
 
     /** The body this request carries, as a choice between alternatives. */
@@ -80,7 +80,7 @@ trait EndpointSyntax:
     def apply[S2[-_, +_], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Request.Schema[S2, Append[W1, W2], Append[R1, R2]] =
+    ): Request.Schema[S2, W.Out, R.Out] =
       Request.Schema(
         Request.Value.Modify(
           Request.Value.Entity[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
@@ -101,12 +101,12 @@ trait EndpointSyntax:
         O: Request.Optionality[W2, R2, W3, R3],
         W: Append.Shape[W1, W3],
         R: Append.Shape[R1, R3]
-    ): Request.Schema[S2, Append[W1, W3], Append[R1, R3]] =
+    ): Request.Schema[S2, W.Out, R.Out] =
       Request.Schema(
         Request.Value.Modify(
           Request.Value.OptionalEntity[S2, W1, R1, W2, R2](fa.self.self, value.self),
           (values: (R1, Option[R2])) => R.join(values._1, O.read(values._2)),
-          (appended: Append[W1, W3]) =>
+          (appended: W.Out) =>
             val (self, body) = W.split(appended)
             (self, O.write(body))
         )
@@ -124,7 +124,7 @@ trait EndpointSyntax:
     def headers[W2, R2](values: => Headers.Node[W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Response.Schema[S, Append[W1, W2], Append[R1, R2]] =
+    ): Response.Schema[S, W.Out, R.Out] =
       Response.Schema(
         Response.Value.Modify(
           Response.Value.Headers(fa.self.self, Reference.later(values)),
@@ -144,7 +144,7 @@ trait EndpointSyntax:
     def apply[S2[-_, +_], W2, R2](value: => Body.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Response.Schema[S2, Append[W1, W2], Append[R1, R2]] =
+    ): Response.Schema[S2, W.Out, R.Out] =
       fa.apply(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
 
     /** The body this response carries, as a choice between alternatives. */
@@ -152,7 +152,7 @@ trait EndpointSyntax:
     def apply[S2[-_, +_], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): Response.Schema[S2, Append[W1, W2], Append[R1, R2]] =
+    ): Response.Schema[S2, W.Out, R.Out] =
       Response.Schema(
         Response.Value.Modify(
           Response.Value.Entity[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),

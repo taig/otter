@@ -10,16 +10,8 @@ import cats.Show
   * which spelling a caller happened to send. Normalising on the way in is what makes [[Isbn.parse]] the way to get one
   * from the wire, and the schema that reads it is a `codec` rather than a `parser` because there is a way back:
   * [[Isbn.render]] writes the digits.
-  *
-  * Bounded by `String` rather than left wholly abstract, and that bound is load bearing rather than a convenience.
-  * [[io.taig.otter.Append]] is a match type that asks whether what it is appending is a tuple or a `Unit`, and a match
-  * type cannot reduce against a type it knows nothing about: an unbounded `opaque type Isbn = String` is abstract
-  * everywhere but this file, so a record holding one would fail to find its `Convert` with a message about fields not
-  * being covered in the correct order. Naming the upper bound tells the compiler what it needs and gives nothing away
-  * -- reading an `Isbn` as text is what [[Isbn.render]] already offers, and there is still no way to make one except
-  * through [[Isbn.parse]].
   */
-opaque type Isbn <: String = String
+opaque type Isbn = String
 
 object Isbn:
   extension (self: Isbn)
@@ -47,5 +39,7 @@ object Isbn:
   private[sample] def digits(value: String): Isbn = value
 
   given Order[Isbn] = Order.by(_.value)
+
+  given Ordering[Isbn] = summon[Order[Isbn]].toOrdering
 
   given Show[Isbn] = Show.show(_.value)

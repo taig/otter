@@ -15,12 +15,24 @@ package io.taig.otter.operation
   * There are no instances here. A format registers the one that fits each receiver in that receiver's own companion,
   * where the alphabet that tells them apart is in scope.
   */
-trait AppendableOperation[F[-_, +_], G[-_, +_], -H[-_, +_]]:
-  def lift[W, R](fa: F[W, R]): G[W, R]
-
-  def element[W, R](fb: => H[W, R]): G[W, R]
+trait AppendableOperation[F[-_, +_], G[-_, +_], -H[-_, +_]] extends AppendableOperation.For[F, H]:
+  override type Container[-w, +r] = G[w, r]
 
 object AppendableOperation:
+  /** Selects the container from the operands before checking the expected result type.
+    *
+    * The value types of `:*` and `*:` depend on shape evidence. While they are unresolved, inferring a free `G` from
+    * the expected type can constrain its entire constructor instead of this application, rejecting a union of narrow
+    * alphabets that would fit once applied. Searching by `F` and `H` keeps that result out of instance selection;
+    * [[AppendableOperation]] still lets instances name their container directly.
+    */
+  trait For[F[-_, +_], -H[-_, +_]]:
+    type Container[-w, +r]
+
+    def lift[W, R](fa: F[W, R]): Container[W, R]
+
+    def element[W, R](fb: => H[W, R]): Container[W, R]
+
   inline def apply[F[-_, +_], G[-_, +_], H[-_, +_]](using
       self: AppendableOperation[F, G, H]
   ): AppendableOperation[F, G, H] = self
