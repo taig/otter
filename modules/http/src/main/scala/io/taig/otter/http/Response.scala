@@ -35,7 +35,7 @@ object Response:
   type Writer[-A] = Response.Writer.Of[Body.Payload, A]
 
   object Writer:
-    type Of[S[-w, +r], -A] = Response.Schema[S, A, Any]
+    type Of[+S[-w, +r], -A] = Response.Schema[S, A, Any]
 
   final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Response.Value[S, W, R]]):
     export self.self.{bodies, headers, status, streamed}

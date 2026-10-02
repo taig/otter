@@ -46,14 +46,14 @@ trait PathSyntax:
         Z: Zip[G],
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): G[Append[W1, W2], Append[R1, R2]] = Append(A.lift(fa), A.element(fb))
+    ): G[W.Out, R.Out] = Append(A.lift(fa), A.element(fb))
 
     /** The same, with a segment the request has to spell exactly: `__ / "users" / segment("id", int)`. */
     def /[G[-w, +r] <: Path.Node[w, r]](name: String)(using
         A: AppendableOperation[F, G, PathSyntax.Literal],
         P: Profunctor[G],
         Z: Zip[G]
-    ): G[Append[W1, Unit], Append[R1, Unit]] = fa / PathSyntax.literal(name)
+    ): G[W1, R1] = fa / PathSyntax.literal(name)
 
 object PathSyntax extends PathSyntax:
   /** What a bare [[String]] in a path stands for: a [[Segment.Static]] spelled out as text. */

@@ -15,13 +15,13 @@ trait OtterSyntax:
       * One operator serves `field :* field`, `record :* field` and `TNil :* string`: the receiver is lifted into the
       * container that accumulates, which is the identity when it already is one.
       */
-    def :*[G[-_, +_], H[-_, +_], W2, R2](fb: => H[W2, R2])(using
-        A: AppendableOperation[F, G, H],
-        P: Profunctor[G],
-        Z: Zip[G],
+    def :*[H[-_, +_], W2, R2](fb: => H[W2, R2])(using
+        A: AppendableOperation.For[F, H],
+        P: Profunctor[A.Container],
+        Z: Zip[A.Container],
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
-    ): G[Append[W1, W2], Append[R1, R2]] = Append(A.lift(fa), A.element(fb))
+    ): A.Container[W.Out, R.Out] = Append(A.lift(fa), A.element(fb))
 
     /** Prepends a field to a record, or a schema to a tuple: `foo *: bar *: TNil`, which is `TNil :* foo :* bar` the
       * way Scala spells a cons.
@@ -36,13 +36,13 @@ trait OtterSyntax:
       * wraps in a [[io.taig.otter.Reference]]. A schema named further down the file and appended bare is: write that
       * one with `:*`, which suspends its element.
       */
-    def *:[G[-_, +_], H[-_, +_], W2, R2](fb: H[W2, R2])(using
-        A: AppendableOperation[H, G, F],
-        P: Profunctor[G],
-        Z: Zip[G],
+    def *:[H[-_, +_], W2, R2](fb: H[W2, R2])(using
+        A: AppendableOperation.For[H, F],
+        P: Profunctor[A.Container],
+        Z: Zip[A.Container],
         W: Prepend.Shape[W1, W2],
         R: Prepend.Shape[R1, R2]
-    ): G[Prepend[W1, W2], Prepend[R1, R2]] = Prepend(A.element(fa), A.lift(fb))
+    ): A.Container[W.Out, R.Out] = Prepend(A.element(fa), A.lift(fb))
 
     /** Appends a branch to a union, lifting the receiver into a union first. */
     def :+[G[-_, +_], H[-_, +_], W2, R2](fb: => H[W2, R2])(using

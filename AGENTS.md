@@ -233,13 +233,15 @@ and one of each. All three are rendered into both documents and reported by name
 three where the routes are built, and `LibraryShortfallTest` asserts that of the compiler rather than of a response.
 Those tests failing is the signal that a shortfall has been fixed.
 
-Two sharp edges it ran into are worth knowing before writing anything against this library.
+Two product conversion details are worth knowing before writing anything against this library.
 
-**An opaque type needs an upper bound to be a record member.** `Append` is a match type that asks whether what it is
-appending is a tuple or a `Unit`, and a match type cannot reduce against a type it knows nothing about. An unbounded
-`opaque type Isbn = String` is abstract outside its own file, so a record holding one fails to find its `Convert` and
-says its fields are not covered in the correct order -- which points nowhere near the cause. `opaque type Isbn <:
-String = String` reduces and gives nothing away.
+**Opaque domain types need no representation bound.** `Append.Shape` and `Prepend.Shape` carry an `Out` type selected
+by the same implicit search as their `split` and `join` operations. A separate match type would get stuck on an
+unbounded opaque member because the compiler cannot prove it disjoint from `Unit` or a tuple; the evidence instead
+selects a scalar shape without inspecting its representation. Only a visible `Unit` is dropped and only a visible tuple
+accumulator is flattened. The sample's `opaque type Isbn = String` therefore stays opaque, and its `Ordering` is supplied
+by its domain API rather than inherited from `String`. Generic combinators must pass the shape evidence through to keep
+the shape selected at their call site.
 
 **`.to` needs a branch that carries a body.** Mapping a response union onto a sealed sum -- the thing that turns
 `Either[Either[Loan, Problem], Problem]` into three named cases -- converts each branch first, and that conversion goes
@@ -330,7 +332,7 @@ sbt testFull scalafmtCheckAll scalafixCheckAll blowoutCheck
 
 Products are built with two operators. `:*` is left-associative and carries what it has built on the left; `*:` is
 right-associative and carries it on the right, so `TNil :* foo :* bar` and `foo *: bar *: TNil` are one schema.
-`Append` and `Prepend` are the match types that keep each flat, and each drops a `Unit` operand, which is how a static
+`Append` and `Prepend` use shape evidence to keep each flat, and each drops a visible `Unit` operand, which is how a static
 path segment stays out of a path's value type.
 
 Neither needs an empty root: two schemas beside each other already are the container that holds them, so `foo :* bar`
@@ -353,10 +355,10 @@ the extension parameter, and Scala evaluates it first.
 writes both sets of fields into one object -- and differs in the Scala value, which stays a pair rather than flattening,
 because neither operand is a member of the other. It binds tighter than `:*` and looser than `*:`.
 
-**Neither operator may become `inline`, and neither may the shape evidence they summon.** `Append` and `Prepend` are
-match types, but which of their branches a pair of types took is found by implicit search -- `Append.Shape`, a ladder of
-four instances -- and that is a measured choice rather than a leftover. Matching on the schema instead copies it into
-every branch, so each member roughly doubles the cost of the one before: ten members took forty seconds and thirteen did
+**Neither operator may become `inline`, and neither may the shape evidence they summon.** `Append.Shape` and
+`Prepend.Shape` select both the result type and its operations by implicit search, through a ladder of four instances.
+That is a measured choice rather than a leftover. Matching on the schema instead copies it into every branch, so each
+member roughly doubles the cost of the one before: ten members took forty seconds and thirteen did
 not finish. Writing the four instances as one `inline given` over `summonFrom` avoids that and is the only inline
 formulation that is even correct -- an `inline match` on `erasedValue` is an error where the scrutinee is neither a
 subtype of a pattern nor disjoint from one, and both `Any` and `Nothing` reach it from a member that goes only one way

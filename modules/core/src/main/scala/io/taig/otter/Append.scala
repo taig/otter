@@ -4,18 +4,7 @@ import cats.arrow.Profunctor
 
 import scala.Tuple as STuple
 
-/** The value shape that results from appending `B` to `A`, keeping tuples flat and eliminating `Unit`. */
-type Append[A, B] = A match
-  case _ *: _ =>
-    B match
-      case Unit => A
-      case _    => STuple.Append[A, B]
-  case Unit => B
-  case _    =>
-    B match
-      case Unit => A
-      case _    => A *: B *: EmptyTuple
-
+/** Combines product values, keeping the accumulator flat and eliminating visible `Unit` operands. */
 object Append:
   /** Appends `fb` to `fa`, flattening each direction on its own terms.
     *
@@ -29,10 +18,18 @@ object Append:
       Z: Zip[F],
       W: Append.Shape[W1, W2],
       R: Append.Shape[R1, R2]
-  ): F[Append[W1, W2], Append[R1, R2]] =
+  ): F[W.Out, R.Out] =
     P.dimap(Z.zip(fa, fb))(W.split)((r: (R1, R2)) => R.join(r._1, r._2))
 
-  /** How a value of `Append[A, B]` is put together and taken apart.
+  /** The result type and the operations that put it together and take it apart.
+    *
+    * `Out` is selected by the same evidence as `split` and `join`. A separate match type cannot do this for an
+    * unbounded opaque member: it cannot prove that the member is disjoint from `Unit` or `NonEmptyTuple`, so it stops
+    * reducing before reaching the scalar case. Search can select the scalar instance without inspecting a hidden
+    * representation. Only a visible `Unit` is dropped and only a visible tuple accumulator is flattened.
+    *
+    * Generic callers must pass this evidence through when they want a caller's shape; summoning it against an
+    * unconstrained type parameter selects the scalar case at that definition site.
     *
     * Found by implicit search rather than by matching on the schema itself, for two reasons. Search is total, so a
     * direction a schema does not have still yields an instance instead of leaving the append undecided -- and an
@@ -50,37 +47,46 @@ object Append:
     * instances, and here it is also the cheaper of the two.
     */
   sealed abstract class Shape[A, B]:
-    def split(value: Append[A, B]): (A, B)
+    type Out
 
-    def join(a: A, b: B): Append[A, B]
+    def split(value: Out): (A, B)
+
+    def join(a: A, b: B): Out
 
   object Shape extends Append.LeftUnit:
-    /** Appending nothing leaves the receiver as it is, whatever the receiver is, so this comes before every other. */
-    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    given right: [A] => Append.Shape[A, Unit]:
-      override def split(value: Append[A, Unit]): (A, Unit) = (value.asInstanceOf[A], ())
+    type Aux[A, B, O] = Append.Shape[A, B] { type Out = O }
 
-      override def join(a: A, b: Unit): Append[A, Unit] = a.asInstanceOf[Append[A, Unit]]
+    /** Dropping the right `Unit` takes precedence over flattening a tuple accumulator. */
+    given right: [A] => Append.Shape.Aux[A, Unit, A] = new Append.Shape[A, Unit]:
+      override type Out = A
+
+      override def split(value: A): (A, Unit) = (value, ())
+
+      override def join(a: A, b: Unit): A = a
 
   private[otter] trait LeftUnit extends Append.TupleLeft:
-    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    given left: [B] => Append.Shape[Unit, B]:
-      override def split(value: Append[Unit, B]): (Unit, B) = ((), value.asInstanceOf[B])
+    given left: [B] => Append.Shape.Aux[Unit, B, B] = new Append.Shape[Unit, B]:
+      override type Out = B
 
-      override def join(a: Unit, b: B): Append[Unit, B] = b.asInstanceOf[Append[Unit, B]]
+      override def split(value: B): (Unit, B) = ((), value)
+
+      override def join(a: Unit, b: B): B = b
 
   private[otter] trait TupleLeft extends Append.Pair:
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    given tuple: [A <: NonEmptyTuple, B] => Append.Shape[A, B]:
-      override def split(value: Append[A, B]): (A, B) =
+    given tuple: [A <: NonEmptyTuple, B] => Append.Shape.Aux[A, B, STuple.Append[A, B]] = new Append.Shape[A, B]:
+      override type Out = STuple.Append[A, B]
+
+      override def split(value: STuple.Append[A, B]): (A, B) =
         val tuple = value.asInstanceOf[NonEmptyTuple]
         (tuple.init.asInstanceOf[A], tuple.last.asInstanceOf[B])
 
-      override def join(a: A, b: B): Append[A, B] = (a :* b).asInstanceOf[Append[A, B]]
+      override def join(a: A, b: B): STuple.Append[A, B] = a :* b
 
   private[otter] trait Pair:
-    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    given pair: [A, B] => Append.Shape[A, B]:
-      override def split(value: Append[A, B]): (A, B) = value.asInstanceOf[(A, B)]
+    given pair: [A, B] => Append.Shape.Aux[A, B, (A, B)] = new Append.Shape[A, B]:
+      override type Out = (A, B)
 
-      override def join(a: A, b: B): Append[A, B] = (a, b).asInstanceOf[Append[A, B]]
+      override def split(value: (A, B)): (A, B) = value
+
+      override def join(a: A, b: B): (A, B) = (a, b)
