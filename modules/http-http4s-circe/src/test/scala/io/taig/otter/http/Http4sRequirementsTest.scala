@@ -18,7 +18,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
         val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
-        Http4s.routes[IO](Route(e, (_: Unit) => IO.unit))(Http4sPayload.Empty)
+        Http4s.routes[IO](Route.composed(e, (_: Unit) => IO.unit))(Http4sPayload.Empty)
       """))
     },
     test("composed routes keep domain handler signatures and accept error interpreters") {
@@ -30,7 +30,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
         val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
-        Http4s.routes[IO](Route(e, (_: Unit) => IO.unit))(Http4sCirce.Payload)
+        Http4s.routes[IO](Route.composed(e, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """)
       assertTrue(errors.isEmpty)
     },
@@ -59,6 +59,23 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         Http4s.routes[IO](Api(ErrorPolicy.default, UnroutedPolicy.default), Route(e, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """)
       assertTrue(errors.isEmpty)
+    },
+    test("a handler untuples what a composed request holds, however its route is built") {
+      val prelude = """
+        import cats.effect.IO
+        import io.taig.otter.http.*
+        import io.taig.otter.http.fixture.dsl.*
+        val e = endpoint(request(method.get, __ / segment("a", int) / segment("b", string)), response(status.noContent))
+        def handle(a: Int, b: String): IO[Unit] = IO.unit
+      """
+      assertTrue(
+        typeCheckErrors(prelude + "Route(e, (a, b) => handle(a, b))").isEmpty,
+        typeCheckErrors(prelude + "Route(e.withErrors(ErrorOverrides()), (a, b) => handle(a, b))").isEmpty,
+        typeCheckErrors(
+          prelude + "Route(Api(ErrorPolicy.default, UnroutedPolicy.default), e, (a, b) => handle(a, b))"
+        ).isEmpty,
+        typeCheckErrors(prelude + "Route.composed(ErrorPolicy.default(e), (a, b) => handle(a, b))").isEmpty
+      )
     },
     test("unrouted payload requirements are checked wherever the API is interpreted") {
       val prelude = """
@@ -96,13 +113,19 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
       assertTrue(errors.isEmpty)
     },
     test("endpoint overrides preserve domain handler types") {
-      assertTrue(!typeChecks("""
+      val prelude = """
         import cats.effect.IO
         import io.taig.otter.http.*
         import io.taig.otter.http.fixture.dsl.*
-        val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(ErrorOverrides())
-        Route(e, (_: Unit) => IO.pure("wrong domain response"))
-      """))
+        import io.taig.otter.http.fixture.payload
+        val e = endpoint(request(method.get, __), response(status.ok)(body.json(payload.string)))
+          .withErrors(ErrorOverrides())
+      """
+      assertTrue(
+        typeChecks(prelude + "Route(e, (_: Unit) => IO.pure(\"domain response\"))"),
+        !typeChecks(prelude + "Route(e, (_: Unit) => IO.pure(1))"),
+        !typeChecks(prelude + "Route(e, (_: Unit) => IO.pure(Right(\"domain response\")))")
+      )
     },
     test("API clients retain global and endpoint-local error types") {
       val errors = typeCheckErrors("""
