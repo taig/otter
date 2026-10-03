@@ -37,10 +37,16 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(
           render(
             int
-          ) == "Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))",
+          ) == """Schema.Int.check(
+                 |  Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |  Schema.isLessThanOrEqualTo(2147483647)
+                 |)""".stripMargin,
           render(
             long
-          ) == "Schema.Number.pipe(Schema.filter(Number.isInteger)).pipe(Schema.greaterThanOrEqualTo(-9223372036854775808), Schema.lessThan(9223372036854775808))",
+          ) == """Schema.Number.check(Schema.makeFilter(Number.isInteger)).check(
+                 |  Schema.isGreaterThanOrEqualTo(-9223372036854775808),
+                 |  Schema.isLessThan(9223372036854775808)
+                 |)""".stripMargin,
           render(jBigInteger) == "Schema.Int",
           render(double) == "Schema.Number",
           render(float) == "Schema.Number",
@@ -65,7 +71,10 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
             json.book
           ) == """Schema.Struct({
                  |  "title": Schema.String,
-                 |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |  "pages": Schema.Int.check(
+                 |    Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |    Schema.isLessThanOrEqualTo(2147483647)
+                 |  ),
                  |  "read": Schema.Boolean
                  |})""".stripMargin
         )
@@ -77,23 +86,38 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(
           render(
             collection.list(int)
-          ) == "Schema.Array(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"
+          ) == """Schema.Array(
+                 |  Schema.Int.check(
+                 |    Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |    Schema.isLessThanOrEqualTo(2147483647)
+                 |  )
+                 |)""".stripMargin
         )
       ,
       test("a dictionary names the key it does not otherwise describe"):
-        assertTrue(render(dictionary.list(boolean)) == """Schema.Record({
-                                                         |  "key": Schema.String,
-                                                         |  "value": Schema.Boolean
-                                                         |})""".stripMargin)
+        assertTrue(render(dictionary.list(boolean)) == "Schema.Record(Schema.String, Schema.Boolean)")
       ,
       test("a tuple"):
         assertTrue(
           render(
             TNil :* string :* int :* json.genre.optional
           ) == """Schema.Tuple(
-                 |  Schema.String,
-                 |  Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-                 |  Schema.NullOr(Schema.Literal("fiction", "history", "poetry"))
+                 |  [
+                 |    Schema.String,
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    ),
+                 |    Schema.NullOr(
+                 |      Schema.Literals(
+                 |        [
+                 |          "fiction",
+                 |          "history",
+                 |          "poetry"
+                 |        ]
+                 |      )
+                 |    )
+                 |  ]
                  |)""".stripMargin
         )
       ,
@@ -107,17 +131,30 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           render(
             schema
           ) == """Schema.Union(
-                 |  Schema.String,
-                 |  Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-                 |  Schema.Literal("fiction", "history", "poetry")
+                 |  [
+                 |    Schema.String,
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    ),
+                 |    Schema.Literals(
+                 |      [
+                 |        "fiction",
+                 |        "history",
+                 |        "poetry"
+                 |      ]
+                 |    )
+                 |  ]
                  |)""".stripMargin,
           render(json.shape) == """Schema.Union(
-                                  |  Schema.Struct({ "radius": Schema.Number }),
-                                  |  Schema.Struct({ "side": Schema.Number }),
-                                  |  Schema.Struct({
-                                  |    "base": Schema.Number,
-                                  |    "height": Schema.Number
-                                  |  })
+                                  |  [
+                                  |    Schema.Struct({ "radius": Schema.Number }),
+                                  |    Schema.Struct({ "side": Schema.Number }),
+                                  |    Schema.Struct({
+                                  |      "base": Schema.Number,
+                                  |      "height": Schema.Number
+                                  |    })
+                                  |  ]
                                   |)""".stripMargin
         )
       ,
@@ -136,7 +173,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         )
       ,
       test("an enumeration lists every value it admits"):
-        assertTrue(render(json.genre) == """Schema.Literal("fiction", "history", "poetry")""")
+        assertTrue(render(json.genre) == """Schema.Literals(
+                                           |  [
+                                           |    "fiction",
+                                           |    "history",
+                                           |    "poetry"
+                                           |  ]
+                                           |)""".stripMargin)
     ),
     suite("constraint")(
       /** A `Validation` keeps its constraints, so what a primitive was built with is still readable and can be piped
@@ -151,9 +194,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           render(
             schema
           ) == """Schema.Struct({
-                 |  "title": Schema.String.pipe(Schema.minLength(3)),
-                 |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647), Schema.greaterThanOrEqualTo(1)),
-                 |  "tags": Schema.Array(Schema.String).pipe(Schema.maxItems(5))
+                 |  "title": Schema.String.check(Schema.isMinLength(3)),
+                 |  "pages": Schema.Int.check(
+                 |    Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |    Schema.isLessThanOrEqualTo(2147483647),
+                 |    Schema.isGreaterThanOrEqualTo(1)
+                 |  ),
+                 |  "tags": Schema.Array(Schema.String).check(Schema.isMaxLength(5))
                  |})""".stripMargin
         )
       ,
@@ -162,19 +209,19 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(
           render(
             string(text.minimum[String](Comparison(3L, exclusive = true)))
-          ) == "Schema.String.pipe(Schema.minLength(4))",
+          ) == "Schema.String.check(Schema.isMinLength(4))",
           render(
             string(text.maximum[String](Comparison(9L, exclusive = true)))
-          ) == "Schema.String.pipe(Schema.maxLength(8))"
+          ) == "Schema.String.check(Schema.isMaxLength(8))"
         )
       ,
       /** An exclusive bound on a number is a different filter, not a different reference. */
       test("an exclusive bound on a number is its own filter"):
         assertTrue(
           render(double(number.minimum(Comparison(1.5, exclusive = true)))) ==
-            "Schema.Number.pipe(Schema.greaterThan(1.5))",
+            "Schema.Number.check(Schema.isGreaterThan(1.5))",
           render(double(number.maximum(Comparison(1.5, exclusive = false)))) ==
-            "Schema.Number.pipe(Schema.lessThanOrEqualTo(1.5))"
+            "Schema.Number.check(Schema.isLessThanOrEqualTo(1.5))"
         )
       ,
       /** effect has no filter for a unique collection, and rendering something else would claim more than the server
@@ -202,13 +249,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           collections.minimum[List[String]](1).and(collections.maximum[List[String]](5))
         )
 
-        assertTrue(render(schema) == "Schema.NonEmptyArray(Schema.String).pipe(Schema.maxItems(5))")
+        assertTrue(render(schema) == "Schema.NonEmptyArray(Schema.String).check(Schema.isMaxLength(5))")
       ,
       /** A minimum of anything else is a bound, not a promise that there is a first element. */
       test("a collection with a larger minimum is still an array with a filter"):
         assertTrue(
           render(collection.list(string, collections.minimum[List[String]](2))) ==
-            "Schema.Array(Schema.String).pipe(Schema.minItems(2))"
+            "Schema.Array(Schema.String).check(Schema.isMinLength(2))"
         )
     ),
     /** That a pattern reaches the filter at all, and that [[TypescriptRegex]] is what decides whether there is one.
@@ -219,14 +266,14 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       test("a pattern JavaScript agrees with becomes a filter, under the unicode flag"):
         assertTrue(
           render(string(text.matches[String](Pattern.compile("^[a-z]+$")))) ==
-            """Schema.String.pipe(Schema.pattern(RegExp("^(?:^[a-z]+$)(?![\\s\\S])", "u")))"""
+            """Schema.String.check(Schema.isPattern(RegExp("^(?:^[a-z]+$)(?![\\s\\S])", "u")))"""
         )
       ,
       /** `/` ends the literal, so a pattern that means one as a character has to say so. */
       test("a slash is passed as pattern text rather than a literal delimiter"):
         assertTrue(
           render(string(text.matches[String](Pattern.compile("^a/b$")))) ==
-            """Schema.String.pipe(Schema.pattern(RegExp("^(?:^a/b$)(?![\\s\\S])", "u")))"""
+            """Schema.String.check(Schema.isPattern(RegExp("^(?:^a/b$)(?![\\s\\S])", "u")))"""
         )
     ),
     suite("name")(
@@ -249,7 +296,12 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                  |
                  |Schema.Struct({
                  |  "name": Name,
-                 |  "age": Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+                 |  "age": Schema.optional(
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    )
+                 |  )
                  |})""".stripMargin
         )
       ,
@@ -289,8 +341,11 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                  |  "children": ReadonlyArray<Tree>;
                  |};
                  |
-                 |export const Tree: Schema.Schema<Tree> = Schema.Struct({
-                 |  "value": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |export const Tree: Schema.Codec<Tree, Tree> = Schema.Struct({
+                 |  "value": Schema.Int.check(
+                 |    Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |    Schema.isLessThanOrEqualTo(2147483647)
+                 |  ),
                  |  "children": Schema.Array(Schema.suspend(() => Tree))
                  |});
                  |
@@ -326,7 +381,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
         assertTrue(
           render(tree).contains("export type Size = Schema.Schema.Type<typeof Size>;"),
-          !render(tree).contains("export const Size: Schema.Schema<Size>")
+          !render(tree).contains("export const Size: Schema.Codec<Size, Size>")
         )
       ,
       /** Only the declaration that holds the suspension cannot infer its type. `Student` is entered first and refers
@@ -350,10 +405,10 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                        |
                                        |export type StudentEncoded = {
                                        |  "name": string;
-                                       |  "courses": ReadonlyArray<Schema.Schema.Encoded<typeof Course>>;
+                                       |  "courses": ReadonlyArray<Schema.Codec.Encoded<typeof Course>>;
                                        |};
                                        |
-                                       |export const Student: Schema.Schema<Student, StudentEncoded> = Schema.Struct({
+                                       |export const Student: Schema.Codec<Student, StudentEncoded> = Schema.Struct({
                                        |  "name": Schema.String,
                                        |  "courses": Schema.Array(Schema.suspend(() => Course))
                                        |});
@@ -401,7 +456,10 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                  |
                  |export type BarEncoded = number;
                  |
-                 |export const Bar: Schema.Schema<Bar, BarEncoded> = Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647));
+                 |export const Bar: Schema.Codec<Bar, BarEncoded> = Schema.Int.check(
+                 |  Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |  Schema.isLessThanOrEqualTo(2147483647)
+                 |);
                  |
                  |Schema.Struct({ "bar": Bar })""".stripMargin
         )

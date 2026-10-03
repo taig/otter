@@ -36,7 +36,7 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
         source.contains("\"value\": number;"),
         source.contains("\"value\": number | string;"),
         source.contains("ReadonlyArray<TreeEncoded>"),
-        source.contains("Schema.Schema<Tree, TreeEncoded>")
+        source.contains("Schema.Codec<Tree, TreeEncoded>")
       )
     ,
     test("optional nullable fields retain null only in the encoded projection"):
@@ -46,13 +46,13 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
         source.contains("\"value\"?: number | undefined;"),
         source.contains("\"value\"?: number | null | undefined;"),
         source.contains("ReadonlyArray<OptionalTreeEncoded>"),
-        source.contains("Schema.Schema<OptionalTree, OptionalTreeEncoded>")
+        source.contains("Schema.Codec<OptionalTree, OptionalTreeEncoded>")
       )
     ,
     test("the symmetric write side remains compact"):
       val source = JsonTypescriptEffectRenderer.writer.render(tree).mkString("\n")
 
-      assertTrue(source.contains("Schema.Schema<Tree>"), !source.contains("TreeEncoded"))
+      assertTrue(source.contains("Schema.Codec<Tree, Tree>"), !source.contains("TreeEncoded"))
     ,
     test("encoded type names cannot overwrite explicitly named schemas"):
       val named = string.attr(Keys.name, "TreeEncoded")
@@ -62,13 +62,13 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
       assertTrue(
         source.contains("export const TreeEncoded = Schema.String;"),
         source.contains("export type TreeEncoded_2 ="),
-        source.contains("Schema.Schema<Tree, TreeEncoded_2>"),
+        source.contains("Schema.Codec<Tree, TreeEncoded_2>"),
         source.contains("ReadonlyArray<TreeEncoded_2>")
       )
     ,
     test("a decoded type override does not replace the wire type"):
       val date = string
-        .attr(TypescriptKeys.expression, TypescriptEffect.symbol("Date"))
+        .attr(TypescriptKeys.expression, TypescriptEffect.symbol("DateFromString"))
         .attr(TypescriptKeys.tpe, Typescript.Type.Symbol("Date", Nil))
         .attr(Keys.name, "Timestamp")
       val source = JsonTypescriptEffectRenderer.reader.render(date).mkString("\n")
@@ -76,7 +76,7 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
       assertTrue(
         source.contains("export type Timestamp = Date;"),
         source.contains("export type TimestampEncoded = string;"),
-        source.contains("Schema.Schema<Timestamp, TimestampEncoded>")
+        source.contains("Schema.Codec<Timestamp, TimestampEncoded>")
       )
     ,
     test("an encoded type override describes a custom transformation"):
@@ -89,7 +89,7 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
       assertTrue(
         source.contains("export type Number_2 = number;"),
         source.contains("export type Number_2Encoded = string;"),
-        source.contains("Schema.Schema<Number_2, Number_2Encoded> = Schema.NumberFromString;")
+        source.contains("Schema.Codec<Number_2, Number_2Encoded> = Schema.NumberFromString;")
       )
     ,
     test("recursive boolean coercion names only the strings the Effect schema accepts"):
@@ -102,7 +102,7 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
       assertTrue(
         source.contains("\"value\": boolean;"),
         source.contains("\"value\": boolean | \"true\" | \"false\";"),
-        source.contains("Schema.Schema<Tree, TreeEncoded>")
+        source.contains("Schema.Codec<Tree, TreeEncoded>")
       )
     ,
     test("nullable values remain nullable after decoding"):
@@ -112,7 +112,7 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
           .attr(Keys.name, "Tree")
       val source = JsonTypescriptEffectRenderer.reader.render(nullable).mkString("\n")
 
-      assertTrue(source.contains("\"value\": number | null;"), source.contains("Schema.Schema<Tree>"))
+      assertTrue(source.contains("\"value\": number | null;"), source.contains("Schema.Codec<Tree, Tree>"))
     ,
     test("mutual recursion follows the encoded type through an inferred declaration"):
       lazy val parent: Json.Record[JsonTypescriptRecursiveTypesTest.Parent] =
@@ -126,8 +126,8 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
       val source = JsonTypescriptEffectRenderer.module(parent).mkString("\n")
 
       assertTrue(
-        source.contains("Schema.Schema.Encoded<typeof ParentRead>"),
-        source.contains("Schema.Schema<ChildRead, ChildReadEncoded>"),
+        source.contains("Schema.Codec.Encoded<typeof ParentRead>"),
+        source.contains("Schema.Codec<ChildRead, ChildReadEncoded>"),
         source.contains("export type ParentRead = Schema.Schema.Type<typeof ParentRead>;"),
         source.contains("export const ParentWrite = Schema.Struct(")
       )

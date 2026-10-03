@@ -37,7 +37,7 @@ object LibraryTypescriptTest extends ZIOSpecDefault:
         catalogue.contains("\"500\":"),
         catalogue.contains("\"400\":"),
         catalogue.contains("Schema.Schema.Type<typeof Problem>"),
-        catalogue.contains("Schema.Schema.Encoded<typeof Problem>")
+        catalogue.contains("Schema.Codec.Encoded<typeof Problem>")
       )
     ,
     suite("what is generated")(
@@ -45,7 +45,7 @@ object LibraryTypescriptTest extends ZIOSpecDefault:
         assertTrue(!source.contains("fetch("), !source.contains("await "), !source.contains("async "))
       ,
       test("imports the one library its schemas are written in"):
-        assertTrue(source.startsWith("""import { Schema } from "effect";"""))
+        assertTrue(source.startsWith("""import { Schema, SchemaGetter, Option } from "effect";"""))
       ,
       test("declares a descriptor per served endpoint, named by its operation id"):
         assertTrue(
@@ -73,20 +73,20 @@ object LibraryTypescriptTest extends ZIOSpecDefault:
     suite("schemas")(
       test("a refinement written in Scala reaches the generated schema as a refinement"):
         assertTrue(
-          source.contains("Schema.minLength(1)"),
-          source.contains("Schema.maxLength(200)"),
-          source.contains("Schema.greaterThan(0)")
+          source.contains("Schema.isMinLength(1)"),
+          source.contains("Schema.isMaxLength(200)"),
+          source.contains("Schema.isGreaterThan(0)")
         )
       ,
       test("an enumeration becomes the set of literals it maps onto"):
         assertTrue(
-          source.contains(
-            """Schema.Literal("biography", "children", "fantasy", "history", "poetry", "romance", "thriller")"""
-          )
+          source.contains("Schema.Literals("),
+          List("biography", "children", "fantasy", "history", "poetry", "romance", "thriller")
+            .forall(genre => source.contains("\"" + genre + "\""))
         )
       ,
       test("a dictionary becomes a record keyed by string"):
-        assertTrue(source.contains("Schema.Record({"))
+        assertTrue(source.contains("Schema.Record(Schema.String,"))
       ,
       test("a schema shared by several endpoints is declared once"):
         assertTrue(source.split("export const Book = ").length == 2)
@@ -95,7 +95,7 @@ object LibraryTypescriptTest extends ZIOSpecDefault:
         assertTrue(source.contains("Schema.suspend(() => Category)"))
       ,
       test("both the decoded and the encoded type of an answer are named, so a caller may cache the second"):
-        assertTrue(source.contains("Schema.Schema.Type<"), source.contains("Schema.Schema.Encoded<"))
+        assertTrue(source.contains("Schema.Schema.Type<"), source.contains("Schema.Codec.Encoded<"))
     ),
     suite("what could not be said")(
       test("a multipart payload is reported by the endpoint it was written on"):

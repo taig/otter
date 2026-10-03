@@ -71,7 +71,7 @@ final class JsonTypescriptExpressionEffectRenderer(
   /** The laxer wire forms the decoder normalises before handing over, which only the read side sees.
     *
     * The union of forms says nothing about the primitive underneath, so whatever that primitive was constrained by is
-    * piped onto the result: the coercion decides what arrives, the filters still decide what is acceptable.
+    * checked on the result: the coercion decides what arrives, the checks still decide what is acceptable.
     */
   private def coerce[W, R](
       schema: Coerce[Json.Primitive.Node, W, R]
@@ -141,13 +141,13 @@ final class JsonTypescriptExpressionEffectRenderer(
     schema match
       case Primitive.Number.Int(_) =>
         List(
-          bound("greaterThanOrEqualTo", "-2147483648"),
-          bound("lessThanOrEqualTo", "2147483647")
+          bound("isGreaterThanOrEqualTo", "-2147483648"),
+          bound("isLessThanOrEqualTo", "2147483647")
         )
       case Primitive.Number.Long(_) =>
         List(
-          bound("greaterThanOrEqualTo", "-9223372036854775808"),
-          bound("lessThan", "9223372036854775808")
+          bound("isGreaterThanOrEqualTo", "-9223372036854775808"),
+          bound("isLessThan", "9223372036854775808")
         )
       case Primitive.Number.Modify(self, _, _) => bounds(self)
       case _                                   => Nil

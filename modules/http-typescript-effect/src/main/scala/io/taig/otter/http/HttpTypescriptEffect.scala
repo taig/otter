@@ -3,8 +3,9 @@ package io.taig.otter.http
 import cats.data.NonEmptyList
 import io.taig.otter.JsonTypescriptEffect
 import io.taig.otter.Metadata
+import io.taig.otter.TypescriptEffect
 
-/** How the `effect` `Schema` module answers what a generated endpoint asks of a target. */
+/** How the Effect v4 `Schema` module answers what a generated endpoint asks of a target. */
 object HttpTypescriptEffect:
   /** [[HttpTypescript.Layers]] above the chain the effect payload generator already reads.
     *
@@ -15,4 +16,4 @@ object HttpTypescriptEffect:
     HttpTypescript.Layers.concatNel(JsonTypescriptEffect.Namespaces)
 
   /** The module a generated descriptor imports `Schema` from. */
-  val Module: String = "effect"
+  val Module: String = TypescriptEffect.Module

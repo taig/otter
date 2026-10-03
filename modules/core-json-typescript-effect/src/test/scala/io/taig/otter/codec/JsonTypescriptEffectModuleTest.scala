@@ -40,7 +40,10 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const Book = Schema.Struct({
                |  "title": Schema.String,
-               |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |  "pages": Schema.Int.check(
+               |    Schema.isGreaterThanOrEqualTo(-2147483648),
+               |    Schema.isLessThanOrEqualTo(2147483647)
+               |  ),
                |  "read": Schema.Boolean
                |});""".stripMargin
       )
@@ -56,9 +59,28 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const NoteRead = Schema.Struct({
                |  "title": Schema.String,
-               |  "tag": Schema.optionalWith(
-               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-               |    { "nullable": true }
+               |  "tag": Schema.optional(
+               |    Schema.NullOr(
+               |      Schema.Int.check(
+               |        Schema.isGreaterThanOrEqualTo(-2147483648),
+               |        Schema.isLessThanOrEqualTo(2147483647)
+               |      )
+               |    )
+               |  ).pipe(
+               |    Schema.decodeTo(
+               |      Schema.optional(
+               |        Schema.toType(
+               |          Schema.Int.check(
+               |            Schema.isGreaterThanOrEqualTo(-2147483648),
+               |            Schema.isLessThanOrEqualTo(2147483647)
+               |          )
+               |        )
+               |      ),
+               |      {
+               |        "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+               |        "encode": SchemaGetter.transformOptional((value) => value)
+               |      }
+               |    )
                |  )
                |});
                |
@@ -66,7 +88,12 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const NoteWrite = Schema.Struct({
                |  "title": Schema.String,
-               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |  "tag": Schema.NullOr(
+               |    Schema.Int.check(
+               |      Schema.isGreaterThanOrEqualTo(-2147483648),
+               |      Schema.isLessThanOrEqualTo(2147483647)
+               |    )
+               |  )
                |});""".stripMargin
       )
     ,
@@ -84,9 +111,28 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const NoteRead = Schema.Struct({
                |  "title": Schema.String,
-               |  "tag": Schema.optionalWith(
-               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-               |    { "nullable": true }
+               |  "tag": Schema.optional(
+               |    Schema.NullOr(
+               |      Schema.Int.check(
+               |        Schema.isGreaterThanOrEqualTo(-2147483648),
+               |        Schema.isLessThanOrEqualTo(2147483647)
+               |      )
+               |    )
+               |  ).pipe(
+               |    Schema.decodeTo(
+               |      Schema.optional(
+               |        Schema.toType(
+               |          Schema.Int.check(
+               |            Schema.isGreaterThanOrEqualTo(-2147483648),
+               |            Schema.isLessThanOrEqualTo(2147483647)
+               |          )
+               |        )
+               |      ),
+               |      {
+               |        "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+               |        "encode": SchemaGetter.transformOptional((value) => value)
+               |      }
+               |    )
                |  )
                |});
                |
@@ -98,7 +144,12 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const NoteWrite = Schema.Struct({
                |  "title": Schema.String,
-               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |  "tag": Schema.NullOr(
+               |    Schema.Int.check(
+               |      Schema.isGreaterThanOrEqualTo(-2147483648),
+               |      Schema.isLessThanOrEqualTo(2147483647)
+               |    )
+               |  )
                |});
                |
                |export type OuterWrite = Schema.Schema.Type<typeof OuterWrite>;
@@ -126,9 +177,28 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const OuterRead = Schema.Struct({
                |  "author": Name,
-               |  "tag": Schema.optionalWith(
-               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-               |    { "nullable": true }
+               |  "tag": Schema.optional(
+               |    Schema.NullOr(
+               |      Schema.Int.check(
+               |        Schema.isGreaterThanOrEqualTo(-2147483648),
+               |        Schema.isLessThanOrEqualTo(2147483647)
+               |      )
+               |    )
+               |  ).pipe(
+               |    Schema.decodeTo(
+               |      Schema.optional(
+               |        Schema.toType(
+               |          Schema.Int.check(
+               |            Schema.isGreaterThanOrEqualTo(-2147483648),
+               |            Schema.isLessThanOrEqualTo(2147483647)
+               |          )
+               |        )
+               |      ),
+               |      {
+               |        "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+               |        "encode": SchemaGetter.transformOptional((value) => value)
+               |      }
+               |    )
                |  )
                |});
                |
@@ -136,7 +206,12 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const OuterWrite = Schema.Struct({
                |  "author": Name,
-               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |  "tag": Schema.NullOr(
+               |    Schema.Int.check(
+               |      Schema.isGreaterThanOrEqualTo(-2147483648),
+               |      Schema.isLessThanOrEqualTo(2147483647)
+               |    )
+               |  )
                |});""".stripMargin
       )
     ,
@@ -151,7 +226,10 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const BookRead = Schema.Struct({
                |  "title": Schema.String,
-               |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |  "pages": Schema.Int.check(
+               |    Schema.isGreaterThanOrEqualTo(-2147483648),
+               |    Schema.isLessThanOrEqualTo(2147483647)
+               |  ),
                |  "read": Schema.Boolean
                |});
                |
@@ -159,7 +237,10 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const BookWrite = Schema.Struct({
                |  "title": Schema.String,
-               |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |  "pages": Schema.Int.check(
+               |    Schema.isGreaterThanOrEqualTo(-2147483648),
+               |    Schema.isLessThanOrEqualTo(2147483647)
+               |  ),
                |  "read": Schema.Boolean
                |});""".stripMargin
       )
@@ -194,7 +275,12 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const Note = Schema.Struct({
                |  "title": Schema.String,
-               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |  "tag": Schema.NullOr(
+               |    Schema.Int.check(
+               |      Schema.isGreaterThanOrEqualTo(-2147483648),
+               |      Schema.isLessThanOrEqualTo(2147483647)
+               |    )
+               |  )
                |});""".stripMargin,
         side(
           Side.Read,
@@ -203,9 +289,28 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
                |
                |export const Note = Schema.Struct({
                |  "title": Schema.String,
-               |  "tag": Schema.optionalWith(
-               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-               |    { "nullable": true }
+               |  "tag": Schema.optional(
+               |    Schema.NullOr(
+               |      Schema.Int.check(
+               |        Schema.isGreaterThanOrEqualTo(-2147483648),
+               |        Schema.isLessThanOrEqualTo(2147483647)
+               |      )
+               |    )
+               |  ).pipe(
+               |    Schema.decodeTo(
+               |      Schema.optional(
+               |        Schema.toType(
+               |          Schema.Int.check(
+               |            Schema.isGreaterThanOrEqualTo(-2147483648),
+               |            Schema.isLessThanOrEqualTo(2147483647)
+               |          )
+               |        )
+               |      ),
+               |      {
+               |        "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+               |        "encode": SchemaGetter.transformOptional((value) => value)
+               |      }
+               |    )
                |  )
                |});""".stripMargin
       )

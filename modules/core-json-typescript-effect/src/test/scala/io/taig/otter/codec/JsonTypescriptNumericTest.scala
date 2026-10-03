@@ -13,24 +13,30 @@ object JsonTypescriptNumericTest extends ZIOSpecDefault:
 
   override val spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptNumericTest")(
     test("Int bounds apply on both sides and survive mappings"):
-      val expected = "Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))"
+      val expected = """Schema.Int.check(
+                       |  Schema.isGreaterThanOrEqualTo(-2147483648),
+                       |  Schema.isLessThanOrEqualTo(2147483647)
+                       |)""".stripMargin
       assertTrue(read(int) == expected, write(int) == expected, read(int.map(_.toString)) == expected)
     ,
     test("Long excludes the rounded representation of Long.MaxValue plus one"):
       val expected =
-        "Schema.Number.pipe(Schema.filter(Number.isInteger)).pipe(Schema.greaterThanOrEqualTo(-9223372036854775808), Schema.lessThan(9223372036854775808))"
+        """Schema.Number.check(Schema.makeFilter(Number.isInteger)).check(
+          |  Schema.isGreaterThanOrEqualTo(-9223372036854775808),
+          |  Schema.isLessThan(9223372036854775808)
+          |)""".stripMargin
       assertTrue(read(long) == expected, write(long) == expected)
     ,
     test("coercion checks the decimal text before converting to Number"):
       val source = read(coerce(int(std.number.minimum(Comparison(10, false)))))
       assertTrue(
         source.contains("export const CoerceInt ="),
-        source.contains("Schema.pattern(RegExp("),
+        source.contains("Schema.isPattern(RegExp("),
         source.contains("const significant ="),
         source.contains("const scale ="),
-        source.contains("Schema.int()"),
-        source.contains("Schema.greaterThanOrEqualTo(10)"),
-        source.contains("Schema.lessThanOrEqualTo(2147483647)"),
+        source.contains("Schema.isInt()"),
+        source.contains("Schema.isGreaterThanOrEqualTo(10)"),
+        source.contains("Schema.isLessThanOrEqualTo(2147483647)"),
         !source.contains("NumberFromString")
       )
     ,

@@ -9,14 +9,14 @@ import io.taig.otter.Typescript
 
 import scala.annotation.tailrec
 
-/** Turns a JSON schema into `effect` `Schema` source.
+/** Turns a JSON schema into Effect v4 `Schema` source.
   *
   * [[reader]] and [[writer]] each describe one side and end with the expression the schema itself came to, preceded by
   * whatever it had to declare along the way. [[module]] describes both sides at once, which is what a client wants: it
   * has to know what it may send as well as what it must be ready to receive.
   *
-  * Nothing here emits the `import` the declarations need; the caller writes that line, because only the caller knows
-  * where the module is going.
+  * Nothing here emits imports; [[io.taig.otter.TypescriptEffect.imports]] discovers the Effect imports required by the
+  * returned declarations, for the caller assembling a module. Custom expression overrides must use Effect v4 APIs.
   *
   * A schema that refers to itself must carry [[io.taig.otter.Keys.name]] on the `lazy val` that is reached again, and
   * not on a wrapper around it. Names are allocated to schema instances, so separate schemas requesting the same name
