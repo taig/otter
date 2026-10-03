@@ -44,6 +44,7 @@ object Typescript:
       case And extends Operator("&&")
       case Or extends Operator("||")
       case Otherwise extends Operator("??")
+      case StrictNotEqual extends Operator("!==")
       case AtLeast extends Operator(">=")
       case AtMost extends Operator("<=")
 
@@ -109,6 +110,8 @@ object Typescript:
 
     final case class TripleEqual(left: Typescript.Expression, right: Typescript.Expression)
         extends Typescript.Expression
+
+    case object Null extends Typescript.Expression
 
     /** The value a key that was never written holds, which is not [[Typescript.Type.Null]] and not an omission. */
     case object Undefined extends Typescript.Expression

@@ -118,6 +118,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
   case Typescript.Expression.Symbol(name)                       => name
   case Typescript.Expression.Ternary(condition, valid, invalid) => s"$condition ? $valid : $invalid"
   case Typescript.Expression.TripleEqual(left, right)           => s"$left === $right"
+  case Typescript.Expression.Null                               => "null"
   case Typescript.Expression.Undefined                          => "undefined"
 
 private val renderTypescriptStatement: Typescript.Statement => String =

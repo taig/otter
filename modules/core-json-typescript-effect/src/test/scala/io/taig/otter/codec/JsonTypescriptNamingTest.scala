@@ -25,7 +25,12 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
 
       assertTrue(
         source.contains(
-          "export const Shared = Schema.Struct({ \"a\": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)) });"
+          """export const Shared = Schema.Struct({
+            |  "a": Schema.Int.check(
+            |    Schema.isGreaterThanOrEqualTo(-2147483648),
+            |    Schema.isLessThanOrEqualTo(2147483647)
+            |  )
+            |});""".stripMargin
         ),
         source.contains("export const Shared_2 = Schema.Struct({ \"b\": Schema.String });"),
         source.contains("\"left\": Shared,"),
@@ -65,9 +70,12 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
 
       assertTrue(
         source.contains(
-          "export const Tree = Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647));"
+          """export const Tree = Schema.Int.check(
+            |  Schema.isGreaterThanOrEqualTo(-2147483648),
+            |  Schema.isLessThanOrEqualTo(2147483647)
+            |);""".stripMargin
         ),
-        source.contains("export const Tree_2: Schema.Schema<Tree_2>"),
+        source.contains("export const Tree_2: Schema.Codec<Tree_2, Tree_2>"),
         source.contains("ReadonlyArray<Tree_2>"),
         source.contains("Schema.suspend(() => Tree_2)")
       )
@@ -80,8 +88,8 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
       assertTrue(
         source.contains("export const CoerceInt = Schema.String;"),
         source.contains("export const CoerceInt_2 = Schema.Union"),
-        source.contains("\"count\": CoerceInt_2.pipe"),
-        source.contains("\"again\": CoerceInt_2.pipe"),
+        source.contains(""""count": CoerceInt_2.check""".stripMargin),
+        source.contains(""""again": CoerceInt_2.check""".stripMargin),
         !source.contains("CoerceInt_3")
       )
     ,
@@ -102,13 +110,15 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
       assertTrue(
         constants(module) == List("Shared", "Shared_2Read", "Shared_2Write"),
         source.contains(
-          """Schema.optionalWith(
-            |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-            |    { "nullable": true }
-            |  )""".stripMargin
+          "SchemaGetter.transformOptional(Option.filter((value) => (value !== null)))"
         ),
         source.contains(
-          "Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"
+          """Schema.optional(
+            |    Schema.Int.check(
+            |      Schema.isGreaterThanOrEqualTo(-2147483648),
+            |      Schema.isLessThanOrEqualTo(2147483647)
+            |    )
+            |  )""".stripMargin
         )
       )
     ,
@@ -139,6 +149,9 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
         int.attr(Keys.name, "require"),
         int.attr(Keys.name, "exports"),
         string.attr(Keys.name, "Schema"),
+        string.attr(Keys.name, "SchemaTransformation"),
+        string.attr(Keys.name, "SchemaGetter"),
+        string.attr(Keys.name, "Option"),
         int.attr(Keys.name, "String"),
         int.attr(Keys.name, "Number"),
         int.attr(Keys.name, "ReadonlyArray"),
@@ -152,6 +165,9 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
           "require_2",
           "exports_2",
           "Schema_2",
+          "SchemaTransformation_2",
+          "SchemaGetter_2",
+          "Option_2",
           "String_2",
           "Number_2",
           "ReadonlyArray_2",
@@ -165,10 +181,10 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
       val source = JsonTypescriptEffectRenderer.module(tree).mkString("\n")
 
       assertTrue(
-        source.contains("export const not_validRead: Schema.Schema<not_validRead, not_validReadEncoded>"),
+        source.contains("export const not_validRead: Schema.Codec<not_validRead, not_validReadEncoded>"),
         source.contains("ReadonlyArray<not_validReadEncoded>"),
         source.contains("Schema.suspend(() => not_validRead)"),
-        source.contains("export const not_validWrite: Schema.Schema<not_validWrite>"),
+        source.contains("export const not_validWrite: Schema.Codec<not_validWrite, not_validWrite>"),
         !source.contains("not-valid")
       )
     ,
@@ -177,7 +193,10 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
 
       assertTrue(
         source.contains(
-          "export const not_valid = Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647));"
+          """export const not_valid = Schema.Int.check(
+            |  Schema.isGreaterThanOrEqualTo(-2147483648),
+            |  Schema.isLessThanOrEqualTo(2147483647)
+            |);""".stripMargin
         ),
         source.contains("\"not-valid\": not_valid")
       )

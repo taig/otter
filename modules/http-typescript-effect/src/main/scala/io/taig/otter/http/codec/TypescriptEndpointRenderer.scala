@@ -70,8 +70,10 @@ final class TypescriptEndpointRenderer(
     val (context, (statements, issues, _)) =
       program.run(JsonTypescriptContext.Empty.copy(reserved = TypescriptEffect.Reserved)).value
 
+    val declarations = context.declarations ++ statements.toList
+
     TypescriptModule(
-      TypescriptEndpointRenderer.Import :: context.declarations ++ statements.toList,
+      TypescriptEffect.imports(declarations) ++ declarations,
       issues.toList
     )
 
@@ -347,9 +349,6 @@ object TypescriptEndpointRenderer:
   /** The same endpoints as the side answering them sees, which is what a generated server stub would want. */
   def server(payload: TypescriptPayload): TypescriptEndpointRenderer =
     new TypescriptEndpointRenderer(payload, Side.Read, Side.Write, HttpTypescriptEffect.Namespaces)
-
-  val Import: Typescript.Statement =
-    Typescript.Statement.Import(NonEmptyList.one("Schema"), HttpTypescriptEffect.Module)
 
   private val Blob: Typescript.Type = Typescript.Type.Symbol("Blob", parameters = Nil)
 

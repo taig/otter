@@ -66,7 +66,7 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
           module.issues.isEmpty,
           rendered.contains("export const Settings ="),
           rendered.contains("export const Settings_2 ="),
-          rendered.contains("Schema.optionalWith"),
+          rendered.contains("Schema.optional(Schema.NullOr("),
           rendered.contains("\"application/json\": Settings_2")
         )
       ,
@@ -105,13 +105,19 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
           module.render.contains("export const Shared_2 ="),
           module.render.contains("\"application/json\": Shared_2"),
           module.render.contains(
-            "\"pages\": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))"
+            """"pages": Schema.Int.check(
+              |    Schema.isGreaterThanOrEqualTo(-2147483648),
+              |    Schema.isLessThanOrEqualTo(2147483647)
+              |  )""".stripMargin
           ),
-          module.render.contains("\"theme\": Schema.optionalWith")
+          module.render.contains(""""theme": Schema.optional(Schema.NullOr(""".stripMargin)
         )
       ,
       test("a module imports the Schema it names"):
         assertTrue(source(api.fetch).startsWith("""import { Schema } from "effect";"""))
+      ,
+      test("optional fields import the helpers their transformations use"):
+        assertTrue(source(send, answer).startsWith("""import { Schema, SchemaGetter, Option } from "effect";"""))
       ,
       /** The claim the whole module exists for: what is generated describes a call and never makes one. */
       test("nothing generated fetches or decodes"):
@@ -216,7 +222,7 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
                               || { "status": 404 };""".stripMargin),
           rendered.contains("""export type GetReportsIdEncoded = | {
                               |    "status": 200;
-                              |    "body": Schema.Schema.Encoded<typeof GetReportsIdResponse200>;
+                              |    "body": Schema.Codec.Encoded<typeof GetReportsIdResponse200>;
                               |  }
                               || { "status": 404 };""".stripMargin)
         )
@@ -234,8 +240,11 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
       test("a recursive payload is declared under its name and suspended where it recurs"):
         assertTrue(
           source(api.trees).contains(
-            """export const Tree: Schema.Schema<Tree> = Schema.Struct({
-              |  "value": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+            """export const Tree: Schema.Codec<Tree, Tree> = Schema.Struct({
+              |  "value": Schema.Int.check(
+              |    Schema.isGreaterThanOrEqualTo(-2147483648),
+              |    Schema.isLessThanOrEqualTo(2147483647)
+              |  ),
               |  "children": Schema.Array(Schema.suspend(() => Tree))
               |});""".stripMargin
           )

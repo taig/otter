@@ -11,7 +11,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 
-/** What a schema's `Validation` says, said as the filters effect pipes a schema through.
+/** What a schema's `Validation` says, said as Effect v4 checks.
   *
   * The module is a table, and a table is worth asserting entry by entry: a filter named wrongly, or a bound moved the
   * wrong way, produces source that still prints and still parses and is simply not the constraint the schema carried.
@@ -26,12 +26,22 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("ConstraintTypescriptEffectTest")(
     suite("text")(
+      test("impossible lengths reject even the empty string"):
+        assertTrue(
+          filter(Constraint.Primitive.Text.Maximum(Comparison(-1L, exclusive = false)))
+            .contains("Schema.makeFilter(() => false)"),
+          filter(Constraint.Primitive.Text.Maximum(Comparison(0L, exclusive = true)))
+            .contains("Schema.makeFilter(() => false)"),
+          filter(Constraint.Primitive.Text.Maximum(Comparison(0L, exclusive = false)))
+            .contains("Schema.isMaxLength(0)")
+        )
+      ,
       test("a length is a length"):
         assertTrue(
           filter(Constraint.Primitive.Text.Minimum(Comparison(1L, exclusive = false)))
-            .contains("Schema.minLength(1)"),
+            .contains("Schema.isMinLength(1)"),
           filter(Constraint.Primitive.Text.Maximum(Comparison(64L, exclusive = false)))
-            .contains("Schema.maxLength(64)")
+            .contains("Schema.isMaxLength(64)")
         )
       ,
       /** A length is an integer, so an exclusive bound is the inclusive one next to it -- and the two move in opposite
@@ -39,14 +49,14 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
         */
       test("an exclusive bound on a length is the inclusive one next to it"):
         assertTrue(
-          filter(Constraint.Primitive.Text.Minimum(Comparison(1L, exclusive = true))).contains("Schema.minLength(2)"),
-          filter(Constraint.Primitive.Text.Maximum(Comparison(9L, exclusive = true))).contains("Schema.maxLength(8)")
+          filter(Constraint.Primitive.Text.Minimum(Comparison(1L, exclusive = true))).contains("Schema.isMinLength(2)"),
+          filter(Constraint.Primitive.Text.Maximum(Comparison(9L, exclusive = true))).contains("Schema.isMaxLength(8)")
         )
       ,
       test("a pattern both flavours read alike becomes one"):
         assertTrue(
           filter(Constraint.Primitive.Text.Matches(Pattern.compile("^[a-z]+$")))
-            .contains("""Schema.pattern(RegExp("^(?:^[a-z]+$)(?![\\s\\S])", "u"))""")
+            .contains("""Schema.isPattern(RegExp("^(?:^[a-z]+$)(?![\\s\\S])", "u"))""")
         )
       ,
       /** The one constraint whose counterpart is only sometimes there. Saying nothing is safe; saying something else is
@@ -58,23 +68,23 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
     suite("number")(
       test("a bound names whether it includes its reference"):
         assertTrue(
-          minimum(1L, exclusive = true).contains("Schema.greaterThan(1)"),
-          minimum(1L, exclusive = false).contains("Schema.greaterThanOrEqualTo(1)"),
+          minimum(1L, exclusive = true).contains("Schema.isGreaterThan(1)"),
+          minimum(1L, exclusive = false).contains("Schema.isGreaterThanOrEqualTo(1)"),
           filter(Constraint.Primitive.Number.Maximum(Comparison(9L, exclusive = true)))
-            .contains("Schema.lessThan(9)"),
+            .contains("Schema.isLessThan(9)"),
           filter(Constraint.Primitive.Number.Maximum(Comparison(9L, exclusive = false)))
-            .contains("Schema.lessThanOrEqualTo(9)")
+            .contains("Schema.isLessThanOrEqualTo(9)")
         )
       ,
       /** Unlike a length, a numeric bound is not moved: a number between 1 and 2 exists, so `greaterThan(1)` is not
         * `greaterThanOrEqualTo(2)`.
         */
       test("an exclusive numeric bound keeps its reference"):
-        assertTrue(minimum(1L, exclusive = true).contains("Schema.greaterThan(1)"))
+        assertTrue(minimum(1L, exclusive = true).contains("Schema.isGreaterThan(1)"))
       ,
       test("a multiple is a multiple"):
         assertTrue(
-          filter(Constraint.Primitive.Number.Multiple(5L)).contains("Schema.multipleOf(5)")
+          filter(Constraint.Primitive.Number.Multiple(5L)).contains("Schema.isMultipleOf(5)")
         )
       ,
       /** Every branch of the reference's own type, because a bound is written as whatever number the schema carried and
@@ -82,10 +92,10 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
         */
       test("every kind of number a bound may carry is spelled as itself"):
         assertTrue(
-          minimum(42, exclusive = false).contains("Schema.greaterThanOrEqualTo(42)"),
-          minimum(42L, exclusive = false).contains("Schema.greaterThanOrEqualTo(42)"),
-          minimum(new JBigInteger("42"), exclusive = false).contains("Schema.greaterThanOrEqualTo(42)"),
-          minimum(new JBigDecimal("4.25"), exclusive = false).contains("Schema.greaterThanOrEqualTo(4.25)")
+          minimum(42, exclusive = false).contains("Schema.isGreaterThanOrEqualTo(42)"),
+          minimum(42L, exclusive = false).contains("Schema.isGreaterThanOrEqualTo(42)"),
+          minimum(new JBigInteger("42"), exclusive = false).contains("Schema.isGreaterThanOrEqualTo(42)"),
+          minimum(new JBigDecimal("4.25"), exclusive = false).contains("Schema.isGreaterThanOrEqualTo(4.25)")
         )
       ,
       /** The bug this suite would have caught. `new BigDecimal(double)` is exact, so `0.1` became a bound of
@@ -94,31 +104,31 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
         */
       test("a binary float bound is spelled the way its own text spells it"):
         assertTrue(
-          minimum(0.1d, exclusive = false).contains("Schema.greaterThanOrEqualTo(0.1)"),
-          minimum(0.1f, exclusive = false).contains(s"Schema.greaterThanOrEqualTo(${0.1f.toString})"),
-          minimum(2.5d, exclusive = false).contains("Schema.greaterThanOrEqualTo(2.5)")
+          minimum(0.1d, exclusive = false).contains("Schema.isGreaterThanOrEqualTo(0.1)"),
+          minimum(0.1f, exclusive = false).contains(s"Schema.isGreaterThanOrEqualTo(${0.1f.toString})"),
+          minimum(2.5d, exclusive = false).contains("Schema.isGreaterThanOrEqualTo(2.5)")
         )
     ),
     suite("collection")(
       test("a size is a size, and an exclusive one is the inclusive one next to it"):
         assertTrue(
-          filter(Constraint.Collection.Minimum(Comparison(1L, exclusive = false))).contains("Schema.minItems(1)"),
-          filter(Constraint.Collection.Maximum(Comparison(9L, exclusive = false))).contains("Schema.maxItems(9)"),
-          filter(Constraint.Collection.Minimum(Comparison(1L, exclusive = true))).contains("Schema.minItems(2)"),
-          filter(Constraint.Collection.Maximum(Comparison(9L, exclusive = true))).contains("Schema.maxItems(8)")
+          filter(Constraint.Collection.Minimum(Comparison(1L, exclusive = false))).contains("Schema.isMinLength(1)"),
+          filter(Constraint.Collection.Maximum(Comparison(9L, exclusive = false))).contains("Schema.isMaxLength(9)"),
+          filter(Constraint.Collection.Minimum(Comparison(1L, exclusive = true))).contains("Schema.isMinLength(2)"),
+          filter(Constraint.Collection.Maximum(Comparison(9L, exclusive = true))).contains("Schema.isMaxLength(8)")
         )
       ,
       test("zero and impossible counts do not call Effect constructors with invalid bounds"):
         assertTrue(
           filter(Constraint.Collection.Minimum(Comparison(0L, false))).isEmpty,
-          filter(Constraint.Collection.Maximum(Comparison(0L, false))).contains("Schema.itemsCount(0)"),
-          filter(Constraint.Collection.Maximum(Comparison(1L, true))).contains("Schema.itemsCount(0)"),
-          filter(Constraint.Collection.Maximum(Comparison(0L, true))).contains("Schema.filter(() => false)"),
+          filter(Constraint.Collection.Maximum(Comparison(0L, false))).contains("Schema.isMaxLength(0)"),
+          filter(Constraint.Collection.Maximum(Comparison(1L, true))).contains("Schema.isMaxLength(0)"),
+          filter(Constraint.Collection.Maximum(Comparison(0L, true))).contains("Schema.makeFilter(() => false)"),
           filter(Constraint.Collection.Minimum(Comparison(Long.MaxValue, true)))
-            .contains("Schema.minItems(9223372036854775808)")
+            .contains("Schema.isMinLength(9223372036854775808)")
         )
       ,
-      /** effect has no filter for these, and approximating one would validate something other than what the schema
+      /** These have no supported translation, and approximating one would validate something other than what the schema
         * says. Dropping is the documented answer.
         */
       test("what effect cannot say is dropped rather than approximated"):
@@ -128,8 +138,8 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
           filter(Constraint.Collection.Sorted(Direction.Descending)).isEmpty
         )
     ),
-    /** A record's size has no counterpart either: effect constrains the fields a struct declares, not how many of them
-      * a value carries.
+    /** A record's size is not translated either: effect constrains the fields a struct declares, not how many of them a
+      * value carries.
       */
     suite("object")(
       test("the size of a record says nothing"):
@@ -139,7 +149,7 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
         )
     ),
     /** A generic constraint is about presence or identity rather than shape, and is enforced by the schema the filter
-      * would have been piped onto.
+      * would have been applied to.
       */
     suite("generic")(
       test("a generic constraint says nothing"):
@@ -158,7 +168,7 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
 
         assertTrue(
           ConstraintTypescriptEffect.filters(constraints).map(_.render) ==
-            List("Schema.minLength(1)", "Schema.maxLength(9)")
+            List("Schema.isMinLength(1)", "Schema.isMaxLength(9)")
         )
       ,
       test("no constraints is no filters"):

@@ -34,15 +34,39 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
             json.omittedTag
           ) == """Schema.Struct({
                  |  "title": Schema.String,
-                 |  "tag": Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+                 |  "tag": Schema.optional(
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    )
+                 |  )
                  |})""".stripMargin,
           read(
             json.omittedTag
           ) == """Schema.Struct({
                  |  "title": Schema.String,
-                 |  "tag": Schema.optionalWith(
-                 |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-                 |    { "nullable": true }
+                 |  "tag": Schema.optional(
+                 |    Schema.NullOr(
+                 |      Schema.Int.check(
+                 |        Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |        Schema.isLessThanOrEqualTo(2147483647)
+                 |      )
+                 |    )
+                 |  ).pipe(
+                 |    Schema.decodeTo(
+                 |      Schema.optional(
+                 |        Schema.toType(
+                 |          Schema.Int.check(
+                 |            Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |            Schema.isLessThanOrEqualTo(2147483647)
+                 |          )
+                 |        )
+                 |      ),
+                 |      {
+                 |        "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+                 |        "encode": SchemaGetter.transformOptional((value) => value)
+                 |      }
+                 |    )
                  |  )
                  |})""".stripMargin
         )
@@ -54,15 +78,39 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
             json.nullableTag
           ) == """Schema.Struct({
                  |  "title": Schema.String,
-                 |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+                 |  "tag": Schema.NullOr(
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    )
+                 |  )
                  |})""".stripMargin,
           read(
             json.nullableTag
           ) == """Schema.Struct({
                  |  "title": Schema.String,
-                 |  "tag": Schema.optionalWith(
-                 |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-                 |    { "nullable": true }
+                 |  "tag": Schema.optional(
+                 |    Schema.NullOr(
+                 |      Schema.Int.check(
+                 |        Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |        Schema.isLessThanOrEqualTo(2147483647)
+                 |      )
+                 |    )
+                 |  ).pipe(
+                 |    Schema.decodeTo(
+                 |      Schema.optional(
+                 |        Schema.toType(
+                 |          Schema.Int.check(
+                 |            Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |            Schema.isLessThanOrEqualTo(2147483647)
+                 |          )
+                 |        )
+                 |      ),
+                 |      {
+                 |        "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+                 |        "encode": SchemaGetter.transformOptional((value) => value)
+                 |      }
+                 |    )
                  |  )
                  |})""".stripMargin
         )
@@ -76,11 +124,25 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
           read(omitted) == write(omitted),
           write(
             omitted
-          ) == """Schema.Struct({ "tag": Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))) })""",
+          ) == """Schema.Struct({
+                 |  "tag": Schema.optional(
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    )
+                 |  )
+                 |})""".stripMargin,
           read(nulled) == write(nulled),
           write(
             nulled
-          ) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))) })"""
+          ) == """Schema.Struct({
+                 |  "tag": Schema.NullOr(
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    )
+                 |  )
+                 |})""".stripMargin
         )
       ,
       /** Two layers of absence: no key at all is the outer one, a null the inner. Only a strict field can tell them
@@ -91,7 +153,16 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
           read(json.nestedTag) == write(json.nestedTag),
           write(
             json.nestedTag
-          ) == """Schema.Struct({ "tag": Schema.optional(Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))) })"""
+          ) == """Schema.Struct({
+                 |  "tag": Schema.optional(
+                 |    Schema.NullOr(
+                 |      Schema.Int.check(
+                 |        Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |        Schema.isLessThanOrEqualTo(2147483647)
+                 |      )
+                 |    )
+                 |  )
+                 |})""".stripMargin
         )
       ,
       /** A field holding a default is never absent when written, and may always be absent when read. The default is an
@@ -103,13 +174,37 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         assertTrue(
           write(
             schema
-          ) == """Schema.Struct({ "tag": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)) })""",
+          ) == """Schema.Struct({
+                 |  "tag": Schema.Int.check(
+                 |    Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |    Schema.isLessThanOrEqualTo(2147483647)
+                 |  )
+                 |})""".stripMargin,
           read(
             schema
           ) == """Schema.Struct({
-                 |  "tag": Schema.optionalWith(
-                 |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-                 |    { "nullable": true }
+                 |  "tag": Schema.optional(
+                 |    Schema.NullOr(
+                 |      Schema.Int.check(
+                 |        Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |        Schema.isLessThanOrEqualTo(2147483647)
+                 |      )
+                 |    )
+                 |  ).pipe(
+                 |    Schema.decodeTo(
+                 |      Schema.optional(
+                 |        Schema.toType(
+                 |          Schema.Int.check(
+                 |            Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |            Schema.isLessThanOrEqualTo(2147483647)
+                 |          )
+                 |        )
+                 |      ),
+                 |      {
+                 |        "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+                 |        "encode": SchemaGetter.transformOptional((value) => value)
+                 |      }
+                 |    )
                  |  )
                  |})""".stripMargin
         )
@@ -120,10 +215,22 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         assertTrue(
           write(
             schema
-          ) == """Schema.Struct({ "tag": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)) })""",
+          ) == """Schema.Struct({
+                 |  "tag": Schema.Int.check(
+                 |    Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |    Schema.isLessThanOrEqualTo(2147483647)
+                 |  )
+                 |})""".stripMargin,
           read(
             schema
-          ) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))) })"""
+          ) == """Schema.Struct({
+                 |  "tag": Schema.NullOr(
+                 |    Schema.Int.check(
+                 |      Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |      Schema.isLessThanOrEqualTo(2147483647)
+                 |    )
+                 |  )
+                 |})""".stripMargin
         )
     ),
     suite("coerce")(
@@ -135,16 +242,19 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         assertTrue(
           write(
             coerce(int)
-          ) == "Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))",
+          ) == """Schema.Int.check(
+                 |  Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |  Schema.isLessThanOrEqualTo(2147483647)
+                 |)""".stripMargin,
           read(
             coerce(int)
           ) == """export type CoerceInt = Schema.Schema.Type<typeof CoerceInt>;
                  |
                  |export const CoerceInt = Schema.Union(
-                 |  Schema.Number,
-                 |  Schema.transform(
-                 |    Schema.String.pipe(Schema.pattern(RegExp("^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"))).pipe(
-                 |      Schema.filter(
+                 |  [
+                 |    Schema.Number,
+                 |    Schema.String.check(Schema.isPattern(RegExp("^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"))).check(
+                 |      Schema.makeFilter(
                  |        (value) => {
                  |          const parts = value.toLowerCase().split("e");
                  |          const decimal = (parts[0] ?? "").split(".");
@@ -156,16 +266,23 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
                  |          return (significant === "" || ((((scale >= 0) && ((significant.length + scale) <= 10)) && (decoded >= -2147483648)) && (decoded <= 2147483647)));
                  |        }
                  |      )
-                 |    ),
-                 |    Schema.Number,
-                 |    {
-                 |      "decode": (value) => Number(value),
-                 |      "encode": (value) => String(value)
-                 |    }
-                 |  )
+                 |    ).pipe(
+                 |      Schema.decodeTo(
+                 |        Schema.Number,
+                 |        SchemaTransformation.transform({
+                 |          "decode": (value) => Number(value),
+                 |          "encode": (value) => String(value)
+                 |        })
+                 |      )
+                 |    )
+                 |  ]
                  |);
                  |
-                 |CoerceInt.pipe(Schema.int(), Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))""".stripMargin
+                 |CoerceInt.check(
+                 |  Schema.isInt(),
+                 |  Schema.isGreaterThanOrEqualTo(-2147483648),
+                 |  Schema.isLessThanOrEqualTo(2147483647)
+                 |)""".stripMargin
         )
       ,
       /** A coercion replaces the node with a union of the forms it accepts, so whatever the node was claiming has to
@@ -178,15 +295,18 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
           ) == """export type CoerceNumber = Schema.Schema.Type<typeof CoerceNumber>;
                  |
                  |export const CoerceNumber = Schema.Union(
-                 |  Schema.Number,
-                 |  Schema.transform(
-                 |    Schema.String.pipe(Schema.pattern(RegExp("^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"))),
+                 |  [
                  |    Schema.Number,
-                 |    {
-                 |      "decode": (value) => Number(value),
-                 |      "encode": (value) => String(value)
-                 |    }
-                 |  )
+                 |    Schema.String.check(Schema.isPattern(RegExp("^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"))).pipe(
+                 |      Schema.decodeTo(
+                 |        Schema.Number,
+                 |        SchemaTransformation.transform({
+                 |          "decode": (value) => Number(value),
+                 |          "encode": (value) => String(value)
+                 |        })
+                 |      )
+                 |    )
+                 |  ]
                  |);
                  |
                  |CoerceNumber""".stripMargin
@@ -199,38 +319,50 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
           read(coerce(boolean)) == """export type CoerceBoolean = Schema.Schema.Type<typeof CoerceBoolean>;
                                      |
                                      |export const CoerceBoolean = Schema.Union(
-                                     |  Schema.Boolean,
-                                     |  Schema.transform(
-                                     |    Schema.Union(Schema.Literal("true"), Schema.Literal("false")),
+                                     |  [
                                      |    Schema.Boolean,
-                                     |    {
-                                     |      "decode": (value) => value === "true",
-                                     |      "encode": (value) => value ? "true" : "false"
-                                     |    }
-                                     |  )
+                                     |    Schema.Union(
+                                     |      [
+                                     |        Schema.Literal("true"),
+                                     |        Schema.Literal("false")
+                                     |      ]
+                                     |    ).pipe(
+                                     |      Schema.decodeTo(
+                                     |        Schema.Boolean,
+                                     |        SchemaTransformation.transform({
+                                     |          "decode": (value) => value === "true",
+                                     |          "encode": (value) => value ? "true" : "false"
+                                     |        })
+                                     |      )
+                                     |    )
+                                     |  ]
                                      |);
                                      |
                                      |CoerceBoolean""".stripMargin,
           read(coerce(string)) == """export type CoerceString = Schema.Schema.Type<typeof CoerceString>;
                                     |
                                     |export const CoerceString = Schema.Union(
-                                    |  Schema.String,
-                                    |  Schema.transform(
-                                    |    Schema.Number,
+                                    |  [
                                     |    Schema.String,
-                                    |    {
-                                    |      "decode": (value) => String(value),
-                                    |      "encode": (value) => Number(value)
-                                    |    }
-                                    |  ),
-                                    |  Schema.transform(
-                                    |    Schema.Boolean,
-                                    |    Schema.String,
-                                    |    {
-                                    |      "decode": (value) => value ? "true" : "false",
-                                    |      "encode": (value) => value === "true"
-                                    |    }
-                                    |  )
+                                    |    Schema.Number.pipe(
+                                    |      Schema.decodeTo(
+                                    |        Schema.String,
+                                    |        SchemaTransformation.transform({
+                                    |          "decode": (value) => String(value),
+                                    |          "encode": (value) => Number(value)
+                                    |        })
+                                    |      )
+                                    |    ),
+                                    |    Schema.Boolean.pipe(
+                                    |      Schema.decodeTo(
+                                    |        Schema.String,
+                                    |        SchemaTransformation.transform({
+                                    |          "decode": (value) => String(value),
+                                    |          "encode": (value) => value === "true"
+                                    |        })
+                                    |      )
+                                    |    )
+                                    |  ]
                                     |);
                                     |
                                     |CoerceString""".stripMargin
@@ -286,7 +418,12 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
           absent.asObject.map(_.keys.toList) == List("title").some,
           present.asObject.map(_.keys.toList) == List("title", "tag").some,
           write(json.omittedTag).contains(
-            """Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"""
+            """Schema.optional(
+              |    Schema.Int.check(
+              |      Schema.isGreaterThanOrEqualTo(-2147483648),
+              |      Schema.isLessThanOrEqualTo(2147483647)
+              |    )
+              |  )""".stripMargin
           )
         )
       ,
@@ -296,7 +433,12 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         assertTrue(
           absent.asObject.flatMap(_.apply("tag")) == CirceJson.Null.some,
           write(json.nullableTag).contains(
-            """Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"""
+            """Schema.NullOr(
+              |    Schema.Int.check(
+              |      Schema.isGreaterThanOrEqualTo(-2147483648),
+              |      Schema.isLessThanOrEqualTo(2147483647)
+              |    )
+              |  )""".stripMargin
           )
         )
       ,
@@ -311,10 +453,7 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
           JsonCirceDecoder.decode(json.omittedTag, omitted).isValid,
           JsonCirceDecoder.decode(json.omittedTag, nulled).isValid,
           read(json.omittedTag).contains(
-            """Schema.optionalWith(
-              |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
-              |    { "nullable": true }
-              |  )""".stripMargin
+            "SchemaGetter.transformOptional(Option.filter((value) => (value !== null)))"
           )
         )
       ,

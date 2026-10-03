@@ -16,6 +16,42 @@ object TypescriptEffectTest extends ZIOSpecDefault:
   private val b: Typescript.Expression = Typescript.Expression.Symbol("B")
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TypescriptEffectTest")(
+    suite("imports")(
+      test("plain schemas import only Schema"):
+        assertTrue(
+          TypescriptEffect.imports(List(TypescriptEffect.String)).map(_.render) ==
+            List("""import { Schema } from "effect";""")
+        )
+      ,
+      test("transformations and optional fields discover all helpers once in stable order"):
+        val source = Typescript.Statement.Declaration.Constant(
+          exported = true,
+          "Example",
+          None,
+          TypescriptEffect.struct(
+            List(
+              "number" -> TypescriptEffect.CoerceNumber,
+              "optional" -> TypescriptEffect.optionalNullable(TypescriptEffect.String)
+            )
+          )
+        )
+        assertTrue(
+          TypescriptEffect.imports(List(source, source)).map(_.render) ==
+            List("""import { Schema, SchemaTransformation, SchemaGetter, Option } from "effect";""")
+        )
+      ,
+      test("type references count and text containing namespace names does not"):
+        val tpe = Typescript.Statement.Declaration.Type(
+          exported = true,
+          "Example",
+          TypescriptEffect.encoded(Typescript.Type.TypeOf(a))
+        )
+        assertTrue(
+          TypescriptEffect.imports(List(tpe)).map(_.render) == List("""import { Schema } from "effect";"""),
+          TypescriptEffect.imports(List(Typescript.Expression.Literal.String("SchemaGetter.transform"))).isEmpty,
+          TypescriptEffect.imports(Nil).isEmpty
+        )
+    ),
     suite("naming")(
       test("a member is reached through the module"):
         assertTrue(TypescriptEffect.symbol("Foo").render == "Schema.Foo", TypescriptEffect(a).render == "Schema.A")
@@ -29,9 +65,9 @@ object TypescriptEffectTest extends ZIOSpecDefault:
           TypescriptEffect.String.render == "Schema.String"
         )
       ,
-      /** A filter and not a primitive: `Schema.int()` narrows a number rather than naming a different one. */
+      /** A filter and not a primitive: `Schema.isInt()` narrows a number rather than naming a different one. */
       test("integrality is a call and not a name"):
-        assertTrue(TypescriptEffect.Integral.render == "Schema.int()")
+        assertTrue(TypescriptEffect.Integral.render == "Schema.isInt()")
     ),
     suite("combinators")(
       test("a collection is an array, and a non empty one says so"):
@@ -40,26 +76,25 @@ object TypescriptEffectTest extends ZIOSpecDefault:
           TypescriptEffect.nonEmptyArray(a).render == "Schema.NonEmptyArray(A)"
         )
       ,
-      /** An object of more than one member is broken over lines by the printer, so this is what a dictionary really
-        * looks like in a generated module.
-        */
       test("a dictionary keys itself by string"):
         assertTrue(
           TypescriptEffect.record(a).render ==
-            """|Schema.Record({
-               |  "key": Schema.String,
-               |  "value": A
-               |})""".stripMargin
+            "Schema.Record(Schema.String, A)"
         )
       ,
       test("a tuple and a struct carry what they hold"):
         assertTrue(
-          TypescriptEffect.tuple(List(a, b)).render == "Schema.Tuple(A, B)",
+          TypescriptEffect.tuple(List(a, b)).render == """Schema.Tuple(
+                                                         |  [
+                                                         |    A,
+                                                         |    B
+                                                         |  ]
+                                                         |)""".stripMargin,
           TypescriptEffect.struct(List("x" -> a)).render == """Schema.Struct({ "x": A })"""
         )
       ,
       test("an empty tuple is still a tuple"):
-        assertTrue(TypescriptEffect.tuple(Nil).render == "Schema.Tuple()")
+        assertTrue(TypescriptEffect.tuple(Nil).render == "Schema.Tuple([])")
       ,
       test("a literal carries every value it was given"):
         assertTrue(
@@ -70,7 +105,12 @@ object TypescriptEffectTest extends ZIOSpecDefault:
                 Typescript.Expression.Literal.Number(java.math.BigDecimal.valueOf(1L))
               )
             )
-            .render == """Schema.Literal("a", 1)"""
+            .render == """Schema.Literals(
+                         |  [
+                         |    "a",
+                         |    1
+                         |  ]
+                         |)""".stripMargin
         )
       ,
       /** A suspension is what a definition refers to itself through, before the constant it names exists. */
@@ -80,14 +120,15 @@ object TypescriptEffectTest extends ZIOSpecDefault:
       test("a transform names both sides and both directions"):
         assertTrue(
           TypescriptEffect.transform(a, b, a, b).render ==
-            """|Schema.transform(
-               |  A,
-               |  B,
-               |  {
-               |    "decode": A,
-               |    "encode": B
-               |  }
-               |)""".stripMargin
+            """A.pipe(
+              |  Schema.decodeTo(
+              |    B,
+              |    SchemaTransformation.transform({
+              |      "decode": A,
+              |      "encode": B
+              |    })
+              |  )
+              |)""".stripMargin
         )
     ),
     suite("absence")(
@@ -95,12 +136,27 @@ object TypescriptEffectTest extends ZIOSpecDefault:
         assertTrue(
           TypescriptEffect.nullOr(a).render == "Schema.NullOr(A)",
           TypescriptEffect.optional(a).render == "Schema.optional(A)",
-          TypescriptEffect.optionalNullable(a).render == """Schema.optionalWith(A, { "nullable": true })"""
+          TypescriptEffect
+            .optionalNullable(a)
+            .render == """Schema.optional(Schema.NullOr(A)).pipe(
+                         |  Schema.decodeTo(
+                         |    Schema.optional(Schema.toType(A)),
+                         |    {
+                         |      "decode": SchemaGetter.transformOptional(Option.filter((value) => (value !== null))),
+                         |      "encode": SchemaGetter.transformOptional((value) => value)
+                         |    }
+                         |  )
+                         |)""".stripMargin
         )
     ),
     suite("union")(
       test("a union of several is a union"):
-        assertTrue(TypescriptEffect.union(NonEmptyList.of(a, b)).render == "Schema.Union(A, B)")
+        assertTrue(TypescriptEffect.union(NonEmptyList.of(a, b)).render == """Schema.Union(
+                                                                             |  [
+                                                                             |    A,
+                                                                             |    B
+                                                                             |  ]
+                                                                             |)""".stripMargin)
       ,
       /** A union of one is that one. Wrapping it would say the same thing at the cost of a level, and every caller
         * builds its members before it knows how many there are.
@@ -109,11 +165,10 @@ object TypescriptEffectTest extends ZIOSpecDefault:
         assertTrue(TypescriptEffect.union(NonEmptyList.one(a)).render == "A")
     ),
     suite("filtered")(
-      test("a filtered schema is piped through its filters"):
-        assertTrue(TypescriptEffect.filtered(a, List(b)).render == "A.pipe(B)")
+      test("a filtered schema applies its checks"):
+        assertTrue(TypescriptEffect.filtered(a, List(b)).render == "A.check(B)")
       ,
-      /** Nothing to narrow leaves the schema alone rather than piping it through an empty list, which would not parse.
-        */
+      /** Nothing to narrow leaves the schema alone. */
       test("no filters leaves the schema as it was"):
         assertTrue(TypescriptEffect.filtered(a, Nil).render == "A")
     ),
@@ -123,17 +178,17 @@ object TypescriptEffectTest extends ZIOSpecDefault:
 
         assertTrue(
           TypescriptEffect.inferred(tpe).render == "Schema.Schema.Type<Book>",
-          TypescriptEffect.encoded(tpe).render == "Schema.Schema.Encoded<Book>",
-          TypescriptEffect.annotation(tpe).render == "Schema.Schema<Book>"
+          TypescriptEffect.encoded(tpe).render == "Schema.Codec.Encoded<Book>",
+          TypescriptEffect.annotation(tpe).render == "Schema.Codec<Book, Book>"
         )
       ,
-      test("annotations distinguish transformations and keep symmetric schemas compact"):
+      test("annotations retain both projections for transformed and symmetric schemas"):
         val decoded = Typescript.Type.Symbol("Book", Nil)
         val encoded = Typescript.Type.Symbol("BookEncoded", Nil)
 
         assertTrue(
-          TypescriptEffect.annotation(decoded, encoded).render == "Schema.Schema<Book, BookEncoded>",
-          TypescriptEffect.annotation(decoded, decoded).render == "Schema.Schema<Book>"
+          TypescriptEffect.annotation(decoded, encoded).render == "Schema.Codec<Book, BookEncoded>",
+          TypescriptEffect.annotation(decoded, decoded).render == "Schema.Codec<Book, Book>"
         )
       ,
       /** What decides whether a constant needs an ascription: a type it inferred from its own value does not. */
@@ -157,14 +212,15 @@ object TypescriptEffectTest extends ZIOSpecDefault:
         assertTrue(
           rendered.startsWith("Schema.Union("),
           rendered.contains("Schema.Boolean"),
-          rendered.contains("""Schema.Union(Schema.Literal("true"), Schema.Literal("false"))"""),
+          rendered.contains("Schema.Literal(\"true\")"),
+          rendered.contains("Schema.Literal(\"false\")"),
           rendered.contains(""""decode": (value) => value === "true""""),
           rendered.contains(""""encode": (value) => value ? "true" : "false"""")
         )
       ,
       test("a coerced number accepts a number and the text of one"):
         assertTrue(
-          TypescriptEffect.CoerceNumber.render.contains("Schema.pattern(RegExp("),
+          TypescriptEffect.CoerceNumber.render.contains("Schema.isPattern(RegExp("),
           TypescriptEffect.CoerceNumber.render.contains("\"decode\": (value) => Number(value)"),
           TypescriptEffect.CoerceNumber.render.contains("\"encode\": (value) => String(value)")
         )
@@ -180,7 +236,9 @@ object TypescriptEffectTest extends ZIOSpecDefault:
           rendered.contains("Schema.String"),
           rendered.contains(""""decode": (value) => String(value)"""),
           rendered.contains(""""encode": (value) => Number(value)"""),
-          rendered.contains(""""decode": (value) => value ? "true" : "false""""),
+          rendered
+            .sliding("\"decode\": (value) => String(value)".length)
+            .count(_ == "\"decode\": (value) => String(value)") == 2,
           rendered.contains(""""encode": (value) => value === "true"""")
         )
     )

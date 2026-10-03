@@ -130,6 +130,12 @@ naming a format's vocabulary, and a module interpreting it into a library's data
 - `http-openapi` — render endpoints as an OpenAPI 3.1 document.
 - `http-typescript`, `http-typescript-effect` — render endpoints as TypeScript request descriptors.
 
+The Effect generators target **Effect v4** exclusively. Generated code requires `effect@4` and TypeScript 5.9 or
+newer with strict checking. HTTP descriptors include their imports. When assembling a JSON schema module, prepend
+`TypescriptEffect.imports(declarations)` to the declarations returned by `JsonTypescriptEffectRenderer.module`.
+Custom expression overrides must also use v4 APIs: for example, use `Schema.DateFromString` for an ISO string decoded
+to a `Date`. Encoded types use `Schema.Codec.Encoded`, and recursive schemas retain both sides through `Schema.Codec`.
+
 `AGENTS.md` is the long-form design document: why each module exists, what the benchmarks say, and the sharp edges
 worth knowing before writing against the library.
 

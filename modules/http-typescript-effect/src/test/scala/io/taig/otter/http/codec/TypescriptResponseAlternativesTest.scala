@@ -45,7 +45,7 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
         source.contains("\"400\":"),
         source.contains("\"415\":"),
         source.contains("Schema.Schema.Type<typeof ErrorText>"),
-        source.contains("Schema.Schema.Encoded<typeof ErrorText>"),
+        source.contains("Schema.Codec.Encoded<typeof ErrorText>"),
         !source.contains("fetch(")
       )
     ,
@@ -88,23 +88,44 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
       assertTrue(
         module.issues.isEmpty,
         source.sliding(6).count(_ == "\"200\":") == 1,
-        source.contains("\"application/json\": Schema.Union(Integer, Text)"),
+        source.contains(""""application/json": Schema.Union(
+                          |        [
+                          |          Integer,
+                          |          Text
+                          |        ]
+                          |      )""".stripMargin),
         source.contains("Schema.Schema.Type<typeof Integer>"),
         source.contains("Schema.Schema.Type<typeof Text>"),
-        source.contains("Schema.Schema.Encoded<typeof Integer>"),
-        source.contains("Schema.Schema.Encoded<typeof Text>")
+        source.contains("Schema.Codec.Encoded<typeof Integer>"),
+        source.contains("Schema.Codec.Encoded<typeof Text>")
       )
     ,
     test("repeating a schema does not add a union"):
       val source = render(
         endpoint(requestSchema, response(status.ok)(body.json(integer)) :+ response(status.ok)(body.json(integer)))
       ).render
-      assertTrue(source.contains("\"application/json\": Integer"), !source.contains("Schema.Union(Integer, Integer)"))
+      assertTrue(
+        source.contains("\"application/json\": Integer"),
+        !source.contains("""Schema.Union(
+                           |  [
+                           |    Integer,
+                           |    Integer
+                           |  ]
+                           |)""".stripMargin)
+      )
     ,
     test("body alternatives within one response use the same media grouping"):
       val module =
         render(endpoint(requestSchema, response(status.ok)(body.json(integer) :+ body.json(text)).toUnion))
-      assertTrue(module.issues.isEmpty, module.render.contains("\"application/json\": Schema.Union(Integer, Text)"))
+      assertTrue(
+        module.issues.isEmpty,
+        module.render.contains(""""application/json": Schema.Union(
+                                 |        [
+                                 |          Integer,
+                                 |          Text
+                                 |        ]
+                                 |      )""".stripMargin)
+      )
     ,
     test("an undescribed alternative cannot leave a validator for only the known subset"):
       val module = render(
