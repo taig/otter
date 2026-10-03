@@ -25,19 +25,26 @@ import scodec.bits.ByteVector
   * candidate wherever it is visible, and `private[http]` would still have offered it to every route written inside this
   * package. Every [[Endpoint.Declaration]] goes through the one `apply`, a [[ComposedEndpoint]] through
   * [[Route.composed]], and only the `api` form, which differs in arity, keeps the name.
+  *
+  * A route keeps the [[Endpoint.Declaration]] it was built from, so what is served can be rendered as a document by
+  * handing [[declaration]] to a renderer, and the handler is all that is thrown away. A composed endpoint is kept as
+  * [[ComposedEndpoint.declaration]], which overrides every entry of its policy: it answers with that policy under an
+  * API too, and a document rendered from it says so.
   */
 final case class Route[F[_], +S[-_, +_], A, B] private (
-    endpoint: Endpoint.Server[S, A, B],
+    declaration: Endpoint.Declaration[S, Nothing, A, B, Any, Any],
     handler: A => F[B],
-    errors: ErrorPolicy[S, Any],
-    overrides: ErrorOverrides[S, Any]
+    errors: ErrorPolicy[S, Any]
 ):
+  /** The endpoint as the server sees it, without its error declarations. */
+  def endpoint: Endpoint.Server[S, A, B] = declaration.domain
+
   /** This route under an API's policy, with its own overrides applied on top of it.
     *
     * A method rather than a `copy`, because a private constructor takes `copy` with it.
     */
   private[http] def under[T[-w, +r] >: S[w, r]](policy: ErrorPolicy[T, Any]): Route[F, T, A, B] =
-    new Route(endpoint, handler, overrides(policy), overrides)
+    new Route(declaration, handler, declaration.overrides(policy))
 
   /** Whether this route is the one an incoming method and path is addressed to. */
   def matches(method: Method, segments: Vector[String]): Boolean =
@@ -61,22 +68,22 @@ object Route:
       endpoint: Endpoint.Declaration[S, Nothing, A, B, Any, D],
       handler: A => F[B]
   ): Route[F, S, A, B] =
-    new Route(endpoint.domain, handler, endpoint.compose(api.errors).errors, endpoint.overrides)
+    new Route(endpoint, handler, endpoint.compose(api.errors).errors)
 
   def apply[F[_], S[-_, +_], A, B, E](
       endpoint: Endpoint.Declaration[S, Nothing, A, B, Any, E],
       handler: A => F[B]
   ): Route[F, S, A, B] =
-    new Route(endpoint.domain, handler, endpoint.compose(ErrorPolicy.default).errors, endpoint.overrides)
+    new Route(endpoint, handler, endpoint.compose(ErrorPolicy.default).errors)
 
-  /** A route for an endpoint already composed with its error policy.
+  /** A route for an endpoint already composed with its error policy, which it keeps under an API's policy as well.
     *
     * A name of its own rather than an overload of `apply`, for the reason [[Route]] gives.
     */
   def composed[F[_], S[-_, +_], A, B, E](
       endpoint: ComposedEndpoint[S, Nothing, A, B, Any, E],
       handler: A => F[B]
-  ): Route[F, S, A, B] = new Route(endpoint.domain, handler, endpoint.errors, ErrorOverrides())
+  ): Route[F, S, A, B] = new Route(endpoint.declaration, handler, endpoint.errors)
 
   /** This route's answer to a request it has already matched.
     *
