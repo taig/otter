@@ -181,6 +181,12 @@ measured trade. `Http4sRoundTripTest` is what the module rests on -- `Client.fro
 read as both sides, so neither half can agree by being written twice the same wrong way, and no socket means it runs on
 Scala.js too.
 
+A `Route` keeps the declaration it was built from, so `route.declaration` and `routes.declarations` hand what is served
+to a renderer with only the handlers thrown away; documents can come from the endpoints alone or from the routes, and
+neither direction needs the other. `Route.composed` stores `ComposedEndpoint.declaration`, which overrides every entry
+of its policy, so a composed route answers with its own policy under an `Api` too and a document rendered from it says
+the same.
+
 `http-csv` is the second payload alphabet, beside `http-json`: a `CsvDocument` is exactly one row or a finite collection
 of rows. `http-http4s-fs2-data` interprets it for http4s, buffered, with fs2-data writing the CSV wire syntax and
 Otter's schema writing each row, as `http-http4s-circe` does for JSON.
@@ -231,6 +237,10 @@ cannot be that. Each of them is shaped by what its own suite had to ask, and a r
 becomes a served route has to work out which test's needs bent which fixture first. Nothing in it is measured against
 another module's fixture, and it names `zio-test` itself rather than taking a `test->test` edge, so no other module's
 `api` or `json` object is in scope to be mistaken for its own.
+
+Its served endpoints are listed twice on purpose: `api.served` with no handler in sight, so documents need no
+`Library`, and `LibraryRoutes.routes` beside the handlers. `LibraryServedTest` is what keeps them one list -- the
+routes' declarations must be exactly `api.served`, by identity and in order.
 
 What it deliberately does *not* serve is the more useful half. `POST /books/{isbn}/cover` carries a `Multipart`
 payload, `GET /books/export` answers with an ndjson stream, and `GET /books/report` answers with a stream whose

@@ -21,9 +21,10 @@ import java.nio.file.Paths
 
 /** The same endpoint values, written out as documents.
   *
-  * Nothing here describes the API a second time. `api.all` is the identical list [[LibraryRoutes]] serves from, read by
-  * three different interpreters -- which is the claim the whole library rests on, and the reason a document cannot
-  * drift from the server that answers it.
+  * Nothing here describes the API a second time. `api.all` is the value [[LibraryRoutes]] serves under, read by three
+  * different interpreters, and the endpoints its routes carry are exactly `api.served` -- `LibraryServedTest` asserts
+  * it -- which is the claim the whole library rests on, and the reason a document cannot drift from the server that
+  * answers it.
   *
   * Two sides, and they genuinely differ. A server *reads* the request and *writes* the response, and a caller does the
   * reverse; wherever a field is optional or holds a default the two documents disagree, because a reader accepts an

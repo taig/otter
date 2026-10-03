@@ -7,6 +7,13 @@ final case class ComposedEndpoint[+S[-_, +_], -AW, +AR, -BW, +BR, +E](
     domain: Endpoint.Schema[S, AW, AR, BW, BR],
     errors: ErrorPolicy[S, E]
 ):
+  /** This endpoint as a declaration that keeps its policy under whatever defaults it is later composed with.
+    *
+    * Every entry of the policy becomes an override, so composing the result with an API's policy, or rendering it on
+    * its own, describes exactly [[errors]] and nothing the API would have said instead.
+    */
+  def declaration: Endpoint.WithErrors[S, AW, AR, BW, BR, E] = Endpoint.WithErrors(domain, ErrorOverrides.from(errors))
+
   /** Domain alternatives retain priority when wire representations overlap. */
   def effective: Endpoint.Schema[S, AW, AR, Either[Failure, BW], Either[E, BR]] =
     val union = Union.Modify(

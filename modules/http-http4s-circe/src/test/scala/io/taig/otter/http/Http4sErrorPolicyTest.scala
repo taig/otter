@@ -280,4 +280,36 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         }
         assertTrue(status == 500, category(events).contains(Failure.Category.Encoding))
       }
+    ,
+    test("a composed route keeps its own policy under an API's"):
+      val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
+      val value = ErrorPolicy.default.copy(unexpected = unavailable)(domain)
+      val api = Api(ErrorPolicy.default, UnroutedPolicy.default)
+      run(
+        Http4s
+          .app[IO](api, Route.composed(value, (_: Unit) => IO.raiseError[Unit](cause)))(Http4sPayload.Empty)
+          .run(Http4sRequest[IO](uri = base))
+      ).map(response => assertTrue(response.status.code == 503))
+    ,
+    test("a route's declaration is the one it was built from"):
+      val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
+      val overridden = domain.withErrors(ErrorOverrides(unexpected = Some(unavailable)))
+      val api = Api(ErrorPolicy.default, UnroutedPolicy.default)
+      val handler = (_: Unit) => IO.unit
+      val plain = Route(domain, handler)
+      val under = Route(api, domain, handler)
+      val local = Route(overridden, handler)
+      val declarations = Routes(plain, local).declarations
+      assertTrue(
+        plain.declaration == domain,
+        under.declaration == domain,
+        local.declaration == overridden,
+        declarations == Chain(domain, overridden)
+      )
+    ,
+    test("a composed route's declaration carries its policy under any other"):
+      val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
+      val value = ErrorPolicy.default.copy(unexpected = unavailable)(domain)
+      val declaration = Route.composed(value, (_: Unit) => IO.unit).declaration
+      assertTrue(declaration.domain == domain, declaration.compose(ErrorPolicy.default).errors == value.errors)
   )

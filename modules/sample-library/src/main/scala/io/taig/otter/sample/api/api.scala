@@ -19,7 +19,7 @@ object api:
     description = Some("A library management API, written to show what Otter can describe")
   )
 
-  /** The endpoints [[io.taig.otter.sample.LibraryRoutes]] answers. */
+  /** The endpoints [[io.taig.otter.sample.LibraryRoutes]] answers, which `LibraryServedTest` holds it to. */
   val served: Chain[Endpoint.Declaration.Node] = Chain(
     loans.health,
     books.list,

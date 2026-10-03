@@ -1,15 +1,22 @@
 package io.taig.otter.sample
 
 import cats.effect.Concurrent
+import io.taig.otter.Json
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Route
+import io.taig.otter.http.Routes
+import io.taig.otter.http.codec.Http4sPayload
 import io.taig.otter.sample.api.api
 import io.taig.otter.sample.api.books
 import io.taig.otter.sample.api.loans
 import org.http4s.HttpApp
 
 /** The endpoints of [[io.taig.otter.sample.api.api.served]], each paired with what answers it.
+  *
+  * The two lists are kept apart on purpose -- the declarations depend on nothing that serves them, so documents and
+  * clients can be generated without a [[Library]] in scope -- and `LibraryServedTest` is what keeps them equal: the
+  * declarations these routes carry must be exactly `api.served`, in order.
   *
   * A [[Route]] is an endpoint and an `A => F[B]`, and the pairing is checked by the compiler: the endpoint says what a
   * request holds and what an answer may be, so a handler of the wrong shape is a compile error rather than a runtime
@@ -29,19 +36,21 @@ import org.http4s.HttpApp
   * leaves them to be discovered.
   */
 object LibraryRoutes:
+  /** Every served endpoint, answered by `library`, in the order a request is matched against them. */
+  def routes[F[_]](library: Library[F]): Routes[F, Http4sPayload.Supported[Json.Node]] = Routes(
+    Route(loans.health, (_: Unit) => library.health),
+    Route(books.list, (filter, _) => library.list(filter)),
+    Route(books.create, library.create),
+    Route(books.fetch, library.fetch),
+    Route(books.patch, library.patch.tupled),
+    Route(books.delete, library.delete),
+    Route(books.scan, library.scan.tupled),
+    Route(books.intake, library.intake),
+    Route(books.catalogue, (_: Unit) => library.catalogue),
+    Route(loans.fetch, library.member),
+    Route(loans.borrow, library.borrow.tupled)
+  )
+
   /** Every served endpoint, answered by `library`, and every other request answered as the API declares. */
   def apply[F[_]: Concurrent](library: Library[F]): HttpApp[F] =
-    Http4s.app[F](
-      api.all,
-      Route(loans.health, (_: Unit) => library.health),
-      Route(books.list, (filter, _) => library.list(filter)),
-      Route(books.create, library.create),
-      Route(books.fetch, library.fetch),
-      Route(books.patch, library.patch.tupled),
-      Route(books.delete, library.delete),
-      Route(books.scan, library.scan.tupled),
-      Route(books.intake, library.intake),
-      Route(books.catalogue, (_: Unit) => library.catalogue),
-      Route(loans.fetch, library.member),
-      Route(loans.borrow, library.borrow.tupled)
-    )(Http4sCirce.Payload)
+    Http4s.app[F](api.all, LibraryRoutes.routes(library).values.toList*)(Http4sCirce.Payload)
