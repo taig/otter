@@ -97,14 +97,7 @@ object books:
     * not change with the position it is read in.
     */
   private[sample] def enumerated: Parameter.Enumeration[Genre] =
-    dsl.enumeration[Parameter.Primitive.Text.Schema, String, Genre](dsl.string):
-      case Genre.Biography => "biography"
-      case Genre.Children  => "children"
-      case Genre.Fantasy   => "fantasy"
-      case Genre.History   => "history"
-      case Genre.Poetry    => "poetry"
-      case Genre.Romance   => "romance"
-      case Genre.Thriller  => "thriller"
+    dsl.enumeration(dsl.string, Genre.mapping)
 
   /** `GET /books`
     *
