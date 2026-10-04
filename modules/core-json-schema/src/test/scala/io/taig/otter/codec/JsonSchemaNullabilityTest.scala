@@ -34,7 +34,7 @@ object JsonSchemaNullabilityTest extends ZIOSpecDefault:
   private def alternatives(document: CirceJson, property: String): List[CirceJson] =
     document.hcursor.downField("properties").downField(property).downField("anyOf").values.toList.flatten.toList
 
-  private val shape: Json.Record[Option[Shape]] = field("shape", json.shape).optional.nullable.toRecord
+  private val shape: Json.Record[Option[Shape]] = field("shape", json.shape).nullableOrMissing.toRecord
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonSchemaNullabilityTest")(
     test("an alternation names null beside what the value otherwise is"):

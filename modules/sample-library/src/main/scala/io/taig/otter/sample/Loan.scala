@@ -23,7 +23,7 @@ object Loan:
   /** What a caller sends to borrow one.
     *
     * `period` may be left out, and is then the member's own -- a default that the *server* fills in and a caller
-    * therefore need not know, which is exactly the asymmetry `.optional(default)` describes and the reason the server
+    * therefore need not know, which is exactly the asymmetry `.defaulted(default)` describes and the reason the server
     * and client documents for this endpoint differ.
     */
   final case class Request(isbn: Isbn, period: Option[Period])

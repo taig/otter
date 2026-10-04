@@ -2,9 +2,7 @@ package io.taig.otter.codec
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.Absence
 import io.taig.otter.Csv
-import io.taig.otter.Keys
 import io.taig.otter.component.CsvComponent.*
 import io.taig.otter.fixture.*
 import zio.Scope
@@ -68,25 +66,11 @@ object CsvEncoderTest extends ZIOSpecDefault:
       )
     ,
     test("Csv.Record: a defaulted column always writes"):
-      val schema = field("title", string) :* field("pages", int).optional(0)
+      val schema = field("title", string) :* field("pages", int).defaultedOnMissingOrBlank(0)
       assertTrue(
         CsvRecordEncoder.encode(schema, ("Dune", 412)) == Chain("title" -> "Dune", "pages" -> "412"),
         CsvRecordEncoder.encode(schema, ("Dune", 0)) == Chain("title" -> "Dune", "pages" -> "0")
       )
-    ,
-    test("Csv.Record: the attribute survives .optional"):
-      val schema = field("title", string) :* field("tag", int).omitted.optional
-      assertTrue(CsvRecordEncoder.encode(schema, ("Dune", none)) == Chain("title" -> "Dune"))
-    ,
-    test("Csv.Record: a globally set attribute is read"):
-      val schema = field("title", string) :* field("tag", int).optional.attr(Keys.absence, Absence.Omit)
-      assertTrue(CsvRecordEncoder.encode(schema, ("Dune", none)) == Chain("title" -> "Dune"))
-    ,
-    test("Csv.Record: the csv namespace wins over the global one"):
-      val schema = field("title", string) :* field("tag", int).optional
-        .attr(Keys.absence, Absence.Omit)
-        .attr(Csv.Namespace, Keys.absence, Absence.Empty)
-      assertTrue(CsvRecordEncoder.encode(schema, ("Dune", none)) == Chain("title" -> "Dune", "tag" -> ""))
     ,
     test("Csv.Tuple"):
       assertTrue(CsvTupleEncoder.encode(csv.positional, Book("Dune", 412, true)) == Vector("Dune", "412", "true"))

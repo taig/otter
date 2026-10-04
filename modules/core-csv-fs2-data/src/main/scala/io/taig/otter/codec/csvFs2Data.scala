@@ -21,10 +21,9 @@ object CsvKeyedRowEncoder extends Encoder[Csv.Record.Node, Option[CsvRow[String]
   /** Aligned to the header the schema renders rather than to the cells this one row happened to write.
     *
     * A `CsvRow` is its headers and its values together, and every row of a file has to agree with the rest on them, so
-    * a column the writer dropped is filled back in as an empty cell. That is the sense in which
-    * [[io.taig.otter.Absence.Omit]] says nothing here that [[io.taig.otter.Absence.Empty]] does not: a row lined up
-    * against a header has no way to be missing one of its columns. Only a positional row, or a reader, can tell the two
-    * apart.
+    * a column the writer dropped is filled back in as an empty cell. That is the sense in which an omitted contract
+    * says nothing here that an explicit blank does not: a row lined up against a header has no way to be missing one of
+    * its columns. Only a positional row, or a reader, can tell the two apart.
     */
   override def encode[W](csv: Csv.Record.Node[W, Any], w: W): Option[CsvRow[String]] =
     val cells = CsvRecordEncoder.encode(csv, w).toList.toMap

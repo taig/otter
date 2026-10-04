@@ -58,9 +58,9 @@ object Book:
   /** What a caller sends to change one.
     *
     * Every field is absent-able, and the two kinds of absence are told apart on purpose: a missing key means "leave it
-    * as it is", and an explicit `null` in `summary` means "there is no summary". That distinction is the reason
-    * `.optional.nullable` exists, and it is the clearest case in this API of a schema whose read and write sides
-    * differ.
+    * as it is", and an explicit `null` in `summary` means "there is no summary". That distinction is the reason the
+    * summary field is optional while its payload is nullable. `None`, `Some(None)` and `Some(Some(text))` retain
+    * unchanged, cleared and replaced independently.
     */
   final case class Patch(
       title: Option[Book.Title],

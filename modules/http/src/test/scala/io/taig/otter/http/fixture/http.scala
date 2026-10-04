@@ -33,30 +33,21 @@ object http:
 
   /** `?page&tags`, where `page` may be left out and `tags` may be given more than once. */
   val listing: Queries[(Option[Int], List[String])] =
-    query("page", int).optional :* query("tags", collection.list(string))
+    query("page", int).optionalOrEmpty :* query("tags", collection.list(string))
 
   /** `?page` standing for the first page when it is not given. */
-  val paged: Queries[Int] = query("page", int).optional(1).toRecord
+  val paged: Queries[Int] = query("page", int).defaultedOnMissingOrEmpty(1).toRecord
 
-  /** A flag, which is what a bare `?verbose` is: a name given with no value at all.
-    *
-    * `strict` is what makes it one. A lenient parameter reads a name carrying no text as absence before the value is
-    * looked at, which is right for `?page=` and wrong here, where giving the name is the assertion.
-    */
-  val verbose: Queries[Boolean] = query("verbose", coerce(boolean)).strict.optional(false).toRecord
+  /** A bare or empty flag means true; omission means false, and explicit Boolean values remain accepted. */
+  val verbose: Queries[Boolean] = query.flag("verbose").toRecord
 
   /** One header that has to be there and one list valued one that need not be. */
   val request: Headers[(String, Option[List[String]])] =
-    header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optional
+    header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optionalOrEmpty
 
-  /** The same list valued header read strictly, which is what lets it hold no elements at all.
-    *
-    * `strict` is what makes the difference, for the reason it makes it on [[verbose]]. A lenient header reads a name
-    * carrying no text as absence before the line is looked at, so an empty list and an absent header are one thing to
-    * it. Read strictly the name is there, the line is empty, and an empty line is no elements.
-    */
+  /** A required list-valued header: a missing name fails, but a present empty line means no elements. */
   val languages: Headers[List[String]] =
-    header("Accept-Language", collection.list(string)).strict.toRecord
+    header("Accept-Language", collection.list(string)).toRecord
 
   /** Ascribed to say that every segment is a primitive, which is the ordinary shape of a path and a compile error for
     * anything that would need more than one piece of text.

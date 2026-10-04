@@ -83,8 +83,8 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
     ,
     /** A strict field takes only the form it writes, which is what makes the two sides agree again. */
     test("a strict field reads exactly what it writes"):
-      val omitted = field("tag", int).optional.omitted.strict.toRecord
-      val nulled = field("tag", int).optional.nullable.strict.toRecord
+      val omitted = field("tag", int).optional.toRecord
+      val nulled = field("tag", int).nullable.toRecord
 
       assertTrue(
         read(omitted) == write(omitted),
@@ -104,7 +104,7 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
     ,
     /** A field holding a default is never absent when written, and may always be absent when read. */
     test("a defaulted field is required on the way out and optional on the way in"):
-      val schema = field("tag", int).optional(0).toRecord
+      val schema = field("tag", int).defaultedOnMissingOrNull(0).toRecord
 
       assertTrue(
         write(schema) == """{ "tag": number }""",

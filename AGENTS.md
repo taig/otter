@@ -435,3 +435,24 @@ than `:*` and `++`, which is the direction and the grouping a URL is read with. 
 - Add dependencies
 - Commit without formatting
 - Delete or skip tests to make CI pass
+
+## Field absence contracts
+
+Field absence lives in `Field.Optional.presence` or `Field.Default.absent`, never in metadata. Optional contracts
+are the four closed combinations `Omitted`, `Empty`, `OmittedOrEmpty`, and `EmptyOrMissing`; defaults name only a
+read trigger (`Missing`, `Empty`, or `MissingOrEmpty`) and always delegate writes to their payload. Format adapters
+supply the empty representation and predicate. One field may carry one such contract, including through `Modify`;
+a second fails at construction without forcing the payload reference or default. Payload nullability is independent.
+
+JSON `.optional` means missing only. `.nullable` means null only with a required key; `.optionalOrNull` accepts
+both and omits when writing; `.nullableOrMissing` accepts both and writes null. Defaults use `.defaulted`,
+`.defaultedOnNull`, or `.defaultedOnMissingOrNull`. HTTP uses empty text and CSV blank cells in the corresponding
+names. Preserve legacy wire behavior by naming leniency explicitly, especially `.blankOrMissing` for CSV columns.
+The sample PATCH summary is `field("summary", string.nullable).optional`: omission leaves it unchanged, null clears
+it, and text replaces it. `query.flag` retains explicit Boolean writes and coercions, with omission false and bare
+or empty input true. Only required repeated queries are seeded with an empty collection.
+
+`Queries.fields` and `Headers.fields` retain each field's `Annotation`, as `Multipart.parts` retains metadata.
+Renderers use the structural contract and `Side` for requiredness, and the annotation for documentation. A runtime
+default does not invent a JSON Schema default annotation. TypeScript builder input absence and wire-name presence
+are different: undefined may be written as omitted or explicit empty text depending on the contract.

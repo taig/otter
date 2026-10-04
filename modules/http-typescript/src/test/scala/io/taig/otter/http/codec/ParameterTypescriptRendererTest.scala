@@ -1,5 +1,6 @@
 package io.taig.otter.http.codec
 
+import io.taig.otter.Side
 import io.taig.otter.Typescript
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.component.HttpComponent.*
@@ -21,6 +22,21 @@ object ParameterTypescriptRendererTest extends ZIOSpecDefault:
   private def text(parameter: Parameter.Node[?, ?]): String = ParameterTypescriptRenderer.text(parameter, value).render
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("ParameterTypescriptRendererTest")(
+    test("builders distinguish omitted values from explicitly empty fields"):
+      val fields = io.taig.otter.http.Queries.fields(
+        query("omitted", int).optional :* query("empty", int).empty :*
+          query("defaulted", int).defaulted(7) :* query("emptyDefault", int).defaultedOnEmpty(7)
+      )
+      val read = TypescriptEnvelope.parameters("query", fields, Side.Read).render
+      val write = TypescriptEnvelope.parameters("query", fields, Side.Write).render
+      assertTrue(
+        read.contains(""""omitted": input["query"]["omitted"] === undefined ? undefined"""),
+        read.contains(""""empty": input["query"]["empty"] === undefined ? """""),
+        read.contains(""""defaulted": input["query"]["defaulted"] === undefined ? undefined"""),
+        read.contains(""""emptyDefault": input["query"]["emptyDefault"] === undefined ? """""),
+        write.contains(""""defaulted": String(input["query"]["defaulted"])""")
+      )
+    ,
     suite("type")(
       test("a primitive is the type it holds and not the text it becomes"):
         assertTrue(render(int) == "number", render(string) == "string", render(boolean) == "boolean")
@@ -71,8 +87,8 @@ object ParameterTypescriptRendererTest extends ZIOSpecDefault:
         val fields = io.taig.otter.http.Queries.fields(http.listing)
 
         assertTrue(
-          fields.map(_.name).toList == List("page", "tags"),
-          fields.map(field => render(field.schema.value)).toList == List("number", "ReadonlyArray<string>")
+          fields.map(_.self.name).toList == List("page", "tags"),
+          fields.map(field => render(field.self.schema.value)).toList == List("number", "ReadonlyArray<string>")
         )
     )
   )

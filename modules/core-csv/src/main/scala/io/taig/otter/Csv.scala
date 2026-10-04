@@ -46,19 +46,6 @@ object Csv:
   /** The [[Metadata.Namespace]] the CSV interpreters read their attributes from. */
   val Namespace: Metadata.Namespace = Metadata.Namespace("csv")
 
-  /** The [[Absence]] a schema's metadata asks for. Asking for nothing is [[Absence.Empty]], because a row's columns are
-    * fixed by its header: a field with nothing to write still owes its column, and writes it empty. This is where CSV
-    * reads the shared vocabulary the other way round from JSON, which drops the key instead.
-    */
-  private[otter] def absence(metadata: Metadata): Absence =
-    metadata.get(Csv.Namespace, Metadata.Namespace.Global, Keys.absence).getOrElse(Absence.Empty)
-
-  /** The [[Tolerance]] a schema's metadata asks for. Asking for nothing is [[Tolerance.Lenient]], so that a field round
-    * trips whether its column is missing or merely empty.
-    */
-  private[otter] def tolerance(metadata: Metadata): Tolerance =
-    metadata.get(Csv.Namespace, Metadata.Namespace.Global, Keys.tolerance).getOrElse(Tolerance.Lenient)
-
   /** A schema that reads `A`, whatever it writes. */
   type Reader[+A] = Csv.Reader.Of[Csv.Node, A]
 
