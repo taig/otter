@@ -250,7 +250,7 @@ object Http4sUnroutedTest extends ZIOSpecDefault:
     ),
     test("a client calling an endpoint the server does not route reports a response it does not describe"):
       val app = Http4s.app[IO](api, Route(root, (_: Unit) => IO.unit))(Http4sCirce.Payload)
-      run(Http4s.client[IO, Int, Unit](api, one)(Http4sCirce.Payload, base, Client.fromHttpApp(app))(1).attempt)
+      run(Http4s.client(Http4sCirce.Payload, base, Client.fromHttpApp(app)).withApi(api)(one)(1).attempt)
         .map(answer =>
           assertTrue(answer.left.exists {
             case _: Http4sFailure.Response => true

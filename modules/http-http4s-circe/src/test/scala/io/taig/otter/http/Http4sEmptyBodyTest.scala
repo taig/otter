@@ -84,7 +84,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
     ZIO.fromFuture: _ =>
       val client = Http4sClient.fromHttpApp[IO](org.http4s.HttpApp[IO](_ => IO.pure(response)))
 
-      Http4s.client[IO, Unit, A](endpoint)(Http4sCirce.Payload, Base, client)(()).attempt.unsafeToFuture()
+      Http4s.client(Http4sCirce.Payload, Base, client)(endpoint)(()).attempt.unsafeToFuture()
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sEmptyBodyTest")(
     test("the empty interpreter supports body-free and binary-only routes"):
@@ -165,7 +165,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
                     .flatMap(bytes => ref.set(Some((Http4sEnvelope.toMediaType(request.headers), bytes))))
                     .as(Http4sResponse[IO](status = org.http4s.Status.NoContent)))
 
-                Http4s.client[IO, Option[ByteVector], Unit](upload)(Http4sCirce.Payload, Base, client)(value) *> ref.get
+                Http4s.client(Http4sCirce.Payload, Base, client)(upload)(value) *> ref.get
               .map(seen => assertTrue(seen == Some((value.map(_ => Png), ByteVector.empty))))
               .unsafeToFuture()
         .map(results => results.reduce(_ && _))
@@ -192,7 +192,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
                   )
                   .orNotFound
                 val client = Http4sClient.fromHttpApp(app)
-                (Http4s.client[IO, Option[Option[String]], Unit](declaration)(Http4sCirce.Payload, Base, client)(
+                (Http4s.client(Http4sCirce.Payload, Base, client)(declaration)(
                   value
                 ) *> ref.get)
                   .map(seen => assertTrue(seen.contains(value)))

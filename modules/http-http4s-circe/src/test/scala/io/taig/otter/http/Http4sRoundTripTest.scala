@@ -100,7 +100,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** The value a caller gets back for the value it sent, having gone the whole way round. */
   private def roundTrip[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], handler: A => IO[B])(value: A): Task[B] =
     ZIO.fromFuture: _ =>
-      Http4s.client[IO, A, B](endpoint)(Http4sCirce.Payload, Base, routes(endpoint, handler))(value).unsafeToFuture()
+      Http4s.client(Http4sCirce.Payload, Base, routes(endpoint, handler))(endpoint)(value).unsafeToFuture()
 
   /** The request as the handler saw it, which is the half a returned value cannot show. */
   private def received[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], answer: B)(value: A): Task[A] =
@@ -109,7 +109,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         .flatMap: ref =>
           val handler = (received: A) => ref.set(Some(received)).as(answer)
 
-          Http4s.client[IO, A, B](endpoint)(Http4sCirce.Payload, Base, routes(endpoint, handler))(value) *> ref.get
+          Http4s.client(Http4sCirce.Payload, Base, routes(endpoint, handler))(endpoint)(value) *> ref.get
         .map(_.get)
         .unsafeToFuture()
 

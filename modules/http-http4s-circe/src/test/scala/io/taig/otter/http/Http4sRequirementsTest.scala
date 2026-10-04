@@ -7,7 +7,94 @@ import scala.compiletime.testing.typeCheckErrors
 import scala.compiletime.testing.typeChecks
 
 object Http4sRequirementsTest extends ZIOSpecDefault:
+  private inline val ClientPrelude = """
+    import cats.effect.IO
+    import cats.syntax.all.*
+    import io.taig.otter.Json
+    import io.taig.otter.http.*
+    import io.taig.otter.http.codec.*
+    import io.taig.otter.http.fixture.dsl.*
+    import io.taig.otter.http.fixture.payload
+    import org.http4s.implicits.*
+    val transport = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
+    val plain = endpoint(request(method.get, __), response(status.noContent))
+    val jsonRequest = endpoint(request(method.post, __)(body.json(payload.string)), response(status.noContent))
+    val jsonResponse = endpoint(request(method.get, __), response(status.ok)(body.json(payload.string)))
+    val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
+    val overridden = plain.withErrors(ErrorOverrides(unexpected = Some(error)))
+    val api = Api(ErrorPolicy.default, UnroutedPolicy.default)
+    val errors = Api(ErrorPolicy.default.copy(unexpected = error), UnroutedPolicy.default)
+    val answer = response(Status(404))(body.json(payload.string)).dimap[Unrouted, String](_ => "unrouted")(identity)
+    val unrouted = Api(ErrorPolicy.default, UnroutedPolicy(answer, answer))
+    val client = Http4s.client(Http4sPayload.Empty, uri"http://test", transport)
+    val jsonClient = Http4s.client(Http4sCirce.Payload, uri"http://test", transport)
+  """
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sRequirementsTest")(
+    test("configured clients infer each function before an expected type is supplied") {
+      val errors = typeCheckErrors(Http4sRequirementsTest.ClientPrelude + """
+        final class TypeOf[A](value: A):
+          def is[B](using A =:= B): Boolean = true
+        def inferred[A](value: A): TypeOf[A] = new TypeOf(value)
+        val fetch = jsonClient(jsonResponse)
+        val write = jsonClient(jsonRequest)
+        val asymmetric: Endpoint.Schema[Body.Whole[Json.Node], String, Int, Boolean, Long] =
+          endpoint(
+            request(method.post, __)(body.json(payload.string.dimap[String, Int](identity)(_.length))),
+            response(status.ok)(body.json(payload.long.dimap[Boolean, Long](if _ then 1L else 0L)(identity)))
+          )
+        val differentSides = jsonClient(asymmetric)
+        val standalone = jsonClient(overridden)
+        val configured = jsonClient.withApi(api)
+        val inherited = configured(jsonResponse)
+        val local = configured(overridden)
+        val explicit = jsonClient(overridden.compose(ErrorPolicy.default).client)
+        inferred(fetch).is[Unit => IO[String]]
+        inferred(write).is[String => IO[Unit]]
+        inferred(differentSides).is[String => IO[Long]]
+        inferred(standalone).is[Unit => IO[Either[Status | String, Unit]]]
+        inferred(inherited).is[Unit => IO[Either[Status, String]]]
+        inferred(local).is[Unit => IO[Either[Status | String, Unit]]]
+        inferred(explicit).is[Unit => IO[Either[Status | String, Unit]]]
+      """)
+      assertTrue(errors.isEmpty)
+    },
+    test("a configured interpreter cannot widen to cover request, response, or override requirements") {
+      val prelude = Http4sRequirementsTest.ClientPrelude
+      assertTrue(
+        typeChecks(prelude + "client(plain)"),
+        typeChecks(prelude + "client.withApi(api)(plain)"),
+        typeChecks(prelude + "jsonClient(jsonRequest); jsonClient(jsonResponse); jsonClient(overridden)"),
+        typeChecks(prelude + "jsonClient.withApi(api)(overridden)"),
+        !typeChecks(prelude + "client(jsonRequest)"),
+        !typeChecks(prelude + "client(jsonResponse)"),
+        !typeChecks(prelude + "client(overridden)"),
+        !typeChecks(prelude + "client.withApi(api)(jsonRequest)"),
+        !typeChecks(prelude + "client.withApi(api)(jsonResponse)"),
+        !typeChecks(prelude + "client.withApi(api)(overridden)")
+      )
+    },
+    test("binding an API checks both its error and unrouted requirements") {
+      val prelude = Http4sRequirementsTest.ClientPrelude
+      assertTrue(
+        !typeChecks(prelude + "client.withApi(errors)"),
+        !typeChecks(prelude + "client.withApi(unrouted)"),
+        typeChecks(prelude + "jsonClient.withApi(errors)(plain)"),
+        typeChecks(prelude + "jsonClient.withApi(unrouted)(plain)")
+      )
+    },
+    test("configured clients accept binary bodies but reject multipart and streamed endpoints") {
+      val prelude = Http4sRequirementsTest.ClientPrelude
+      assertTrue(
+        typeChecks(
+          prelude + "client(endpoint(request(method.post, __)(body.binary), response(status.ok)(body.binary)))"
+        ),
+        !typeChecks(prelude + "jsonClient(Http4sRoundTripTest.multipart)"),
+        !typeChecks(prelude + "jsonClient(Http4sRoundTripTest.streaming)"),
+        !typeChecks(prelude + "jsonClient.withApi(api)(Http4sRoundTripTest.multipart)"),
+        !typeChecks(prelude + "jsonClient.withApi(api)(Http4sRoundTripTest.streaming)")
+      )
+    },
     test("error payload requirements are retained when composing a body-free endpoint") {
       assertTrue(!typeChecks("""
         import cats.effect.IO
@@ -139,7 +226,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(ErrorOverrides(unexpected = Some(error)))
         val client = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
         val call: Unit => IO[Either[Status | String, Unit]] =
-          Http4s.client[IO, Unit, Unit](Api(ErrorPolicy.default, UnroutedPolicy.default), e)(Http4sCirce.Payload, uri"http://test", client)
+          Http4s.client(Http4sCirce.Payload, uri"http://test", client).withApi(Api(ErrorPolicy.default, UnroutedPolicy.default))(e)
       """)
       assertTrue(errors.isEmpty)
     },
@@ -153,7 +240,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import org.http4s.implicits.*
         val e = endpoint(request(method.post, __)(api.reported), response(status.noContent))
         val client = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
-        Http4s.client[IO, io.taig.otter.http.fixture.Report, Unit](e)(Http4sCirce.Payload, uri"http://test", client)
+        Http4s.client(Http4sCirce.Payload, uri"http://test", client)(e)
       """))
     },
     test("optional request accepts its JSON interpreter") {
@@ -187,7 +274,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import org.http4s.implicits.*
         val e = endpoint(request(method.post, __)(api.reported), response(status.noContent))
         val client = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
-        Http4s.client[IO, io.taig.otter.http.fixture.Report, Unit](e)(Http4sPayload.Empty, uri"http://test", client)
+        Http4s.client(Http4sPayload.Empty, uri"http://test", client)(e)
       """))
     },
     test("optional request retains JSON requirements") {
