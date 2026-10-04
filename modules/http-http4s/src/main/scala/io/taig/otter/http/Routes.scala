@@ -12,6 +12,9 @@ final case class Routes[F[_], +S[-_, +_]](values: Chain[Route[F, S, ?, ?]]):
 
   def ++[T[-_, +_]](that: Routes[F, T]): Routes[F, Body.Or[S, T]] = Routes(values ++ that.values)
 
+  /** What these routes serve, in registration order, as the declarations a renderer takes. */
+  def declarations: Chain[Endpoint.Declaration.Node] = values.map(_.declaration)
+
   /** What a request none of these routes matched is, as far as these routes can say.
     *
     * The methods are those of every route that spells the path, in registration order and each once. The request's own

@@ -21,3 +21,16 @@ final case class ErrorOverrides[+S[-_, +_], +E](
     status.getOrElse(defaults.status),
     unexpected.getOrElse(defaults.unexpected)
   )
+
+object ErrorOverrides:
+  /** Every entry replaced, so whatever defaults these are applied to, the answers are `policy`'s own. */
+  def from[S[-_, +_], E](policy: ErrorPolicy[S, E]): ErrorOverrides[S, E] = ErrorOverrides(
+    envelope = Some(policy.envelope),
+    syntax = Some(policy.syntax),
+    contentType = Some(policy.contentType),
+    validation = Some(policy.validation),
+    entityRead = Some(policy.entityRead),
+    encoding = Some(policy.encoding),
+    status = Some(policy.status),
+    unexpected = Some(policy.unexpected)
+  )

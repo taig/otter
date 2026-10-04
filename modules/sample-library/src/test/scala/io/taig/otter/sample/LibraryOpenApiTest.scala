@@ -11,9 +11,9 @@ import zio.test.*
 
 /** The document the endpoints render as.
   *
-  * Rendered from `api.all` -- the identical value [[LibraryRoutes]] serves from -- so nothing asserted here can be true
-  * of the document and false of the server. That is the claim the module exists to make, and it is why there is no hand
-  * written OpenAPI file anywhere in this project to drift out of date.
+  * Rendered from `api.all`, whose served half is exactly what [[LibraryRoutes]] routes -- `LibraryServedTest` asserts
+  * it -- so nothing asserted here can be true of the document and false of the server. That is the claim the module
+  * exists to make, and it is why there is no hand written OpenAPI file anywhere in this project to drift out of date.
   */
 object LibraryOpenApiTest extends ZIOSpecDefault:
   private val payload = OpenApiPayload.json(OpenApiProfile.V31)
