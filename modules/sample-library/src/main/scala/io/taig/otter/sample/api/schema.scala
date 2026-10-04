@@ -31,18 +31,17 @@ object schema:
     */
   val isbn: Json.Primitive.Text[Isbn] = json.codec("isbn", Isbn.parse, _.value)
 
-  /** A closed set, matched exhaustively. Adding a case to [[Genre]] fails to compile here rather than failing to read
-    * at runtime.
+  val title: Json.Primitive.Text[Book.Title] = json.refined.string[MinLength[1] & MaxLength[200]]
+
+  val pages: Json.Primitive.Number[Book.Pages] = json.refined.int[Positive]
+
+  val genres: Json.Collection[Book.Genres] = json.refined.list[MaxLength[10]](schema.genre)
+
+  /** A closed set, matched exhaustively. Adding a case to [[Genre]] produces a compile-time exhaustivity warning rather
+    * than silently failing to read at runtime.
     */
   val genre: Json.Enumeration[Genre] = json
-    .enumeration[Json.Primitive.Text.Schema, String, Genre](json.string):
-      case Genre.Biography => "biography"
-      case Genre.Children  => "children"
-      case Genre.Fantasy   => "fantasy"
-      case Genre.History   => "history"
-      case Genre.Poetry    => "poetry"
-      case Genre.Romance   => "romance"
-      case Genre.Thriller  => "thriller"
+    .enumeration(json.string, Genre.mapping)
     .attr(Keys.name, "Genre")
 
   val membership: Json.Enumeration[Membership] = json
@@ -69,8 +68,8 @@ object schema:
     */
   val book: Json.Record[Book] = (
     json.field("isbn", schema.isbn).description("The thirteen digit ISBN, hyphens optional") :*
-      json.field("title", json.refined.string[MinLength[1] & MaxLength[200]]) :*
-      json.field("pages", json.refined.int[Positive]).examples(310) :*
+      json.field("title", schema.title) :*
+      json.field("pages", schema.pages).examples(310) :*
       json.field("genres", json.collection.list(schema.genre)) :*
       json.field("published", json.localDate) :*
       json.field("summary", json.string).optional.nullable :*
@@ -88,10 +87,10 @@ object schema:
     */
   val create: Json.Record[Book.Create] = (
     json.field("isbn", schema.isbn) :*
-      json.field("title", json.refined.string[MinLength[1] & MaxLength[200]]) :*
-      json.field("pages", json.refined.int[Positive]) :*
+      json.field("title", schema.title) :*
+      json.field("pages", schema.pages) :*
       json
-        .field("genres", json.refined.list[MaxLength[10]](schema.genre))
+        .field("genres", schema.genres)
         .optional(List.empty[Genre].assume[MaxLength[10]]) :*
       json.field("published", json.localDate) :*
       json.field("summary", json.string).optional.nullable :*
@@ -103,9 +102,9 @@ object schema:
     * rather than the plain `.optional` every other field gets.
     */
   val patch: Json.Record[Book.Patch] = (
-    json.field("title", json.refined.string[MinLength[1] & MaxLength[200]]).optional :*
-      json.field("pages", json.refined.int[Positive]).optional :*
-      json.field("genres", json.refined.list[MaxLength[10]](schema.genre)).optional :*
+    json.field("title", schema.title).optional :*
+      json.field("pages", schema.pages).optional :*
+      json.field("genres", schema.genres).optional :*
       json.field("summary", json.string.optional).optional.omitted.strict
   ).to[Book.Patch].attr(Keys.name, "BookPatch")
 
