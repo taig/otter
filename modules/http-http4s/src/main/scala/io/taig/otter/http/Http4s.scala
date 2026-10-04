@@ -217,36 +217,37 @@ object Http4s:
   ): Routes[F, Http4sPayload.Supported[P]] =
     Routes(routes.map(_.under(api.errors))*)
 
-  /** An endpoint, as a function that calls it.
+  /** Bind the transport context once, then derive a typed function from each endpoint declaration.
     *
-    * The endpoint is read as a caller sees it -- it writes the request and reads the response -- which is why the same
-    * value cannot be handed to [[Http4s.routes]] and this without saying which side it is. That is [[Endpoint.Server]]
-    * and [[Endpoint.Client]], and it is checked by the compiler rather than remembered.
-    *
-    * The endpoint comes first and the interpreter after it, for the reason [[Http4s.routes]] takes its routes first.
+    * The interpreter fixes the supported payload alphabet at configuration time. Each endpoint is checked against that
+    * capability when selected, with its request writer and response reader determining the function's types.
+    * Construction performs no requests; the caller owns the underlying transport's lifetime.
     */
-  def client[F[_]: Concurrent, A, B]: Http4s.ClientBuilder[F, A, B] = new Http4s.ClientBuilder[F, A, B]
+  def client[F[_]: Concurrent, P[-_, +_]](
+      payload: Http4sPayload[P],
+      base: Uri,
+      transport: Http4sClient[F]
+  ): Http4s.Client[F, P] = new Http4s.Client(payload, base, transport)
 
-  final class ClientBuilder[F[_]: Concurrent, A, B]:
-    def apply[P[-_, +_], E, D](
-        api: Api[Http4sPayload.Supported[P], E],
-        endpoint: Endpoint.Declaration[Http4sPayload.Supported[P], A, Any, Nothing, B, D]
-    )(payload: Http4sPayload[P], base: Uri, client: Http4sClient[F]): A => F[Either[E | D, B]] =
-      new Http4s.ClientBuilder[F, A, Either[E | D, B]]
-        .apply(endpoint.compose(api.errors).client)(payload, base, client)
+  final class Client[F[_]: Concurrent, P[-_, +_]] private[Http4s] (
+      payload: Http4sPayload[P],
+      base: Uri,
+      transport: Http4sClient[F]
+  ):
+    private val encoder = Http4sRequestEncoder(payload)
+    private val decoder = Http4sResponseDecoder(payload)
 
-    def apply[P[-_, +_], E](
-        endpoint: Endpoint.WithErrors[Http4sPayload.Supported[P], A, Any, Nothing, B, E]
-    )(payload: Http4sPayload[P], base: Uri, client: Http4sClient[F]): A => F[Either[E | Status, B]] =
-      new Http4s.ClientBuilder[F, A, Either[E | Status, B]]
-        .apply(endpoint.compose(ErrorPolicy.default).client)(payload, base, client)
+    /** Apply API defaults and endpoint-local overrides, independently of documentation membership. */
+    def withApi[E](api: Api[Http4sPayload.Supported[P], E]): Http4s.ApiClient[F, P, E] =
+      new Http4s.ApiClient(this, api)
 
-    def apply[P[-_, +_]](
-        endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
-    )(payload: Http4sPayload[P], base: Uri, client: Http4sClient[F]): A => F[B] =
-      val encoder = Http4sRequestEncoder(payload)
-      val decoder = Http4sResponseDecoder(payload)
+    /** Standalone overrides inherit the bodyless default policy. */
+    def apply[A, B, D](
+        endpoint: Endpoint.WithErrors[Http4sPayload.Supported[P], A, Any, Nothing, B, D]
+    ): A => F[Either[Status | D, B]] = apply(endpoint.compose(ErrorPolicy.default).client)
 
+    /** Plain and explicitly composed schemas retain exactly the response type they declare. */
+    def apply[A, B](endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]): A => F[B] =
       value =>
         for
           wire <- Http4s.raise[F, Http4sWire.Request](encoder.encode(endpoint.request, value))
@@ -254,7 +255,7 @@ object Http4s:
             .toHttp4sMethod(endpoint.request.method)
             .leftMap(failure => Http4sFailure.Method(endpoint.request.method, failure.message))
             .liftTo[F]
-          response <- client
+          response <- transport
             .run(Http4s.toHttp4sRequest[F](method, base, wire))
             .use(response => Http4s.toWire(response).map((response.status.code, _)))
           decoded <- decoder
@@ -262,6 +263,14 @@ object Http4s:
             .leftMap(Http4sFailure.Response.apply)
             .liftTo[F]
         yield decoded
+
+  final class ApiClient[F[_], P[-_, +_], E] private[Http4s] (
+      client: Http4s.Client[F, P],
+      api: Api[Http4sPayload.Supported[P], E]
+  ):
+    def apply[A, B, D](
+        endpoint: Endpoint.Declaration[Http4sPayload.Supported[P], A, Any, Nothing, B, D]
+    ): A => F[Either[E | D, B]] = client(endpoint.compose(api.errors).client)
 
   /** A violation tree, one line per violation, each named by where it was found and by what was found there.
     *

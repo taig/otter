@@ -124,7 +124,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           )(Http4sPayload.Empty)
           .orNotFound
       )
-      run(Http4s.client[IO, Unit, Either[Status, Unit]](composed.effective)(Http4sPayload.Empty, base, client)(()))
+      run(Http4s.client(Http4sPayload.Empty, base, client)(composed.effective)(()))
         .map(value => assertTrue(value == Left(Status(500))))
     ,
     test("a composed client keeps a domain answer in the right branch"):
@@ -135,7 +135,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           )(Http4sPayload.Empty)
           .orNotFound
       )
-      run(Http4s.client[IO, Unit, Either[Status, Unit]](composed.effective)(Http4sPayload.Empty, base, client)(()))
+      run(Http4s.client(Http4sPayload.Empty, base, client)(composed.effective)(()))
         .map(value => assertTrue(value == Right(())))
     ,
     test("overlapping wire responses retain domain priority"):
@@ -145,7 +145,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         Client.fromHttpApp(
           Http4s.routes[IO](Route.composed(value, (_: Unit) => IO.unit))(Http4sPayload.Empty).orNotFound
         )
-      run(Http4s.client[IO, Unit, Either[Status, Unit]](value.effective)(Http4sPayload.Empty, base, client)(()))
+      run(Http4s.client(Http4sPayload.Empty, base, client)(value.effective)(()))
         .map(value => assertTrue(value == Right(())))
     ,
     test("a declared JSON error supports a custom status, headers, and typed client value"):
@@ -162,9 +162,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           response <- app.run(Http4sRequest[IO](uri = base))
           bytes <- Http4sEnvelope.toBytes(response.entity)
           decoded <- Http4s
-            .client[IO, Unit, Either[Status | String, Unit]](
-              value.effective
-            )(Http4sCirce.Payload, base, Client.fromHttpApp(app))(())
+            .client(Http4sCirce.Payload, base, Client.fromHttpApp(app))(value.effective)(())
         yield assertTrue(
           response.status.code == 503,
           response.headers.headers.exists(header => header.name.toString == "Retry-After" && header.value == "5"),

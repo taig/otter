@@ -18,7 +18,9 @@ val app = Http4s.app[IO](
   Route(health, healthHandler),
   Route(create, createHandler)
 )(Http4sCirce.Payload)
-val call = Http4s.client[IO, CreateInput, Created](api, create)(Http4sCirce.Payload, base, client)
+val client = Http4s.client(Http4sCirce.Payload, base, transport).withApi(api)
+val call = client(create)
+val checkHealth = client(health)
 val document = OpenApiRenderer.server(OpenApiProfile.V31, payload).render(info, api)
 ```
 
@@ -30,6 +32,15 @@ collection. OpenAPI and TypeScript renderers both accept the API directly.
 Handlers still return the domain result `B`. API-aware clients decode `Either[E, B]`, where `E` includes the decoded
 error types from both the global policy and the endpoint's overrides. Payload requirements from both are checked by
 the compiler. `Route(api, endpoint, handler)` also applies the same policy when building an individual route.
+
+`Http4s.client(payload, base, transport)` configures a reusable client. The transport determines its effect type,
+and the interpreter fixes which payload alphabets it supports. `.withApi(api)` binds the API policy; `client(endpoint)`
+infers the endpoint's input, result, and local error types and returns a reusable call function. Neither configuration
+nor selecting an endpoint sends a request. The caller owns the underlying http4s transport and its resource lifetime.
+Transport and response-decoding failures remain failures in the effect; declared errors remain values in `Either`.
+
+This replaces `Http4s.client[F, A, B](api, endpoint)(payload, base, transport)` and the standalone per-endpoint builders.
+For an explicitly composed contract, use `Http4s.client(payload, base, transport).apply(composed.client)`.
 
 Without an API, an endpoint carrying overrides inherits `ErrorPolicy.default` for every omitted category. Standalone
 routes, clients, and renderers all honor those overrides. Plain endpoint clients and renderers retain their domain-only

@@ -181,6 +181,15 @@ measured trade. `Http4sRoundTripTest` is what the module rests on -- `Client.fro
 read as both sides, so neither half can agree by being written twice the same wrong way, and no socket means it runs on
 Scala.js too.
 
+`Http4s.client(payload, base, transport)` binds a reusable transport context, with `F` inferred from the http4s
+client and `P` fixed by the interpreter. `client(endpoint)` then infers each function's input and output without
+repeating type arguments. `.withApi(api)` binds the global policy and returns `Either[E | D, B]`, including local
+overrides; a standalone plain endpoint returns `B`, and a standalone endpoint with overrides inherits bodyless default
+errors. Explicit composition is called through `composed.client`. The configured capability cannot widen when an
+endpoint is selected: API requirements are checked at `withApi`, endpoint requirements at `apply`. API documentation
+membership remains independent. Configuration and function selection perform no requests, and the caller owns the
+underlying transport resource. Declared errors are values; transport and decoding failures remain in the effect.
+
 A `Route` keeps the declaration it was built from, so `route.declaration` and `routes.declarations` hand what is served
 to a renderer with only the handlers thrown away; documents can come from the endpoints alone or from the routes, and
 neither direction needs the other. `Route.composed` stores `ComposedEndpoint.declaration`, which overrides every entry

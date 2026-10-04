@@ -83,11 +83,65 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
               )(payloads)
               .orNotFound
           val client = Http4sClient.fromHttpApp(routes)
-          Http4s.client[IO, Either[Report, Book], Unit](mixed)(payloads, uri"http://otter.test", client)(value) *>
+          Http4s.client(payloads, uri"http://otter.test", client)(mixed)(value) *>
             ref.get.map(_.get)
         .unsafeToFuture()
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sFs2DataTest")(
+    test("one configured client calls endpoints in both payload alphabets"):
+      val transport = Http4sClient.fromHttpApp(Http4s.routes[IO](routeGroups)(payloads).orNotFound)
+      val client = Http4s.client(payloads, uri"http://otter.test", transport)
+      val json = client(jsonEndpoint)
+      val csv = client(csvEndpoint)
+      ZIO.fromFuture: _ =>
+        (for
+          a <- json(Report("Quarterly", 12))
+          b <- csv(Book("Dune", 412, true))
+        yield assertTrue(a == (), b == ())).unsafeToFuture()
+    ,
+    test("configured client requirements include every alphabet in a mixed endpoint"):
+      val prelude = """
+        import cats.effect.IO
+        import io.taig.otter.http.*
+        import org.http4s.implicits.*
+        val transport = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
+      """
+      assertTrue(
+        typeChecks(prelude + """
+          val client = Http4s.client(Http4sFs2DataTest.payloads, uri"http://test", transport)
+          client(Http4sFs2DataTest.mixed)
+        """),
+        !typeChecks(prelude + """
+          val client = Http4s.client(Http4sCirce.Payload, uri"http://test", transport)
+          client(Http4sFs2DataTest.mixed)
+        """),
+        !typeChecks(prelude + """
+          val client = Http4s.client(Http4sFs2Data.Payload, uri"http://test", transport)
+          client(Http4sFs2DataTest.jsonResponse)
+        """)
+      )
+    ,
+    test("request encoding failures fail the effect without acquiring the transport"):
+      val invalid = mixedDsl.endpoint(
+        mixedDsl.request(method.post, __)(mixedDsl.body.csv(emptyRecord)),
+        mixedDsl.response(status.noContent)
+      )
+      ZIO.fromFuture: _ =>
+        (for
+          called <- IO.ref(false)
+          transport = Http4sClient[IO](_ => cats.effect.Resource.eval(called.set(true).as(org.http4s.Response[IO]())))
+          client = Http4s.client(Http4sFs2Data.Payload, uri"http://otter.test", transport)
+          result <- client(invalid)(()).attempt
+          acquired <- called.get
+        yield assertTrue(
+          result == Left(
+            Http4sFailure.Encoding(
+              Http4sIssue.Encoding(MediaType("text", "csv"), "A CSV record must have at least one column")
+            )
+          ),
+          !acquired
+        )).unsafeToFuture()
+    ,
     test("single-column records and tuples preserve empty cells and carriage returns"):
       val tuple = CsvDocument.Tuple(Reference.now(CsvComponent.TNil :* CsvComponent.string))
       val record = CsvDocument.Record(
