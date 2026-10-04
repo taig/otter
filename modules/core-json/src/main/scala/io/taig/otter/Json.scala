@@ -61,18 +61,6 @@ object Json:
     */
   val Namespace: Metadata.Namespace = Metadata.Namespace("json")
 
-  /** The [[Absence]] a schema's metadata asks for. Asking for nothing is [[Absence.Omit]], so a field that says nothing
-    * about absence drops its key, the way a field always has.
-    */
-  private[otter] def absence(metadata: Metadata): Absence =
-    metadata.get(Json.Namespace, Metadata.Namespace.Global, Keys.absence).getOrElse(Absence.Omit)
-
-  /** The [[Tolerance]] a schema's metadata asks for. Asking for nothing is [[Tolerance.Lenient]], so that a field round
-    * trips whichever way it is written.
-    */
-  private[otter] def tolerance(metadata: Metadata): Tolerance =
-    metadata.get(Json.Namespace, Metadata.Namespace.Global, Keys.tolerance).getOrElse(Tolerance.Lenient)
-
   /** The [[Metadata]] of a node, whichever node it is.
     *
     * Every wrapper in the alphabet holds an [[Annotation]], but they hold it at their own type and `Json.Schema` itself
@@ -111,28 +99,22 @@ object Json:
   enum Presence:
     case Required, Nullable, Optional, OptionalNullable
 
-  /** What [[Presence]] a field has, on one side.
-    *
-    * Read off the circe interpreters, which are the definition of the wire. A field that drops its key when absent is
-    * written as [[Presence.Optional]] and read, leniently, as [[Presence.OptionalNullable]], because a lenient field
-    * takes a missing key and an explicit empty alike. A field holding a default is never absent when written and always
-    * may be when read, which is the same asymmetry the other way round.
-    */
-  def presence[F[-_, +_], W, R](side: Side, metadata: Metadata, field: Self.Field[F, W, R]): Json.Presence =
+  /** The field's structural wire contract, on one side. Payload nullability is rendered separately. */
+  def presence[F[-_, +_], W, R](side: Side, field: Self.Field[F, W, R]): Json.Presence =
     field match
-      case Self.Field.Root(_, _)         => Json.Presence.Required
-      case Self.Field.Modify(self, _, _) => Json.presence(side, metadata, self)
-      case Self.Field.Default(self, _)   =>
+      case Self.Field.Root(_, _)            => Json.Presence.Required
+      case Self.Field.Modify(self, _, _)    => Json.presence(side, self)
+      case Self.Field.Default(_, _, absent) =>
+        if side == Side.Write then Json.Presence.Required else accepted(absent)
+      case Self.Field.Optional(_, contract) =>
         side match
-          case Side.Write => Json.Presence.Required
-          case Side.Read  => Json.absent(metadata)
-      case Self.Field.Optional(self) =>
-        side match
-          case Side.Write =>
-            Json.absence(metadata) match
-              case Absence.Omit  => Json.Presence.Optional
-              case Absence.Empty => Json.Presence.Nullable
-          case Side.Read => Json.absent(metadata)
+          case Side.Read  => accepted(contract.absent)
+          case Side.Write => if contract.writesEmpty then Json.Presence.Nullable else Json.Presence.Optional
+
+  private def accepted(absent: Self.Field.Absent): Json.Presence = absent match
+    case Self.Field.Absent.Missing        => Json.Presence.Optional
+    case Self.Field.Absent.Empty          => Json.Presence.Nullable
+    case Self.Field.Absent.MissingOrEmpty => Json.Presence.OptionalNullable
 
   /** Whether a tuple admits the all empty form the codecs use for a tuple that is not there.
     *
@@ -153,14 +135,6 @@ object Json:
       side match
         case Side.Write => false
         case Side.Read  => true
-
-  /** Which forms of absence a field accepts when read. */
-  private def absent(metadata: Metadata): Json.Presence = Json.tolerance(metadata) match
-    case Tolerance.Lenient => Json.Presence.OptionalNullable
-    case Tolerance.Strict  =>
-      Json.absence(metadata) match
-        case Absence.Omit  => Json.Presence.Optional
-        case Absence.Empty => Json.Presence.Nullable
 
   /** A schema that reads `A`, whatever it writes.
     *

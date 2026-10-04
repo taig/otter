@@ -85,7 +85,7 @@ final class JsonSchemaNodeRenderer(
     child(json.self.self.schema.value).flatMap: schema =>
       val annotated = JsonSchemaAnnotation(namespaces, json.self.metadata, schema)
 
-      Json.presence(side, json.self.metadata, json.self.self) match
+      Json.presence(side, json.self.self) match
         case Json.Presence.Required => (name, annotated, true).pure
         case Json.Presence.Nullable => (name, profile.nullable(annotated), true).pure
         case Json.Presence.Optional =>

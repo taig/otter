@@ -38,13 +38,13 @@ object LibraryFilterContractTest extends ZIOSpecDefault:
   final case class Mistyped(requestId: Int, languages: Option[List[String]])
 
   private val parameters =
-    query("page", int).optional(1) :*
-      query("size", int).optional(20) :*
+    query("page", int).defaultedOnMissingOrEmpty(1) :*
+      query("size", int).defaultedOnMissingOrEmpty(20) :*
       query("genre", collection.list(books.enumerated)) :*
-      query("available", coerce(boolean)).strict.optional(false)
+      query.flag("available")
 
   private val headers =
-    header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optional
+    header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optionalOrEmpty
 
   private val structural = endpoint(
     request(method.get, books.all).queries(parameters).headers(headers),

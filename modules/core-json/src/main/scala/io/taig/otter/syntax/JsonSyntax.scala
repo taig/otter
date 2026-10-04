@@ -1,31 +1,30 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.Absence
+import io.taig.otter.Field
 import io.taig.otter.Json
-import io.taig.otter.Keys
-import io.taig.otter.Tolerance
+import io.taig.otter.Optional
+import io.taig.otter.Reference
 
+/** Named wire contracts for Json fields. Payload absence is independent of field absence. */
 trait JsonSyntax:
-  /** These are written against a field rather than a schema, because omitting is something only a record's member can
-    * do: a schema has nowhere to be absent from.
-    */
+  extension [S[-w, +r] <: Json.Node[w, r], W, R](schema: S[W, R])
+    /** A present JSON value that may be null. This never makes a field's key optional. */
+    def nullable: Json.Optional.Schema[S, Option[W], Option[R]] =
+      Json.Optional.Schema(Optional.Root(Reference.now(schema)))
+
   extension [S[-w, +r] <: Json.Node[w, r], W, R](fa: Json.Field.Schema[S, W, R])
-    /** How the field renders when what it holds is absent. Inert on a field that is always there. */
-    def absence(value: Absence): Json.Field.Schema[S, W, R] = fa.attr(Json.Namespace, Keys.absence, value)
+    /** Requires the key and represents absence with an explicit null. */
+    def nullable: Json.Field.Schema[S, Option[W], Option[R]] = fa.optional(Field.Presence.Empty)
 
-    /** Writes the key with an explicit `null` when the value is absent. */
-    def nullable: Json.Field.Schema[S, W, R] = absence(Absence.Empty)
+    /** Accepts missing or null, and omits an absent field when writing. */
+    def optionalOrNull: Json.Field.Schema[S, Option[W], Option[R]] = fa.optional(Field.Presence.OmittedOrEmpty)
 
-    /** Drops the key when the value is absent, which is what a field does anyway. */
-    def omitted: Json.Field.Schema[S, W, R] = absence(Absence.Omit)
+    /** Accepts missing or null, and writes an explicit null for absence. */
+    def nullableOrMissing: Json.Field.Schema[S, Option[W], Option[R]] = fa.optional(Field.Presence.EmptyOrMissing)
 
-    /** Whether the field accepts only the form [[absence]] names, or either of them. */
-    def tolerance(value: Tolerance): Json.Field.Schema[S, W, R] = fa.attr(Json.Namespace, Keys.tolerance, value)
+    def defaultedOnNull(value: => R): Json.Field.Schema[S, W, R] = fa.defaulted(value, Field.Absent.Empty)
 
-    /** Rejects the form [[absence]] does not name: a `null` for an omitted field, a missing key for a nullable one. */
-    def strict: Json.Field.Schema[S, W, R] = tolerance(Tolerance.Strict)
-
-    /** Reads a missing key and an explicit `null` alike, which is what a field does anyway. */
-    def lenient: Json.Field.Schema[S, W, R] = tolerance(Tolerance.Lenient)
+    def defaultedOnMissingOrNull(value: => R): Json.Field.Schema[S, W, R] =
+      fa.defaulted(value, Field.Absent.MissingOrEmpty)
 
 object JsonSyntax extends JsonSyntax

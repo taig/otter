@@ -11,14 +11,14 @@ object json:
     (field("title", string) :* field("pages", int) :* field("read", boolean)).to
 
   /** The same note twice: once dropping the key when the tag is absent, once writing an explicit null. */
-  val omittedTag: Json.Record[Note] = (field("title", string) :* field("tag", int).optional).to
+  val omittedTag: Json.Record[Note] = (field("title", string) :* field("tag", int).optionalOrNull).to
 
-  val nullableTag: Json.Record[Note] = (field("title", string) :* field("tag", int).optional.nullable).to
+  val nullableTag: Json.Record[Note] = (field("title", string) :* field("tag", int).nullableOrMissing).to
 
   /** Two layers of absence, which only a strict field can tell apart: no key at all is the outer one, a null is the
     * inner one.
     */
-  val nestedTag: Json[Option[Option[Int]]] = field("tag", int.optional).optional.omitted.strict.toRecord
+  val nestedTag: Json[Option[Option[Int]]] = field("tag", int.optional).optional.toRecord
 
   val genre: Json.Enumeration[Genre] = enumeration(string):
     case Genre.Fiction => "fiction"
@@ -104,7 +104,7 @@ object json:
 
   /** A record holding a normalised field still writes. Spelled out for the same reason [[trimmed]] is. */
   val trimmedNote: Json.Record.Schema[Json.Node, Note, Note] =
-    (field("title", trimmed) :* field("tag", int).optional).to
+    (field("title", trimmed) :* field("tag", int).optionalOrNull).to
 
   /** Can be written but not read, the way [[title]] cannot be read. */
   val label: Json.Primitive.Text.Writer[Isbn] = printer("label", _.value)

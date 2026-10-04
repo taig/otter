@@ -119,7 +119,11 @@ trait HttpComponent
   object query
       extends RecordComponent.Field[Parameter.Node, Parameter.Primitive.Text.Node, Query.Schema](using
         ParameterPrimitiveEncoder
-      )
+      ):
+    /** Missing is false, bare or empty is true, and explicit Boolean spellings are accepted. Writes canonical
+      * true/false values, including false rather than omitting it.
+      */
+    def flag(name: String): Query[Boolean] = apply(name, coerce(boolean)).defaulted(false)
 
   object header
       extends RecordComponent.Field[Parameter.Node, Parameter.Primitive.Text.Node, Header.Schema](using

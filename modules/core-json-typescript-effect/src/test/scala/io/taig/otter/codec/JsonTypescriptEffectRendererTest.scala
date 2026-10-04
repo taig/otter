@@ -282,7 +282,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         */
       test("a named schema is hoisted and referred to"):
         val person = (field("first", string) :* field("last", string)).attr(Keys.name, "Name")
-        val schema = field("name", person) :* field("age", int).optional.omitted.strict
+        val schema = field("name", person) :* field("age", int).optional
 
         assertTrue(
           render(

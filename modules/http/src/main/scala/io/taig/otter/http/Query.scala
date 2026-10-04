@@ -13,7 +13,7 @@ object Query:
   /** A query parameter holding `S` and round tripping `A`.
     *
     * A query parameter is a [[Self.Field]]: a name, a schema, and the two decorations a field carries. `optional` is a
-    * query parameter that may not be given at all, and `optional(default)` is one that stands for a value when it is
+    * query parameter that may not be given at all, and `defaulted(default)` is one that stands for a value when it is
     * not -- the same read and write asymmetry a JSON field has, since a default is always written out and never
     * required when read.
     */

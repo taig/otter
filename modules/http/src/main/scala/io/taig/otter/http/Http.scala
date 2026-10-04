@@ -1,9 +1,6 @@
 package io.taig.otter.http
 
-import io.taig.otter.Absence
-import io.taig.otter.Keys
 import io.taig.otter.Metadata
-import io.taig.otter.Tolerance
 
 /** What every tier of the HTTP description agrees on.
   *
@@ -30,17 +27,3 @@ object Http:
     * another to HTTP alone.
     */
   val Namespace: Metadata.Namespace = Metadata.Namespace("http")
-
-  /** The [[Absence]] a schema's metadata asks for. Asking for nothing is [[Absence.Omit]], because a query string and a
-    * header set are both lists of what is there: a parameter with nothing to say is left out rather than sent empty.
-    * This is where HTTP reads the shared vocabulary the same way round as JSON, and the opposite way from CSV, whose
-    * columns are fixed by a header.
-    */
-  private[otter] def absence(metadata: Metadata): Absence =
-    metadata.get(Http.Namespace, Metadata.Namespace.Global, Keys.absence).getOrElse(Absence.Omit)
-
-  /** The [[Tolerance]] a schema's metadata asks for. Asking for nothing is [[Tolerance.Lenient]], so that a parameter
-    * round trips whether its name is missing or merely present with nothing after the `=`.
-    */
-  private[otter] def tolerance(metadata: Metadata): Tolerance =
-    metadata.get(Http.Namespace, Metadata.Namespace.Global, Keys.tolerance).getOrElse(Tolerance.Lenient)

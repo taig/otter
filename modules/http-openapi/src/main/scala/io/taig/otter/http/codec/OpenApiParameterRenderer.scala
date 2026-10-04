@@ -11,6 +11,7 @@ import io.taig.otter.JsonSchemaDocument
 import io.taig.otter.JsonSchemaIssue
 import io.taig.otter.JsonSchemaProfile
 import io.taig.otter.Metadata
+import io.taig.otter.Side
 import io.taig.otter.codec.JsonSchemaAnnotation
 import io.taig.otter.codec.Renderer
 import io.taig.otter.http.Parameter
@@ -152,14 +153,5 @@ final class OpenApiParameterRenderer(
         case None          => (keywords, issues :+ JsonSchemaIssue.Dropped(None, constraint))
 
 object OpenApiParameterRenderer:
-  /** Whether a named member has to be there, which OpenAPI keeps beside a schema rather than inside it.
-    *
-    * Written for any field and not only a parameter's, because a [[io.taig.otter.http.Part]] is a field too and a part
-    * that may be left out is `not required` in exactly the same sense. A field holding a default is not required: the
-    * whole point of a default is that the caller may say nothing.
-    */
-  def required(field: Self.Field[?, ?, ?]): Boolean = field match
-    case Self.Field.Root(_, _)         => true
-    case Self.Field.Modify(self, _, _) => OpenApiParameterRenderer.required(self)
-    case Self.Field.Optional(_)        => false
-    case Self.Field.Default(_, _)      => false
+  /** Requiredness is a wire property and differs between the reading and writing sides. */
+  def required(field: Self.Field[?, ?, ?], side: Side): Boolean = Self.Field.required(field, side)

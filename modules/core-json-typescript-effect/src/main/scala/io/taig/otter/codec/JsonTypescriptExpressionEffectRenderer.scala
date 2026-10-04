@@ -60,7 +60,7 @@ final class JsonTypescriptExpressionEffectRenderer(
   /** A record's member, whose key may be absent and whose value may be empty, depending on the side. */
   private def field(json: Json.Field.Node[?, ?]): State[JsonTypescriptContext, (String, Typescript.Expression)] =
     child(json.self.self.schema.value).map: expression =>
-      val presence = Json.presence(side, json.self.metadata, json.self.self) match
+      val presence = Json.presence(side, json.self.self) match
         case Json.Presence.Required         => expression
         case Json.Presence.Nullable         => TypescriptEffect.nullOr(expression)
         case Json.Presence.Optional         => TypescriptEffect.optional(expression)

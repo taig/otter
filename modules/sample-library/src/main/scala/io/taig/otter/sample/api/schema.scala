@@ -72,7 +72,7 @@ object schema:
       json.field("pages", schema.pages).examples(310) :*
       json.field("genres", json.collection.list(schema.genre)) :*
       json.field("published", json.localDate) :*
-      json.field("summary", json.string).optional.nullable :*
+      json.field("summary", json.string).nullableOrMissing :*
       json.field("metadata", schema.metadata)
   ).to[Book]
     .attr(Keys.name, "Book")
@@ -91,21 +91,20 @@ object schema:
       json.field("pages", schema.pages) :*
       json
         .field("genres", schema.genres)
-        .optional(List.empty[Genre].assume[MaxLength[10]]) :*
+        .defaultedOnMissingOrNull(List.empty[Genre].assume[MaxLength[10]]) :*
       json.field("published", json.localDate) :*
-      json.field("summary", json.string).optional.nullable :*
-      json.field("metadata", schema.metadata).optional(SortedMap.empty[String, String])
+      json.field("summary", json.string).nullableOrMissing :*
+      json.field("metadata", schema.metadata).defaultedOnMissingOrNull(SortedMap.empty[String, String])
   ).to[Book.Create].attr(Keys.name, "BookCreate")
 
-  /** Two layers of absence, and only a strict field tells them apart: no `summary` key at all means leave it, and an
-    * explicit `null` means there is none. That is `Option[Option[String]]`, and it is why `.omitted.strict` is here
-    * rather than the plain `.optional` every other field gets.
+  /** A missing summary leaves it unchanged; a present null clears it. Payload nullability supplies the inner Option,
+    * and field optionality supplies the outer one, preserving all three states in both directions.
     */
   val patch: Json.Record[Book.Patch] = (
-    json.field("title", schema.title).optional :*
-      json.field("pages", schema.pages).optional :*
-      json.field("genres", schema.genres).optional :*
-      json.field("summary", json.string.optional).optional.omitted.strict
+    json.field("title", schema.title).optionalOrNull :*
+      json.field("pages", schema.pages).optionalOrNull :*
+      json.field("genres", schema.genres).optionalOrNull :*
+      json.field("summary", json.string.nullable).optional
   ).to[Book.Patch].attr(Keys.name, "BookPatch")
 
   /** A schema that refers to itself, which works only because it is named.
@@ -140,7 +139,7 @@ object schema:
   /** `period` may be left out and is then the member's own, which the *server* knows and a caller does not. */
   val borrow: Json.Record[Loan.Request] = (
     json.field("isbn", schema.isbn) :*
-      json.field("period", json.period).optional
+      json.field("period", json.period).optionalOrNull
   ).to[Loan.Request].attr(Keys.name, "BorrowRequest")
 
   val kind: Json.Enumeration[Problem.Kind] = json
@@ -157,7 +156,7 @@ object schema:
   val problem: Json.Record[Problem] = (
     json.field("kind", schema.kind) :*
       json.field("title", json.string) :*
-      json.field("detail", json.collection.list(json.string)).optional(Nil)
+      json.field("detail", json.collection.list(json.string)).defaultedOnMissingOrNull(Nil)
   ).to[Problem]
     .attr(Keys.name, "Problem")
     .description("What this API says when it cannot say what was asked for")

@@ -25,8 +25,8 @@ trait JsonSchemaKeys:
     * tripping reference and the default holders wrap an already asymmetric node. Saying it as a document is saying it
     * in the only language both sides share.
     *
-    * Nothing checks that it agrees with the default the schema actually applies. That is the price, and it is the price
-    * [[Keys.absence]] already pays.
+    * Nothing checks that it agrees with the default the schema actually applies. This is documentation, not a decoding
+    * rule; structural field contracts alone control absence.
     */
   val default: Metadata.Key[CirceJson] = Metadata.Key("default")
 

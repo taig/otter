@@ -13,6 +13,7 @@ import io.taig.otter.http.component.BodyComponent
 import io.taig.otter.http.component.HttpComponent
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.syntax.HttpJsonSyntax
+import io.taig.otter.syntax.JsonSyntax.defaultedOnMissingOrNull
 import scodec.bits.ByteVector
 
 /** Two vocabularies, named apart.
@@ -77,7 +78,7 @@ object api:
   val one: Path[Int] = __ :* segment("reports") :* segment("id", int)
 
   /** `?page`, defaulted, so a caller that says nothing still gets an answer. */
-  val paging: Queries[Int] = query("page", int).optional(1).toRecord
+  val paging: Queries[Int] = query("page", int).defaultedOnMissingOrEmpty(1).toRecord
 
   /** `GET /reports/{id}?page`, answering with a report or saying there is none.
     *
@@ -129,7 +130,8 @@ object api:
   /** A payload with a defaulted field, which is the case where the two sides of a schema genuinely differ: a reader
     * accepts its absence and a writer always produces it.
     */
-  val settings: Json.Record[Settings] = payload.field("theme", payload.string).optional("dark").toRecord.to
+  val settings: Json.Record[Settings] =
+    payload.field("theme", payload.string).defaultedOnMissingOrNull("dark").toRecord.to
 
   /** `PUT /settings`, to be rendered from both sides and compared. */
   val configure: Endpoint.Server[dsl.Payload, Settings, Unit] =

@@ -36,13 +36,15 @@ object Queries:
     * Here rather than in a renderer because every renderer needs the same walk, and a record is a tree whose shape says
     * nothing a caller wants to know: what is asked of it is always the list of its leaves.
     */
-  def fields(schema: Queries.Node[?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = Queries.walk(schema.self.self)
+  def fields(schema: Queries.Node[?, ?]): Chain[Annotation[Self.Field[Parameter.Node, ?, ?]]] =
+    Queries.walk(schema.self.self)
 
-  private def walk(schema: Self.Record[Query.Node, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = schema match
-    case Self.Record.Empty                => Chain.empty
-    case Self.Record.Modify(self, _, _)   => Queries.walk(self)
-    case Self.Record.Product(left, right) => Queries.walk(left) ++ Queries.walk(right)
-    case Self.Record.Root(field)          => Chain.one(field.value.self.self)
+  private def walk(schema: Self.Record[Query.Node, ?, ?]): Chain[Annotation[Self.Field[Parameter.Node, ?, ?]]] =
+    schema match
+      case Self.Record.Empty                => Chain.empty
+      case Self.Record.Modify(self, _, _)   => Queries.walk(self)
+      case Self.Record.Product(left, right) => Queries.walk(left) ++ Queries.walk(right)
+      case Self.Record.Root(field)          => Chain.one(field.value.self)
 
   final case class Schema[+S[-w, +r] <: Parameter.Schema[?, w, r], -W, +R](
       self: Annotation[Self.Record[Query.Schema[S, *, *], W, R]]

@@ -5,6 +5,7 @@ import cats.effect.unsafe.implicits.global
 import fs2.Stream
 import io.taig.otter.http.fixture.*
 import io.taig.otter.http.fixture.dsl.*
+import io.taig.otter.syntax.JsonSyntax.nullable
 import org.http4s.Entity
 import org.http4s.Header as Http4sHeader
 import org.http4s.Headers as Http4sHeaders
@@ -174,6 +175,40 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
       val request = Http4sRequest[IO](method = Http4sMethod.POST, uri = Base, entity = Entity.strict(bytes))
 
       received(upload, request).map(value => assertTrue(value == (204, Some(Some(bytes)))))
+    ,
+    test("optional JSON requests distinguish no entity, null, and a present value through the client"):
+      val declaration = endpoint(
+        request(method.post, __)(body.optional(body.json(payload.string.nullable))),
+        response(status.noContent).toUnion
+      )
+      ZIO
+        .foreach(List(None, Some(None), Some(Some("value")))): value =>
+          ZIO.fromFuture: _ =>
+            IO.ref(Option.empty[Option[Option[String]]])
+              .flatMap: ref =>
+                val app = Http4s
+                  .routes[IO](Route(declaration, (input: Option[Option[String]]) => ref.set(Some(input))))(
+                    Http4sCirce.Payload
+                  )
+                  .orNotFound
+                val client = Http4sClient.fromHttpApp(app)
+                (Http4s.client[IO, Option[Option[String]], Unit](declaration)(Http4sCirce.Payload, Base, client)(
+                  value
+                ) *> ref.get)
+                  .map(seen => assertTrue(seen.contains(value)))
+              .unsafeToFuture()
+        .map(results => results.reduce(_ && _))
+    ,
+    test("a present empty JSON request is invalid rather than an absent entity"):
+      val declaration = endpoint(
+        request(method.post, __)(body.optional(body.json(payload.string.nullable))),
+        response(status.noContent).toUnion
+      )
+      received(
+        declaration,
+        Http4sRequest[IO](method = Http4sMethod.POST, uri = Base, headers = headers(Some("application/json")))
+      )
+        .map(answer => assertTrue(answer == (400, None)))
     ,
     test("an empty JSON response is decoded and rejected as invalid JSON"):
       val endpoint = io.taig.otter.http.fixture.dsl.endpoint(

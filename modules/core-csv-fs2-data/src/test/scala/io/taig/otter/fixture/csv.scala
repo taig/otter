@@ -12,14 +12,14 @@ object csv:
   /** The same note twice: once keeping the column and leaving the cell empty, once dropping the column. Keeping it is
     * the default, because a row owes its header a cell.
     */
-  val blankTag: Csv.Record[Note] = (field("title", string) :* field("tag", int).optional).to
+  val blankTag: Csv.Record[Note] = (field("title", string) :* field("tag", int).blankOrMissing).to
 
-  val omittedTag: Csv.Record[Note] = (field("title", string) :* field("tag", int).optional.omitted).to
+  val omittedTag: Csv.Record[Note] = (field("title", string) :* field("tag", int).optionalOrBlank).to
 
   /** Two layers of absence, which only a strict column can tell apart: a missing column is the outer one, an empty cell
     * the inner one.
     */
-  val nestedTag: Csv[Option[Option[Int]]] = field("tag", int.optional).optional.omitted.strict.toRecord
+  val nestedTag: Csv[Option[Option[Int]]] = field("tag", int.optional).optional.toRecord
 
   val genre: Csv.Enumeration[Genre] = enumeration(string):
     case Genre.Fiction => "fiction"

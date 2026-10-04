@@ -76,15 +76,14 @@ object books:
   /** Four parameters, each a different thing a query string can do: one defaulted, one defaulted, one repeated, and one
     * that is a name with no value at all.
     *
-    * `available` is the interesting one. `?available` and `?available=` are both a name carrying no text, and a lenient
-    * parameter reads that as absence before the value is looked at -- right for `?page=`, wrong here, where giving the
-    * name *is* the assertion. `strict` is what lets the empty text through to be read as `true`.
+    * `query.flag` makes a missing name false and bare or empty text true, while retaining explicit Boolean values. The
+    * pagination defaults deliberately accept empty text too; omission-only defaults would reject `?page=`.
     */
   val filter: Queries[BookFilter] =
-    (query("page", int).optional(1) :*
-      query("size", int).optional(20) :*
+    (query("page", int).defaultedOnMissingOrEmpty(1) :*
+      query("size", int).defaultedOnMissingOrEmpty(20) :*
       query("genre", collection.list(enumerated)) :*
-      query("available", coerce(boolean)).strict.optional(false)).to[BookFilter]
+      query.flag("available")).to[BookFilter]
 
   /** One header that has to be there and one list valued one that need not be.
     *
@@ -92,7 +91,7 @@ object books:
     * this library, and a header a handler reads is the honest whole of what can be said.
     */
   val tracing: Headers[Tracing] =
-    (header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optional).to[Tracing]
+    (header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optionalOrEmpty).to[Tracing]
 
   /** The genre spelling the query string uses, which is the JSON one: an enumeration is a mapping and the mapping does
     * not change with the position it is read in.

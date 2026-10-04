@@ -13,7 +13,7 @@ object Part:
   /** A part holding the body `B` and round tripping `A`.
     *
     * A [[Self.Field]] over a [[Body]]: a name, a body, and the two decorations a field carries, so a part that need not
-    * be sent is `optional` and one standing for a value when it is not is `optional(default)`. The body is the part's
+    * be sent is `optional` and one standing for a value when it is not is `defaulted(default)`. The body is the part's
     * own, which is where a per part `Content-Type` comes from -- there is nowhere else for it to live, and its absence
     * from a flat form alphabet is why neither earlier attempt could describe a file upload.
     */
