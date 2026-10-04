@@ -165,9 +165,9 @@ object Request:
       * `W2` and `R2` are the body's, and what the request holds is an `Option` of them, so a handler is handed the
       * absence rather than a default it cannot tell apart from a value that was sent.
       *
-      * Zero bytes is the whole of the test an interpreter can make, and the corollary is worth knowing before reaching
-      * for this over a payload whose own alphabet can say `null`: a body of bytes cannot tell `Some` of none of them
-      * from `None`, because HTTP does not.
+      * The content type participates in presence: zero bytes with a declared content type are a present entity, while
+      * zero bytes without one are absent. A present JSON `null` is a payload value, never entity absence. In
+      * particular, a typed empty binary body round trips as `Some(ByteVector.empty)`.
       */
     final case class OptionalEntity[+S[-_, +_], W1, R1, W2, R2](
         self: Request.Value[S, W1, R1],

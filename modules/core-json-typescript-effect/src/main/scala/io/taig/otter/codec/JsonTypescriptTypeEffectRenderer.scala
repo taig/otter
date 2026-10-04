@@ -19,7 +19,7 @@ final class JsonTypescriptTypeEffectRenderer(
     case Json.Record.Schema(node) if projection == JsonTypescriptTarget.Projection.Decoded =>
       Typescript.Type.Object(node.self.fields.toList.map: reference =>
         val field = reference.value
-        Json.presence(side, field.self.metadata, field.self.self) match
+        Json.presence(side, field.self.self) match
           case Json.Presence.OptionalNullable =>
             Typescript.Type.Field(field.self.self.name, renderer.render(field.self.self.schema.value), optional = true)
           case _ => wire.field(field))

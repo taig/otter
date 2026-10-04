@@ -1,6 +1,5 @@
 package io.taig.otter.benchmark
 
-import io.taig.otter.Absence
 import io.taig.otter.Json
 import io.taig.otter.Primitive
 import io.taig.otter.codec.BranchEncoder
@@ -81,22 +80,10 @@ object JsonPrimitiveVoidEncoder extends Encoder[Json.Primitive.Node, Unit]:
     case Primitive.Text.Modify(self, _, g)    => encode(self, g(w))
     case Primitive.Text.Root(_)               => ()
 
-/** Reads the annotation `JsonFieldCirceEncoder` reads, so that the metadata lookup is on the walk's side of the line
-  * rather than the document's.
-  */
-object JsonFieldVoidEncoder extends Encoder[Json.Field.Node, Unit]:
-  private val omitting: FieldEncoder[Json.Node, Unit, Unit] =
-    FieldEncoder(JsonVoidEncoder, absent = None, (_, _) => ())
-
-  private val nulling: FieldEncoder[Json.Node, Unit, Unit] =
-    FieldEncoder(JsonVoidEncoder, absent = Some(()), (_, _) => ())
-
-  override def encode[W](json: Json.Field.Node[W, Any], w: W): Unit =
-    val encoder = Json.absence(json.self.metadata) match
-      case Absence.Empty => nulling
-      case Absence.Omit  => omitting
-
-    encoder.encode(json.self.self, w)
+/** Walks the same field contracts as the document encoders, without building a document. */
+val JsonFieldVoidEncoder: Encoder[Json.Field.Node, Unit] =
+  FieldEncoder(JsonVoidEncoder, empty = (), (_: String, _: Unit) => ())
+    .contramapK([w, r] => (json: Json.Field.Node[w, r]) => json.self.self)
 
 val JsonBranchVoidEncoder: Encoder[Json.Branch.Node, Unit] =
   BranchEncoder(JsonVoidEncoder).contramapK([w, r] => (json: Json.Branch.Node[w, r]) => json.self.self)

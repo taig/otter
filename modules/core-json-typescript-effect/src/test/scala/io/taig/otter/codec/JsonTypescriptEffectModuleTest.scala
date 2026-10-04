@@ -161,7 +161,7 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
     test("only what has to split does"):
       val name = (field("first", string) :* field("last", string)).attr(Keys.name, "Name")
 
-      val outer = (field("author", name) :* field("tag", int).optional.nullable).attr(Keys.name, "Outer")
+      val outer = (field("author", name) :* field("tag", int).nullableOrMissing).attr(Keys.name, "Outer")
 
       assertTrue(
         module(

@@ -103,7 +103,7 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
     ,
     test("collapsing read and write definitions splits the right colliding schema"):
       val first = int.attr(Keys.name, "Shared")
-      val second = field("value", int).optional.toRecord.attr(Keys.name, "Shared")
+      val second = field("value", int).optionalOrNull.toRecord.attr(Keys.name, "Shared")
       val module = JsonTypescriptEffectRenderer.module(first, second)
       val source = module.mkString("\n")
 
@@ -123,7 +123,7 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
       )
     ,
     test("read and write suffixes cannot collide with another schema's requested name"):
-      val first = field("value", int).optional.toRecord.attr(Keys.name, "Shared")
+      val first = field("value", int).optionalOrNull.toRecord.attr(Keys.name, "Shared")
       val second = string.attr(Keys.name, "SharedRead")
       val module = JsonTypescriptEffectRenderer.module(first, second)
       val names = constants(module)

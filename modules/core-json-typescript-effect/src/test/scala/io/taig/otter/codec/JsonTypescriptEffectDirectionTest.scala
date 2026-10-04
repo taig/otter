@@ -117,8 +117,8 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
       ,
       /** A strict field takes only the form it writes, which is exactly what makes the two sides agree again. */
       test("a strict field reads back only what it writes, so the sides agree"):
-        val omitted = field("tag", int).optional.omitted.strict.toRecord
-        val nulled = field("tag", int).optional.nullable.strict.toRecord
+        val omitted = field("tag", int).optional.toRecord
+        val nulled = field("tag", int).nullable.toRecord
 
         assertTrue(
           read(omitted) == write(omitted),
@@ -169,7 +169,7 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         * `Eval` of a Scala value and cannot be rendered, so the read side says the key may be missing and stops there.
         */
       test("a defaulted field is required out and optional in, without the default"):
-        val schema = field("tag", int).optional(0).toRecord
+        val schema = field("tag", int).defaultedOnMissingOrNull(0).toRecord
 
         assertTrue(
           write(
@@ -459,7 +459,7 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
       ,
       /** A strict omitted field is the one that refuses the null, and it is also the one whose two sides agree. */
       test("a strict field refuses what the lenient one took, and its sides agree"):
-        val schema = field("title", string) :* field("tag", int).optional.omitted.strict
+        val schema = field("title", string) :* field("tag", int).optional
         val nulled = CirceJson.obj("title" -> CirceJson.fromString("Dune"), "tag" -> CirceJson.Null)
 
         assertTrue(

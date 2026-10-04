@@ -20,7 +20,8 @@ object CsvHeaderRendererTest extends ZIOSpecDefault:
       assertTrue(CsvHeaderRenderer.render(RNil) == Chain.empty)
     ,
     test("a column is named through .optional and .optional(default)"):
-      val schema = field("title", string) :* field("tag", int).optional :* field("pages", int).optional(0)
+      val schema =
+        field("title", string) :* field("tag", int).blankOrMissing :* field("pages", int).defaultedOnMissingOrBlank(0)
       assertTrue(CsvHeaderRenderer.render(schema) == Chain("title", "tag", "pages"))
     ,
     test("an attribute does not disturb the naming"):

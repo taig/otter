@@ -13,7 +13,7 @@ object Header:
   /** A header holding `S` and round tripping `A`.
     *
     * A header is a [[Self.Field]]: a name, a schema, and the two decorations a field carries. `optional` is a header
-    * that may not be given at all, and `optional(default)` is one that stands for a value when it is not -- the same
+    * that may not be given at all, and `defaulted(default)` is one that stands for a value when it is not -- the same
     * read and write asymmetry a JSON field has, since a default is always written out and never required when read.
     */
   type Of[S[-w, +r] <: Parameter.Node[w, r], A] = Header.Schema[S, A, A]

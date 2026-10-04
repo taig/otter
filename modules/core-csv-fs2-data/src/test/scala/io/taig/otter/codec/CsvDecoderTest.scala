@@ -89,7 +89,7 @@ object CsvDecoderTest extends ZIOSpecDefault:
       )
     ,
     test("Csv.Record: a strict blank column wants its column, empty"):
-      val schema = field("tag", int).optional.strict.toRecord
+      val schema = field("tag", int).blank.toRecord
       assertTrue(
         CsvRecordDecoder.decode(schema, Fields("tag" -> "")) == none.valid,
         CsvRecordDecoder.decode(schema, Fields("tag" -> "42")) == 42.some.valid,
@@ -97,7 +97,7 @@ object CsvDecoderTest extends ZIOSpecDefault:
       )
     ,
     test("Csv.Record: a strict omitted column wants no column at all"):
-      val schema = field("tag", int).optional.omitted.strict.toRecord
+      val schema = field("tag", int).optional.toRecord
       assertTrue(
         CsvRecordDecoder.decode(schema, Fields.empty) == none.valid,
         CsvRecordDecoder.decode(schema, Fields("tag" -> "42")) == 42.some.valid,
@@ -105,7 +105,7 @@ object CsvDecoderTest extends ZIOSpecDefault:
       )
     ,
     test("Csv.Record: only a strict column tells two layers of absence apart"):
-      val lenient = field("tag", int.optional).optional.toRecord
+      val lenient = field("tag", int.optional).blankOrMissing.toRecord
       assertTrue(
         CsvRecordDecoder.decode(csv.nestedTag, Fields.empty) == none.valid,
         CsvRecordDecoder.decode(csv.nestedTag, Fields("tag" -> "")) == none.some.valid,
@@ -114,7 +114,7 @@ object CsvDecoderTest extends ZIOSpecDefault:
       )
     ,
     test("Csv.Record: a defaulted column falls back when its cell is empty"):
-      val schema = field("pages", int).optional(0).toRecord
+      val schema = field("pages", int).defaultedOnMissingOrBlank(0).toRecord
       assertTrue(
         CsvRecordDecoder.decode(schema, Fields("pages" -> "412")) == 412.valid,
         CsvRecordDecoder.decode(schema, Fields("pages" -> "")) == 0.valid,

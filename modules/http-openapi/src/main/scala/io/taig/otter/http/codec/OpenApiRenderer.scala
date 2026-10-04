@@ -188,13 +188,21 @@ final class OpenApiRenderer(
 
   /** Every parameter an operation reads, in the order OpenAPI lists them: path, then query, then header. */
   private def parameters(operation: String, schema: Request.Schema[?, ?, ?]): (Chain[CirceJson], Collected) =
-    val path = PathTemplate.placeholders(schema.path.value).map((name, value) => (OpenApi.InPath, name, value, true))
+    val path = PathTemplate
+      .placeholders(schema.path.value)
+      .map((name, value) => (OpenApi.InPath, name, value, true, Metadata.Empty))
 
     val queries = Chain
       .fromOption(schema.queries)
       .flatMap(reference =>
         Queries.fields(reference.value).map { field =>
-          (OpenApi.InQuery, field.name, field.schema.value, OpenApiParameterRenderer.required(field))
+          (
+            OpenApi.InQuery,
+            field.self.name,
+            field.self.schema.value,
+            OpenApiParameterRenderer.required(field.self, request),
+            field.metadata
+          )
         }
       )
 
@@ -202,17 +210,26 @@ final class OpenApiRenderer(
       .fromOption(schema.headers)
       .flatMap(reference =>
         Headers.fields(reference.value).map { field =>
-          (OpenApi.InHeader, field.name, field.schema.value, OpenApiParameterRenderer.required(field))
+          (
+            OpenApi.InHeader,
+            field.self.name,
+            field.self.schema.value,
+            OpenApiParameterRenderer.required(field.self, request),
+            field.metadata
+          )
         }
       )
 
     (path ++ queries ++ headers).foldLeft((Chain.empty[CirceJson], Collected.Empty)): (accumulated, described) =>
       val (rendered, collected) = accumulated
-      val (in, name, value, required) = described
+      val (in, name, value, required, metadata) = described
       val document = parameter.render(value)
       val issues = Chain.fromSeq(document.issues).map(OpenApiIssue.Parameter(operation, name, _))
 
-      (rendered :+ OpenApi.parameter(name, in, required, document.value), collected ++ Collected(issues, ListMap.empty))
+      (
+        rendered :+ OpenApi.parameter(name, in, required, JsonSchemaAnnotation(namespaces, metadata, document.value)),
+        collected ++ Collected(issues, ListMap.empty)
+      )
 
   /** The one entity an operation reads, if it reads one. */
   private def requestBody(operation: String, schema: Request.Schema[?, ?, ?]): (Option[CirceJson], Collected) =
@@ -323,15 +340,15 @@ final class OpenApiRenderer(
       .fields(schema)
       .foldLeft((ListMap.empty[String, CirceJson], Collected.Empty)): (accumulated, field) =>
         val (headers, collected) = accumulated
-        val document = parameter.render(field.schema.value)
-        val issues = Chain.fromSeq(document.issues).map(OpenApiIssue.Parameter(operation, field.name, _))
+        val document = parameter.render(field.self.schema.value)
+        val issues = Chain.fromSeq(document.issues).map(OpenApiIssue.Parameter(operation, field.self.name, _))
 
         val rendered = OpenApi.obj(
-          "required" -> CirceJson.fromBoolean(OpenApiParameterRenderer.required(field)),
-          "schema" -> document.value
+          "required" -> CirceJson.fromBoolean(OpenApiParameterRenderer.required(field.self, response)),
+          "schema" -> JsonSchemaAnnotation(namespaces, field.metadata, document.value)
         )
 
-        (headers.updated(field.name, rendered), collected ++ Collected(issues, ListMap.empty))
+        (headers.updated(field.self.name, rendered), collected ++ Collected(issues, ListMap.empty))
 
   /** One media type entry per alternative a body offers. */
   private def content(
@@ -437,12 +454,12 @@ final class OpenApiRenderer(
           .toList
 
         (
-          properties.updated(field.name, rendered.schema),
+          properties.updated(field.name, JsonSchemaAnnotation(namespaces, metadata, rendered.schema)),
           encoding.updated(
             field.name,
             JsonSchema.merge(OpenApi.obj("contentType" -> CirceJson.fromString(media)), disposition*)
           ),
-          if OpenApiParameterRenderer.required(field) then required :+ field.name else required,
+          if OpenApiParameterRenderer.required(field, side) then required :+ field.name else required,
           collected ++ found ++ (
             if rendered.encoding.nonEmpty then Collected.issue(OpenApiIssue.Encoding(operation, media))
             else Collected.Empty

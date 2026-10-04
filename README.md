@@ -266,3 +266,71 @@ exercise the API.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Missing, null, defaults, and empty values
+
+Field absence is a structural contract, independent of the schema of a present value. In JSON:
+
+| Field method | Reads as absence | Writes `None` |
+| --- | --- | --- |
+| `.optional` | Missing key | Omits the key |
+| `.nullable` | Explicit `null`; key required | Writes `null` |
+| `.optionalOrNull` | Missing key or `null` | Omits the key |
+| `.nullableOrMissing` | Missing key or `null` | Writes `null` |
+
+A present value that does not match the absence contract reaches its payload schema. For example,
+`field("name", string).optional` preserves an empty string and rejects `null`.
+
+```scala
+import io.taig.otter.component.JsonComponent.*
+
+val summary = field("summary", string.nullable).optional
+// None              <-> {}
+// Some(None)        <-> {"summary": null}
+// Some(Some("new"))  <-> {"summary": "new"}
+
+val count = field("count", int).defaulted(7)
+// Missing becomes 7; null and invalid text fail; writing 7 still emits "count": 7.
+```
+
+Defaults are read-side values. `.defaulted(value)` responds only to a missing key;
+`.defaultedOnNull(value)` requires the key and responds to null;
+`.defaultedOnMissingOrNull(value)` accepts either. Default expressions remain lazy.
+A runtime default does not automatically add a JSON Schema `default`: explicit documentation annotations remain
+separate and must be kept consistent by the author. Conversely, a documentation annotation does not supply a runtime default.
+
+Query and header fields use `.optional`, `.empty`, `.optionalOrEmpty`, and `.emptyOrMissing`, with
+`.defaulted`, `.defaultedOnEmpty`, and `.defaultedOnMissingOrEmpty`. Empty refers to text, not JSON null.
+`query.flag("available")` reads omission as false, bare `?available` or `?available=` as true, and accepts the
+existing Boolean coercions, including explicit false. Writers emit `available=true` or `available=false`.
+Duplicate scalar parameters are rejected. A required repeated query defaults to zero elements when missing;
+explicit optional/default contracts see the omission instead. `None` and `Some(emptyCollection)` both write zero
+occurrences and cannot be distinguished on that wire.
+
+CSV fields use `.optional`, `.blank`, `.optionalOrBlank`, and `.blankOrMissing`, with the corresponding
+`defaultedOnBlank` and `defaultedOnMissingOrBlank` methods. Use `.blankOrMissing` to preserve the previous
+lenient behavior and keep an absent column blank. A header-aligned CSV writer fills omitted columns back in as blanks.
+
+`body.optional(body.json(string.nullable))` has two independent layers: no entity, a present JSON null, or a present
+string. Zero bytes without a content type mean entity absence; typed zero-byte binary content is present.
+A typed zero-byte JSON body is invalid JSON, not an absent body.
+
+Codecs and renderers share these contracts. A missing-trigger default allows omission on the read side but writes
+a required member; a null/empty-only default still requires the name on reads. Server documents describe request
+reads and response writes; client documents reverse those sides.
+
+### Migrating field modifiers
+
+- Old JSON `.optional` becomes `.optionalOrNull` to retain leniency; keep `.optional` to accept omission only.
+- Old `.optional.nullable` becomes `.nullableOrMissing`; old `.optional.nullable.strict` becomes `.nullable`.
+- Old `.optional.omitted.strict` becomes `.optional`.
+- Old JSON `.optional(value)` becomes `.defaultedOnMissingOrNull(value)` to retain leniency.
+- Old query/header `.optional(value)` becomes `.defaultedOnMissingOrEmpty(value)` to retain leniency.
+- Old CSV `.optional` becomes `.blankOrMissing`, and `.optional(value)` becomes `.defaultedOnMissingOrBlank(value)`.
+- Replace the bare-flag chain `.strict.optional(false)` over a coercing Boolean with `query.flag(name)`.
+
+The field modifiers `.strict`, `.lenient`, `.omitted`, `.absence(...)`, `.tolerance(...)`, and their metadata keys
+are removed. Select one complete contract. Applying a second contract, even after `.to`, throws an
+`IllegalArgumentException` during schema construction naming the field and conflicting contracts. To model two
+layers of absence, put nullability on the payload inside `field(...)`, as the PATCH example does.
+Generic value/tuple `.optional` operations remain available; this migration changes field contracts.

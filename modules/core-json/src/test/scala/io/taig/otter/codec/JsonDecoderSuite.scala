@@ -48,6 +48,7 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
     result.fold(violations.paths, _ => Nil)
 
   private val contract: Spec[TestEnvironment & Scope, Any] = suite("contract")(
+    JsonAbsenceContract(interpreter),
     test("Json.Primitive"):
       assertTrue(
         decode(string, "\"foobar\"") == "foobar".valid,
@@ -175,18 +176,18 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
       assertTrue(decode(schema, """{"foo":"John Doe","bar":42,"baz":true}""") == ("John Doe", 42, true).valid)
     ,
     test("Json.Record: optional field"):
-      val schema = field("foo", string) :* field("bar", int).optional
+      val schema = field("foo", string) :* field("bar", int).optionalOrNull
       assertTrue(
         decode(schema, """{"foo":"x","bar":42}""") == ("x", 42.some).valid,
         decode(schema, """{"foo":"x"}""") == ("x", none).valid
       )
     ,
     test("Json.Record: an optional field accepts an explicit null"):
-      val schema = field("foo", string) :* field("bar", int).optional
+      val schema = field("foo", string) :* field("bar", int).optionalOrNull
       assertTrue(decode(schema, """{"foo":"x","bar":null}""") == ("x", none).valid)
     ,
     test("Json.Record: a defaulted field accepts an explicit null"):
-      val schema = field("bar", int).optional(7).toRecord
+      val schema = field("bar", int).defaultedOnMissingOrNull(7).toRecord
       assertTrue(
         decode(schema, """{"bar":null}""") == 7.valid,
         decode(schema, "{}") == 7.valid,
@@ -212,7 +213,7 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
       )
     ,
     test("Json.Record: a strict omitted field rejects a null"):
-      val schema = field("bar", int).optional.omitted.strict.toRecord
+      val schema = field("bar", int).optional.toRecord
       assertTrue(
         decode(schema, "{}") == none.valid,
         decode(schema, """{"bar":1}""") == 1.some.valid,
@@ -220,21 +221,21 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
       )
     ,
     test("Json.Record: a strict nullable field rejects a missing key"):
-      val schema = field("bar", int).optional.nullable.strict.toRecord
+      val schema = field("bar", int).nullable.toRecord
       assertTrue(
         decode(schema, """{"bar":null}""") == none.valid,
         decode(schema, """{"bar":1}""") == 1.some.valid,
         decode(schema, "{}").isInvalid
       )
     ,
-    test("Json.Record: leniency is what reading does anyway"):
-      val nullable = field("bar", int).optional.nullable.toRecord
-      val omitted = field("bar", int).optional.omitted.toRecord
+    test("Json.Record: lenient contracts explicitly accept both absence forms"):
+      val nullable = field("bar", int).nullableOrMissing.toRecord
+      val omitted = field("bar", int).optionalOrNull.toRecord
       assertTrue(decode(nullable, """{"bar":null}""") == decode(omitted, """{"bar":null}"""))
     ,
     test("Json.Record: only a strict field tells two layers of absence apart"):
-      val strict = field("bar", int.optional).optional.omitted.strict.toRecord
-      val lenient = field("bar", int.optional).optional.toRecord
+      val strict = field("bar", int.optional).optional.toRecord
+      val lenient = field("bar", int.optional).optionalOrNull.toRecord
       assertTrue(
         decode(strict, "{}") == none.valid,
         decode(strict, """{"bar":null}""") == none.some.valid,

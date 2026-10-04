@@ -56,8 +56,7 @@ object Metadata:
     /** The two namespace case, which is every format's own attribute falling back to the global one.
       *
       * Spelled out rather than reached through the varargs overload, which allocates a `Seq` and a fold closure per
-      * lookup. A field's [[Keys.absence]] and [[Keys.tolerance]] are read once per field per write and twice per field
-      * per read, to answer a question that was fixed when the schema was built.
+      * lookup when an interpreter needs a format-specific annotation with a global fallback.
       */
     def get[A](
         namespace: Metadata.Namespace,

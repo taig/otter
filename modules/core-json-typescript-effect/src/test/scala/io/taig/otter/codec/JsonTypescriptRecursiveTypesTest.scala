@@ -23,7 +23,7 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
       .attr(Keys.name, "Tree")
 
   private lazy val optionalTree: Json.Record[JsonTypescriptRecursiveTypesTest.OptionalTree] =
-    (field("value", int).optional :* field("children", collection.list(optionalTree)))
+    (field("value", int).optionalOrNull :* field("children", collection.list(optionalTree)))
       .to[JsonTypescriptRecursiveTypesTest.OptionalTree]
       .attr(Keys.name, "OptionalTree")
 

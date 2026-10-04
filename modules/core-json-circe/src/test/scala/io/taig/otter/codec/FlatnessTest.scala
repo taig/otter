@@ -22,7 +22,7 @@ object FlatnessTest extends ZIOSpecDefault:
     ,
     test("an attribute leaves a record as flat as it was"):
       assertTrue(typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, Note] =
-        (field("title", string) :* field("tag", int).optional.nullable).to[Note]"""))
+        (field("title", string) :* field("tag", int).nullableOrMissing).to[Note]"""))
     ,
     test("a record holding a record is not flat"):
       assertTrue(!typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, (Book, Int)] =

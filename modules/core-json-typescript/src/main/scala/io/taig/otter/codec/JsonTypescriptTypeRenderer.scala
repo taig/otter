@@ -58,7 +58,7 @@ final class JsonTypescriptTypeRenderer(side: Side, renderer: Renderer[Json.Node,
   def field(json: Json.Field.Node[?, ?]): Typescript.Type.Field =
     val tpe = child(json.self.self.schema.value)
 
-    Json.presence(side, json.self.metadata, json.self.self) match
+    Json.presence(side, json.self.self) match
       case Json.Presence.Required => Typescript.Type.Field(json.self.self.name, tpe, optional = false)
       case Json.Presence.Nullable =>
         Typescript.Type.Field(json.self.self.name, nullable(tpe), optional = false)

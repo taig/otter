@@ -2,6 +2,7 @@ package io.taig.otter.http.codec
 
 import cats.data.Chain
 import io.taig.otter as Self
+import io.taig.otter.Annotation
 import io.taig.otter.Side
 import io.taig.otter.Typescript
 import io.taig.otter.http.Headers
@@ -67,11 +68,12 @@ object TypescriptEnvelope:
     */
   def parameters(
       section: String,
-      fields: Chain[Self.Field[Parameter.Node, ?, ?]],
+      fields: Chain[Annotation[Self.Field[Parameter.Node, ?, ?]]],
       side: Side
   ): Typescript.Expression =
     Typescript.Expression.Object(
-      fields.toList.map: field =>
+      fields.toList.map: annotated =>
+        val field = annotated.self
         val read = TypescriptEnvelope.read(section, field.name)
         val written = ParameterTypescriptRenderer.text(field.schema.value, read)
 
@@ -79,7 +81,7 @@ object TypescriptEnvelope:
           if TypescriptEnvelope.isOptional(field, side) then
             Typescript.Expression.Ternary(
               Typescript.Expression.TripleEqual(read, Typescript.Expression.Undefined),
-              Typescript.Expression.Undefined,
+              absent(field, side),
               written
             )
           else written
@@ -88,8 +90,9 @@ object TypescriptEnvelope:
     )
 
   /** The type of a query string or a header set section of an input. */
-  def parametersType(fields: Chain[Self.Field[Parameter.Node, ?, ?]], side: Side): Option[Typescript.Type] =
-    val members = fields.toList.map: field =>
+  def parametersType(fields: Chain[Annotation[Self.Field[Parameter.Node, ?, ?]]], side: Side): Option[Typescript.Type] =
+    val members = fields.toList.map: annotated =>
+      val field = annotated.self
       Typescript.Type.Field(
         field.name,
         ParameterTypescriptRenderer.render(field.schema.value),
@@ -107,11 +110,20 @@ object TypescriptEnvelope:
   def isOptional(field: Self.Field[?, ?, ?], side: Side): Boolean = field match
     case Self.Field.Root(_, _)         => false
     case Self.Field.Modify(self, _, _) => TypescriptEnvelope.isOptional(self, side)
-    case Self.Field.Optional(_)        => true
-    case Self.Field.Default(_, _)      =>
+    case Self.Field.Optional(_, _)     => true
+    case Self.Field.Default(_, _, _)   =>
       side match
         case Side.Read  => true
         case Side.Write => false
+
+  /** Builder inputs use undefined for Scala absence; the field chooses its canonical wire representation. */
+  private def absent(field: Self.Field[?, ?, ?], side: Side): Typescript.Expression =
+    field match
+      case Self.Field.Modify(self, _, _)                            => absent(self, side)
+      case Self.Field.Optional(_, contract) if contract.writesEmpty => Typescript.Expression.Literal.String("")
+      case Self.Field.Default(_, _, trigger) if side == Side.Read && !trigger.acceptsMissing =>
+        Typescript.Expression.Literal.String("")
+      case _ => Typescript.Expression.Undefined
 
   /** The name an endpoint is generated under when it does not say. `getReportsId` for `GET /reports/{id}`. */
   def name(method: Method, schema: Path.Node[?, ?]): String =
@@ -138,8 +150,8 @@ object TypescriptEnvelope:
     value.headOption.fold(value)(head => head.toUpper.toString ++ value.drop(1)).filter(_.isLetterOrDigit)
 
   /** Every parameter a request reads, by section. */
-  def queries(schema: Request.Schema[?, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] =
+  def queries(schema: Request.Schema[?, ?, ?]): Chain[Annotation[Self.Field[Parameter.Node, ?, ?]]] =
     Chain.fromOption(schema.queries).flatMap(reference => Queries.fields(reference.value))
 
-  def headers(schema: Request.Schema[?, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] =
+  def headers(schema: Request.Schema[?, ?, ?]): Chain[Annotation[Self.Field[Parameter.Node, ?, ?]]] =
     Chain.fromOption(schema.headers).flatMap(reference => Headers.fields(reference.value))

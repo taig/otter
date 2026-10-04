@@ -1,29 +1,23 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.Absence
 import io.taig.otter.Csv
-import io.taig.otter.Keys
-import io.taig.otter.Tolerance
+import io.taig.otter.Field
 
-/** The CSV specific attributes, written against a column rather than a schema.
-  *
-  * Absence is something only a row's member can do, so these live on [[Csv.Field.Schema]]. What they mean is not what
-  * they mean in JSON: a row's columns are fixed by its header, so [[blank]] keeps the column and leaves it empty, and
-  * that is the default. [[omitted]] drops the column outright, which shortens the row and only makes sense where
-  * nothing has to line up with a header.
-  */
+/** Named wire contracts for Csv fields. Payload absence is independent of field absence. */
 trait CsvSyntax:
   extension [S[-w, +r] <: Csv.Cell.Node[w, r], W, R](fa: Csv.Field.Schema[S, W, R])
-    def absence(value: Absence): Csv.Field.Schema[S, W, R] = fa.attr(Csv.Namespace, Keys.absence, value)
+    /** Requires the key and represents absence with an explicit blank. */
+    def blank: Csv.Field.Schema[S, Option[W], Option[R]] = fa.optional(Field.Presence.Empty)
 
-    def blank: Csv.Field.Schema[S, W, R] = absence(Absence.Empty)
+    /** Accepts missing or blank, and omits an absent field when writing. */
+    def optionalOrBlank: Csv.Field.Schema[S, Option[W], Option[R]] = fa.optional(Field.Presence.OmittedOrEmpty)
 
-    def omitted: Csv.Field.Schema[S, W, R] = absence(Absence.Omit)
+    /** Accepts missing or blank, and writes an explicit blank for absence. */
+    def blankOrMissing: Csv.Field.Schema[S, Option[W], Option[R]] = fa.optional(Field.Presence.EmptyOrMissing)
 
-    def tolerance(value: Tolerance): Csv.Field.Schema[S, W, R] = fa.attr(Csv.Namespace, Keys.tolerance, value)
+    def defaultedOnBlank(value: => R): Csv.Field.Schema[S, W, R] = fa.defaulted(value, Field.Absent.Empty)
 
-    def strict: Csv.Field.Schema[S, W, R] = tolerance(Tolerance.Strict)
-
-    def lenient: Csv.Field.Schema[S, W, R] = tolerance(Tolerance.Lenient)
+    def defaultedOnMissingOrBlank(value: => R): Csv.Field.Schema[S, W, R] =
+      fa.defaulted(value, Field.Absent.MissingOrEmpty)
 
 object CsvSyntax extends CsvSyntax

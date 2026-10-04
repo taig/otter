@@ -149,9 +149,13 @@ object Wrapper:
         override def name: String = node(fa).name
         override def isOptional: Boolean = node(fa).isOptional
         override def optional: Outer[S, Option[W], Option[R]] =
-          wrap(unwrap(fa).map(Self.Field.Optional(_)))
-        override def optional(default: => R): Outer[S, W, R] =
-          wrap(unwrap(fa).map(Self.Field.Default(_, Eval.later(default))))
+          optional(Self.Field.Presence.Omitted)
+        override def optional(presence: Self.Field.Presence): Outer[S, Option[W], Option[R]] =
+          wrap(unwrap(fa).map(Self.Field.Optional(_, presence)))
+        override def defaulted(default: => R): Outer[S, W, R] =
+          defaulted(default, Self.Field.Absent.Missing)
+        override def defaulted(default: => R, absent: Self.Field.Absent): Outer[S, W, R] =
+          wrap(unwrap(fa).map(Self.Field.Default(_, Eval.later(default), absent)))
         override def schema: Reference[S, ?, ?] = node(fa).schema
 
   abstract class Record[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_], G[_[-w, +r] <: Bound[w, r], -_, +_]](

@@ -150,6 +150,6 @@ object JsonSchemaFidelityTest extends ZIOSpecDefault:
         .reader(
           JsonSchemaProfile.Draft202012.copy(dialect = None, nullability = JsonSchemaProfile.Nullability.TypeArray)
         )
-        .render(constant(string, "yes").optional)
+        .render(constant(string, "yes").nullable)
       assertTrue(document.value.noSpaces == json("""{"anyOf":[{"type":"string","const":"yes"},{"type":"null"}]}"""))
   )
