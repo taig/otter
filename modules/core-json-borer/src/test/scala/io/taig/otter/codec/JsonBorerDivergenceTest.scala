@@ -4,6 +4,7 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.bullet.borer.Borer
 import io.bullet.borer.Dom
+import io.taig.data.Data
 import io.taig.otter.Constraint
 import io.taig.otter.Json
 import io.taig.otter.Step
@@ -68,6 +69,16 @@ object JsonBorerDivergenceTest extends ZIOSpecDefault:
           JsonBorerDecoder.decode(json.printings, BorerDoc.toBorer(doc)) ==
             Validated.valid(List(1 -> "a", 1 -> "a", 2 -> "b")),
           JsonCirceDecoder.decode(json.printings, CirceDoc.toCirce(doc)) == Validated.valid(List(1 -> "a", 2 -> "b"))
+        )
+      ,
+      test("dynamic objects preserve borer's duplicate members and circe's last-value behavior"):
+        val doc = Doc.Obj(List("x" -> Doc.Num("1"), "x" -> Doc.Num("2")))
+
+        assertTrue(
+          JsonBorerDecoder.decode(dynamic.any, BorerDoc.toBorer(doc)) ==
+            Validated.valid(Data.Object(List("x" -> 1, "x" -> 2))),
+          JsonCirceDecoder.decode(dynamic.any, CirceDoc.toCirce(doc)) ==
+            Validated.valid(Data.Object(List("x" -> 2)))
         )
       ,
       /** The same divergence from the schema's side, which is what makes it a capability here rather than an accident.

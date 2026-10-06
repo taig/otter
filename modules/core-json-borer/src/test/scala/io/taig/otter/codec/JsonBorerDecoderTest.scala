@@ -61,6 +61,18 @@ object JsonBorerDecoderTest extends JsonDecoderSuite(JsonBorerInterpreter):
       test("a NaN reaches a double schema as a NaN, because a hand built Dom can hold one"):
         assertTrue(JsonBorerDecoder.decode(double, Dom.DoubleElem(Double.NaN)).exists(_.isNaN))
       ,
+      test("dynamic documents reject unrepresentable numbers and non-JSON DOM values with paths"):
+        val unrepresentable = Dom.NumberStringElem("1e2147483649")
+        val nested = Dom.MapElem.Unsized("payload" -> Dom.ArrayElem.Sized(unrepresentable))
+        val nestedSchema = field("payload", dynamic.any).toRecord
+
+        assertTrue(
+          JsonBorerDecoder.decode(dynamic.any, unrepresentable).isInvalid,
+          JsonBorerDecoder.decode(nestedSchema, nested).fold(violations.paths, _ => Nil) ==
+            List(List(io.taig.otter.Step.Field("payload"), io.taig.otter.Step.Index(0))),
+          JsonBorerDecoder.decode(dynamic.any, Dom.TaggedElem(Tag.EpochDateTime, Dom.IntElem(1))).isInvalid
+        )
+      ,
       test("an element JSON has no counterpart for is a type mismatch, not a crash"):
         val elements = List(
           Dom.UndefinedElem,

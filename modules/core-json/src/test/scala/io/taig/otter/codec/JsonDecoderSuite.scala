@@ -50,6 +50,7 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
   private val contract: Spec[TestEnvironment & Scope, Any] = suite("contract")(
     JsonDiscriminatorContract(interpreter),
     JsonAbsenceContract(interpreter),
+    JsonDynamicContract(interpreter),
     test("Json.Primitive"):
       assertTrue(
         decode(string, "\"foobar\"") == "foobar".valid,

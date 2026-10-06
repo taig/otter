@@ -33,6 +33,7 @@ object JsonBorerEncoder extends Encoder[Json.Node, BorerWrite]:
     case Json.Collection.Schema(node)            => JsonBorerEncoder.array(collection.encode(node.self, w))
     case Json.Constant.Schema(node)              => constant.encode(node.self, w)
     case Json.Dictionary.Schema(node)            => JsonBorerEncoder.obj(dictionary.encode(node.self, w))
+    case Json.Dynamic.Schema(node)               => JsonBorerDynamicEncoder.encode(node.self, w)
     case Json.Enumeration.Schema(node)           => enumeration.encode(node.self, w)
     case Json.Optional.Schema(node)              => optional.encode(node.self, w)
     case json @ Json.Primitive.Boolean.Schema(_) => JsonPrimitiveBorerEncoder.encode(json, w)

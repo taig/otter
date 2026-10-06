@@ -1,10 +1,13 @@
 package io.taig.otter.component
 
+import io.taig.data.Data
+import io.taig.otter.Constraint
 import io.taig.otter.Json
 import io.taig.otter.JsonDiscriminator
 import io.taig.otter.codec.JsonTextEncoder
 import io.taig.otter.syntax.AllSyntax
 import io.taig.otter.syntax.JsonSyntax
+import io.taig.validation.Validation
 
 /** The user facing vocabulary for defining JSON schemas.
   *
@@ -45,5 +48,25 @@ trait JsonComponent
   object enumeration extends EnumerationComponent[Json.Primitive.Node, Json.Enumeration.Schema]
 
   object coerce extends CoerceComponent[Json.Primitive.Node, Json.Coerce.Schema]
+
+  /** Schemas for JSON documents whose shape is supplied at runtime.
+    *
+    * `any` admits JSON null as `Data.Null`. Wrapping it in `.nullable` instead consumes null as `None`, while a
+    * missing-only optional field keeps a present null as `Some(Data.Null)`. Numeric values are read without narrowing
+    * decimals or large integers to floating point; JSON spelling and decimal scale are not retained.
+    */
+  object dynamic:
+    def any: Json.Dynamic.Schema[Data, Data] = Json.Dynamic.Schema(Json.Dynamic.Node.AnyValue())
+
+    /** An arbitrary object. Supply an object-count validation to constrain its number of members. */
+    def obj: Json.Dynamic.Schema[Data.Object[Data], Data.Object[Data]] = obj(Validation.valid)
+
+    def obj(
+        validation: Validation[Constraint.Object, Data.Object[Data]]
+    ): Json.Dynamic.Schema[Data.Object[Data], Data.Object[Data]] =
+      Json.Dynamic.Schema(Json.Dynamic.Node.ObjectValue(validation))
+
+    def array: Json.Dynamic.Schema[Data.Array[Data], Data.Array[Data]] =
+      Json.Dynamic.Schema(Json.Dynamic.Node.ArrayValue)
 
 object JsonComponent extends JsonComponent

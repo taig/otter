@@ -42,6 +42,7 @@ final class JsonTypescriptExpressionEffectRenderer(
     case Json.Constant.Schema(node) =>
       TypescriptEffect.literal(NonEmptyList.one(JsonTypescriptLiteral.constant(node.self))).pure
     case Json.Dictionary.Schema(node)     => child(node.self.schema.value).map(TypescriptEffect.record)
+    case Json.Dynamic.Schema(node)        => dynamic(node.self)
     case Json.Enumeration.Schema(node)    => TypescriptEffect.literal(JsonTypescriptLiteral.enumeration(node.self)).pure
     case Json.Optional.Schema(node)       => optional(node.self)
     case Json.Primitive.Boolean.Schema(_) => TypescriptEffect.Boolean.pure
@@ -56,6 +57,13 @@ final class JsonTypescriptExpressionEffectRenderer(
         .map(TypescriptEffect.union)
 
   private def child(json: Json.Node[?, ?]): State[JsonTypescriptContext, Typescript.Expression] = renderer.render(json)
+
+  private def dynamic[W, R](schema: Json.Dynamic.Node[W, R]): State[JsonTypescriptContext, Typescript.Expression] =
+    schema match
+      case Json.Dynamic.Node.AnyValue()         => TypescriptEffect.symbol("Unknown").pure
+      case Json.Dynamic.Node.ObjectValue(_)     => TypescriptEffect.record(TypescriptEffect.symbol("Unknown")).pure
+      case Json.Dynamic.Node.ArrayValue         => TypescriptEffect.array(TypescriptEffect.symbol("Unknown")).pure
+      case Json.Dynamic.Node.Modify(self, _, _) => dynamic(self)
 
   /** A record's member, whose key may be absent and whose value may be empty, depending on the side. */
   private def field(json: Json.Field.Node[?, ?]): State[JsonTypescriptContext, (String, Typescript.Expression)] =

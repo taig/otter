@@ -25,6 +25,17 @@ final class JsonTypescriptTypeRenderer(side: Side, renderer: Renderer[Json.Node,
     case Json.Constant.Schema(node)   => JsonTypescriptTypeRenderer.literal(JsonTypescriptLiteral.constant(node.self))
     case Json.Dictionary.Schema(node) =>
       Typescript.Type.Symbol("Record", List(JsonTypescriptTypeRenderer.Text, child(node.self.schema.value)))
+    case Json.Dynamic.Schema(node) =>
+      node.self match
+        case Json.Dynamic.Node.AnyValue()     => Typescript.Type.Symbol("unknown", Nil)
+        case Json.Dynamic.Node.ObjectValue(_) =>
+          Typescript.Type.Symbol(
+            "Record",
+            List(JsonTypescriptTypeRenderer.Text, Typescript.Type.Symbol("unknown", Nil))
+          )
+        case Json.Dynamic.Node.ArrayValue =>
+          Typescript.Type.Symbol("ReadonlyArray", List(Typescript.Type.Symbol("unknown", Nil)))
+        case Json.Dynamic.Node.Modify(self, _, _) => renderDynamic(self)
     case Json.Enumeration.Schema(node) =>
       Typescript.Type.Union(JsonTypescriptLiteral.enumeration(node.self).map(JsonTypescriptTypeRenderer.literal))
     case Json.Optional.Schema(node)       => optional(node.self)
@@ -40,6 +51,14 @@ final class JsonTypescriptTypeRenderer(side: Side, renderer: Renderer[Json.Node,
       )
 
   private def child(json: Json.Node[?, ?]): Typescript.Type = renderer.render(json)
+
+  private def renderDynamic[W, R](schema: Json.Dynamic.Node[W, R]): Typescript.Type = schema match
+    case Json.Dynamic.Node.AnyValue()     => Typescript.Type.Symbol("unknown", Nil)
+    case Json.Dynamic.Node.ObjectValue(_) =>
+      Typescript.Type.Symbol("Record", List(JsonTypescriptTypeRenderer.Text, Typescript.Type.Symbol("unknown", Nil)))
+    case Json.Dynamic.Node.ArrayValue =>
+      Typescript.Type.Symbol("ReadonlyArray", List(Typescript.Type.Symbol("unknown", Nil)))
+    case Json.Dynamic.Node.Modify(self, _, _) => renderDynamic(self)
 
   /** An array, and the tuple with a rest that an array which is never empty is.
     *

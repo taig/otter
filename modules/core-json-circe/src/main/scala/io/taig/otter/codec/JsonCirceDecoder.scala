@@ -41,6 +41,7 @@ object JsonCirceDecoder extends Decoder[Json.Node, CirceJson]:
       case Json.Collection.Schema(node)              => array(json).andThen(collection.decode(node.self, _))
       case Json.Constant.Schema(node)                => constant.decode(node.self, json)
       case Json.Dictionary.Schema(node)              => obj(json).map(_.toList).andThen(dictionary.decode(node.self, _))
+      case Json.Dynamic.Schema(node)                 => JsonCirceDynamicDecoder.decode(node.self, json)
       case Json.Enumeration.Schema(node)             => enumeration.decode(node.self, json)
       case Json.Optional.Schema(node)                => optional.decode(node.self, json)
       case schema @ Json.Primitive.Boolean.Schema(_) => JsonPrimitiveCirceDecoder.decode(schema, json)

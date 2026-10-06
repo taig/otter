@@ -43,6 +43,7 @@ final class JsonSchemaNodeRenderer(
     case Json.Constant.Schema(node) =>
       child(node.self.schema.value).map(JsonSchema.merge(_, "const" -> JsonSchemaLiteral.constant(node.self)))
     case Json.Dictionary.Schema(node)  => dictionary(node.self)
+    case Json.Dynamic.Schema(node)     => dynamic(node.self)
     case Json.Enumeration.Schema(node) =>
       child(node.self.schema.value).map: primitive =>
         val values = JsonSchemaLiteral.enumeration(node.self)
@@ -202,6 +203,21 @@ final class JsonSchemaNodeRenderer(
               JsonSchema.merge(JsonSchema.typed("object"), "additionalProperties" -> values),
               names.toList ++ keywords
             )
+
+  private def dynamic[W, R](schema: Json.Dynamic.Node[W, R]): State[JsonSchemaContext, CirceJson] = schema match
+    case Json.Dynamic.Node.AnyValue() =>
+      if profile.dictionaries then CirceJson.obj().pure else issue(JsonSchemaIssue.Open.apply).as(CirceJson.obj())
+    case Json.Dynamic.Node.ObjectValue(validation) =>
+      val base = JsonSchema.typed("object")
+      if !profile.dictionaries then
+        issue(JsonSchemaIssue.Open.apply)
+          .flatMap(_ => keywords(validation.constraints))
+          .map(JsonSchema.constrained(base, _))
+      else keywords(validation.constraints).map(JsonSchema.constrained(base, _))
+    case Json.Dynamic.Node.ArrayValue =>
+      val schema = JsonSchema.merge(JsonSchema.typed("array"), "items" -> CirceJson.obj())
+      if profile.dictionaries then schema.pure else issue(JsonSchemaIssue.Open.apply).as(schema)
+    case Json.Dynamic.Node.Modify(self, _, _) => dynamic(self)
 
   /** A fixed length, positionally typed array.
     *

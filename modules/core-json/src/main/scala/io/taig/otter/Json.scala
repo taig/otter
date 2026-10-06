@@ -5,8 +5,10 @@ import cats.Functor
 import cats.Invariant
 import cats.arrow.Profunctor
 import cats.data.NonEmptyList
+import io.taig.data.Data
 import io.taig.otter as Self
 import io.taig.otter.operation.*
+import io.taig.validation.Validation
 
 import scala.util.NotGiven
 
@@ -71,6 +73,7 @@ object Json:
     case Json.Collection.Schema(node)        => node.metadata
     case Json.Constant.Schema(node)          => node.metadata
     case Json.Dictionary.Schema(node)        => node.metadata
+    case Json.Dynamic.Schema(node)           => node.metadata
     case Json.Enumeration.Schema(node)       => node.metadata
     case Json.Optional.Schema(node)          => node.metadata
     case Json.Primitive.Boolean.Schema(node) => node.metadata
@@ -481,6 +484,53 @@ object Json:
         override def element[W, R](fb: => Json.Branch.Schema[S2, W, R]): Json.Union.Schema[Json.Or[S1, S2], W, R] =
           Json.Union.Schema.apply[Json.Or[S1, S2], W, R](Self.Union.Root(Reference.later(fb)))
 
+  /** A schema for a document whose structure is supplied at runtime. */
+  type Dynamic[A] = Json.Dynamic.Schema[A, A]
+
+  object Dynamic:
+    sealed trait Node[-W, +R]:
+      def write[A](value: W)(any: Data => A, obj: Data.Object[Data] => A, array: Data.Array[Data] => A): A
+
+    object Node:
+      final case class AnyValue() extends Json.Dynamic.Node[Data, Data]:
+        override def write[A](
+            value: Data
+        )(any: Data => A, obj: Data.Object[Data] => A, array: Data.Array[Data] => A): A =
+          any(value)
+      final case class ObjectValue(validation: Validation[Constraint.Object, Data.Object[Data]])
+          extends Json.Dynamic.Node[Data.Object[Data], Data.Object[Data]]:
+        override def write[A](value: Data.Object[Data])(
+            any: Data => A,
+            obj: Data.Object[Data] => A,
+            array: Data.Array[Data] => A
+        ): A = obj(value)
+      case object ArrayValue extends Json.Dynamic.Node[Data.Array[Data], Data.Array[Data]]:
+        override def write[A](value: Data.Array[Data])(
+            any: Data => A,
+            obj: Data.Object[Data] => A,
+            array: Data.Array[Data] => A
+        ): A = array(value)
+      final case class Modify[W0, R0, W, R](self: Json.Dynamic.Node[W0, R0], f: R0 => R, g: W => W0)
+          extends Json.Dynamic.Node[W, R]:
+        override def write[A](value: W)(
+            any: Data => A,
+            obj: Data.Object[Data] => A,
+            array: Data.Array[Data] => A
+        ): A = self.write(g(value))(any, obj, array)
+
+      given profunctor: Profunctor[Json.Dynamic.Node]:
+        override def dimap[W0, R0, W, R](self: Json.Dynamic.Node[W0, R0])(f: W => W0)(
+            g: R0 => R
+        ): Json.Dynamic.Node[W, R] = Json.Dynamic.Node.Modify(self, g, f)
+
+    final case class Schema[-W, +R](self: Annotation[Json.Dynamic.Node[W, R]]) extends Json.Schema[Json.Leaf, W, R]
+
+    object Schema
+        extends Wrapper[Json.Dynamic.Schema, Json.Dynamic.Node](
+          [w, r] => (annotation: Annotation[Json.Dynamic.Node[w, r]]) => new Json.Dynamic.Schema(annotation),
+          [w, r] => (json: Json.Dynamic.Schema[w, r]) => json.self
+        )
+
   type Primitive[A] = Json.Primitive.Of[Json.Node, A]
 
   object Primitive:
@@ -673,6 +723,7 @@ object Json:
         case self @ Json.Collection.Schema(_)        => Json.Collection.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Constant.Schema(_)          => Json.Constant.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Dictionary.Schema(_)        => Json.Dictionary.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Dynamic.Schema(_)           => Json.Dynamic.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Enumeration.Schema(_)       => Json.Enumeration.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Optional.Schema(_)          => Json.Optional.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Primitive.Boolean.Schema(_) => Json.Primitive.Boolean.Schema.profunctor.dimap(self)(f)(g)
