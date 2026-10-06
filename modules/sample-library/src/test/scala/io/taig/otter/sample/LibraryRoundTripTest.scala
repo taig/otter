@@ -256,9 +256,8 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           yield answer
         }.map(answer =>
           assertTrue(answer match
-            case Created.Duplicate(problem) =>
-              problem.kind == Problem.Kind.Conflict && problem.title.contains("9780000000001")
-            case _ => false)
+            case Created.Duplicate(Problem.Conflict(title, _)) => title.contains("9780000000001")
+            case _                                             => false)
         )
       ,
       test("deleting a book nobody is holding answers with no entity at all"):
@@ -282,8 +281,8 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
           yield answer
         }.map(answer =>
           assertTrue(answer match
-            case Deleted.Conflict(problem) => problem.kind == Problem.Kind.Conflict
-            case _                         => false)
+            case Deleted.Conflict(Problem.Conflict(_, _)) => true
+            case _                                        => false)
         )
       ,
       test("a loan is granted, and the period it was granted for is the member's own"):

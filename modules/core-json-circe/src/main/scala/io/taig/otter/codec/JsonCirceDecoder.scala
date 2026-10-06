@@ -32,7 +32,8 @@ object JsonCirceDecoder extends Decoder[Json.Node, CirceJson]:
     */
   private lazy val record: RecordDecoder[Json.Field.Node, CirceJson] = RecordDecoder(JsonFieldCirceDecoder)
 
-  private lazy val union: UnionDecoder[Json.Branch.Node, CirceJson] = UnionDecoder(JsonBranchCirceDecoder)
+  private lazy val union: JsonUnionDecoder[CirceJson] =
+    JsonUnionDecoder(this, JsonBranchCirceDecoder, json => obj(json).map(_.toIterable))
 
   override def decode[R](schema: Json.Node[Nothing, R], json: CirceJson): Validated[Violations, R] =
     schema match
@@ -49,7 +50,7 @@ object JsonCirceDecoder extends Decoder[Json.Node, CirceJson]:
         obj(json).map(values => Fields.from(values.toIterable)).andThen(record.decode(node.self, _))
       case Json.Tuple.Schema(node) =>
         array(json).andThen(values => tuple.decode(node.self, values.toVector))
-      case Json.Union.Schema(node) => union.decode(node.self, json)
+      case schema @ Json.Union.Schema(_) => union.decode(schema, json)
 
   private def mismatch(name: String, json: CirceJson): Violations =
     Violations(

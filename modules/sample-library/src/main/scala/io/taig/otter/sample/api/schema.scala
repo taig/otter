@@ -4,6 +4,7 @@ import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
 import io.taig.otter.Csv
 import io.taig.otter.Json
+import io.taig.otter.JsonDiscriminator
 import io.taig.otter.Keys
 import io.taig.otter.sample.Book
 import io.taig.otter.sample.Category
@@ -142,21 +143,18 @@ object schema:
       json.field("period", json.period).optionalOrNull
   ).to[Loan.Request].attr(Keys.name, "BorrowRequest")
 
-  val kind: Json.Enumeration[Problem.Kind] = json
-    .enumeration[Json.Primitive.Text.Schema, String, Problem.Kind](json.string):
-      case Problem.Kind.Malformed => "malformed"
-      case Problem.Kind.Internal  => "internal"
-      case Problem.Kind.Conflict  => "conflict"
-      case Problem.Kind.Missing   => "missing"
-      case Problem.Kind.Unrouted  => "unrouted"
-    .attr(Keys.name, "ProblemKind")
-
-  /** The error shape declared by the composed contract and the domain responses.
-    */
-  val problem: Json.Record[Problem] = (
-    json.field("kind", schema.kind) :*
-      json.field("title", json.string) :*
+  private val problemFields: Json.Record[(String, List[String])] = (
+    json.field("title", json.string) :*
       json.field("detail", json.collection.list(json.string)).defaultedOnMissingOrNull(Nil)
+  )
+
+  /** Each case carries its wire tag, with the old `kind` spelling shared by the server and generated clients. */
+  val problem: Json.Union[Problem] = (
+    json.branch.merged("malformed", problemFields.to[Problem.Malformed], JsonDiscriminator.Merged("kind")) :+
+      json.branch.merged("internal", problemFields.to[Problem.Internal], JsonDiscriminator.Merged("kind")) :+
+      json.branch.merged("conflict", problemFields.to[Problem.Conflict], JsonDiscriminator.Merged("kind")) :+
+      json.branch.merged("missing", problemFields.to[Problem.Missing], JsonDiscriminator.Merged("kind")) :+
+      json.branch.merged("unrouted", problemFields.to[Problem.Unrouted], JsonDiscriminator.Merged("kind"))
   ).to[Problem]
     .attr(Keys.name, "Problem")
     .description("What this API says when it cannot say what was asked for")

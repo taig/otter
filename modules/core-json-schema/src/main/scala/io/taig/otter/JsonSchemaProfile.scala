@@ -50,6 +50,9 @@ final case class JsonSchemaProfile(
     /** Whether a branch's name is worth a `title`. */
     branchTitles: Boolean,
 
+    /** Whether tagged unions also carry OpenAPI's discriminator annotation. */
+    discriminator: Boolean,
+
     /** How a schema that also admits nothing says so. */
     nullability: JsonSchemaProfile.Nullability,
 
@@ -155,6 +158,7 @@ object JsonSchemaProfile:
     dictionaries = true,
     coercion = true,
     branchTitles = true,
+    discriminator = false,
     nullability = JsonSchemaProfile.Nullability.AnyOf,
     constraints = true,
     formats = None
@@ -182,6 +186,7 @@ object JsonSchemaProfile:
     dictionaries = false,
     coercion = false,
     branchTitles = true,
+    discriminator = false,
     nullability = JsonSchemaProfile.Nullability.AnyOf,
     constraints = false,
     formats = Some(JsonSchemaProfile.Formats)

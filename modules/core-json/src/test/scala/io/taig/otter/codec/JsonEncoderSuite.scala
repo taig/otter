@@ -31,6 +31,32 @@ abstract class JsonEncoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
   private def encode[A](schema: Json.Writer[A], value: A): String = interpreter.encode(schema, value)
 
   private val contract: Spec[TestEnvironment & Scope, Any] = suite("contract")(
+    test("nested empty records remain values, while empty tuples omit the value"):
+      val schema = branch.nested("record", RNil) :+ branch.nested("unit", TNil)
+      assertTrue(
+        interpreter.encode(schema, Left(())) == """{"type":"record","value":{}}""",
+        interpreter.encode(schema, Right(())) == """{"type":"unit"}"""
+      )
+    ,
+    test("tagging preserves decimal payloads and the interpreter's spelling of whole doubles"):
+      val nested = branch.nested("circle", field("radius", double).toRecord).toUnion
+      val merged = branch.merged("circle", field("radius", double).toRecord).toUnion
+      val whole = interpreter.encode(double, 1.0)
+      assertTrue(
+        interpreter.encode(nested, 1.0) == s"""{"type":"circle","value":{"radius":$whole}}""",
+        interpreter.encode(merged, 1.0) == s"""{"type":"circle","radius":$whole}""",
+        interpreter.encode(nested, 1.25) == """{"type":"circle","value":{"radius":1.25}}""",
+        interpreter.encode(merged, 1.25) == """{"type":"circle","radius":1.25}"""
+      )
+    ,
+    test("tagged branches preserve the legacy bytes and put the discriminator first"):
+      assertTrue(
+        Tagged.nestedDocuments.forall((value, text) => interpreter.encode(Tagged.nested, value) == text),
+        Tagged.mergedDocuments.forall((value, text) => interpreter.encode(Tagged.merged, value) == text),
+        interpreter.encode(Tagged.custom, Left("ABC")) == """{"kind":"code","data":"ABC"}""",
+        interpreter.encode(Tagged.custom, Right(())) == """{"kind":"none"}"""
+      )
+    ,
     test("Json.Primitive"):
       assertTrue(
         encode(string, "foobar") == "\"foobar\"",

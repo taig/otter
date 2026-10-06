@@ -1,6 +1,7 @@
 package io.taig.otter.component
 
 import io.taig.otter.Json
+import io.taig.otter.JsonDiscriminator
 import io.taig.otter.codec.JsonTextEncoder
 import io.taig.otter.syntax.AllSyntax
 import io.taig.otter.syntax.JsonSyntax
@@ -22,7 +23,18 @@ trait JsonComponent
   object field
       extends RecordComponent.Field[Json.Node, Json.Primitive.Text.Node, Json.Field.Schema](using JsonTextEncoder)
 
-  object branch extends BranchComponent[Json.Node, Json.Primitive.Text.Node, Json.Branch.Schema](using JsonTextEncoder)
+  object branch extends BranchComponent[Json.Node, Json.Primitive.Text.Node, Json.Branch.Schema](using JsonTextEncoder):
+    def nested[W, R](
+        name: String,
+        schema: => Json.Node[W, R],
+        discriminator: JsonDiscriminator.Nested = JsonDiscriminator.Nested()
+    ): Json.Branch.Schema[Json.Record.Node, W, R] = JsonDiscriminator.nested(name, schema, discriminator)
+
+    def merged[W, R](
+        name: String,
+        schema: => Json.Record.Node[W, R],
+        discriminator: JsonDiscriminator.Merged = JsonDiscriminator.Merged()
+    ): Json.Branch.Schema[Json.Record.Node, W, R] = JsonDiscriminator.merged(name, schema, discriminator)
 
   object collection extends CollectionComponent[Json.Node, Json.Collection.Schema]
 

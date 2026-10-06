@@ -17,7 +17,7 @@ import io.taig.otter.sample.api.dsl.*
   * endpoint owns them: a caller meets one only when it and the server disagree about what exists. One consequence is
   * worth knowing. [[io.taig.otter.sample.api.loans.borrow]] declares a `404` of its own carrying a [[Problem]], so a
   * caller out of step with the server reads an unrouted `404` as `Borrowed.Unknown` -- which is why its kind is
-  * [[Problem.Kind.Unrouted]] and not [[Problem.Kind.Missing]].
+  * [[Problem.Unrouted]] and not [[Problem.Missing]].
   */
 object contract:
   def answer(status: Int): Response.Schema[dsl.Payload, Failure, Problem] =

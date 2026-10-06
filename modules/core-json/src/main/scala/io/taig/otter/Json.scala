@@ -426,11 +426,11 @@ object Json:
         override def element[W, R](fb: => S2[W, R]): Json.Tuple.Schema[Json.Or[S1, S2], W, R] =
           Json.Tuple.Schema.apply[Json.Or[S1, S2], W, R](Self.Tuple.Root(Reference.later(fb)))
 
-  /** A choice between branches: written as whichever branch the value matches, read by trying them in turn.
+  /** A choice between named branches, written as whichever branch the value matches.
     *
-    * Nothing on the wire says which branch a document belongs to. The name a branch carries labels the path a violation
-    * is reported at and is never written out, so a format that discriminates on a `type` field is a union whose
-    * branches each hold that field as a [[Json.Constant]], and reading one costs an attempt per branch ahead of it.
+    * Untagged branches are tried in order. `branch.nested` and `branch.merged` instead write a discriminator and
+    * dispatch directly to its branch on read. A union must be entirely tagged under one key, or entirely untagged;
+    * tagged branch names must be unique.
     */
   type Union[A] = Json.Union.Of[Json.Node, A]
 
@@ -453,7 +453,10 @@ object Json:
 
     final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](
         self: Annotation[Self.Union[Json.Branch.Schema[S, *, *], W, R]]
-    ) extends Json.Schema[S, W, R]
+    ) extends Json.Schema[S, W, R]:
+      val discriminator: Option[String] = JsonDiscriminator.validate(self.self)
+
+      private[otter] lazy val readers: Map[String, Json.Reader[R]] = JsonDiscriminator.readers(self.self)
 
     object Schema
         extends Wrapper.Union[Json.Node, Json.Union.Schema, Json.Branch.Schema](
