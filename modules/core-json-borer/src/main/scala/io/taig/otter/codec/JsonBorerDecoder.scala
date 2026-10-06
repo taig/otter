@@ -42,6 +42,7 @@ object JsonBorerDecoder extends Decoder[Json.Node, Dom.Element]:
       case Json.Constant.Schema(node)   => constant.decode(node.self, element)
       case Json.Dictionary.Schema(node) =>
         JsonBorerDecoder.members(element).andThen(dictionary.decode(node.self, _))
+      case Json.Dynamic.Schema(node)                 => JsonBorerDynamicDecoder.decode(node.self, element)
       case Json.Enumeration.Schema(node)             => enumeration.decode(node.self, element)
       case Json.Optional.Schema(node)                => optional.decode(node.self, element)
       case schema @ Json.Primitive.Boolean.Schema(_) => JsonPrimitiveBorerDecoder.decode(schema, element)

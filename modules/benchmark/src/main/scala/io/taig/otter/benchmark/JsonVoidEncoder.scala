@@ -47,6 +47,7 @@ object JsonVoidEncoder extends Encoder[Json.Node, Unit]:
     case Json.Collection.Schema(node)            => collection.encode(node.self, w)
     case Json.Constant.Schema(node)              => ConstantEncoder(JsonPrimitiveVoidEncoder).encode(node.self, w)
     case Json.Dictionary.Schema(node)            => dictionary.encode(node.self, w)
+    case Json.Dynamic.Schema(_)                  => ()
     case Json.Enumeration.Schema(node)           => EnumerationEncoder(JsonPrimitiveVoidEncoder).encode(node.self, w)
     case Json.Optional.Schema(node)              => optional.encode(node.self, w)
     case json @ Json.Primitive.Boolean.Schema(_) => JsonPrimitiveVoidEncoder.encode(json, w)

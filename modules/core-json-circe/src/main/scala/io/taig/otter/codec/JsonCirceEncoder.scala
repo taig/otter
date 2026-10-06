@@ -35,6 +35,7 @@ object JsonCirceEncoder extends Encoder[Json.Node, CirceJson]:
     case Json.Collection.Schema(node)            => CirceJson.fromValues(collection.encode(node.self, w))
     case Json.Constant.Schema(node)              => constant.encode(node.self, w)
     case Json.Dictionary.Schema(node)            => CirceJson.fromFields(dictionary.encode(node.self, w))
+    case Json.Dynamic.Schema(node)               => JsonCirceDynamicEncoder.encode(node.self, w)
     case Json.Enumeration.Schema(node)           => enumeration.encode(node.self, w)
     case Json.Optional.Schema(node)              => optional.encode(node.self, w)
     case json @ Json.Primitive.Boolean.Schema(_) => JsonPrimitiveCirceEncoder.encode(json, w)
