@@ -32,6 +32,16 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
     at(document, path*).flatMap(_.asArray).map(_.flatMap(_.asString).toList).getOrElse(Nil)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryOpenApiTest")(
+    test("problems are discriminated by their existing kind field"):
+      val schema = at(server.value, "components", "schemas", "Problem")
+      val branches = schema.flatMap(at(_, "oneOf")).flatMap(_.asArray).toList.flatten
+      assertTrue(
+        schema.flatMap(at(_, "discriminator", "propertyName")).flatMap(_.asString).contains("kind"),
+        branches.flatMap(at(_, "properties", "kind", "const")).flatMap(_.asString) ==
+          List("malformed", "internal", "conflict", "missing", "unrouted"),
+        branches.forall(branch => strings(branch, "required") == List("kind", "title", "detail"))
+      )
+    ,
     test("catalogue overrides unexpected failures and inherits the other global errors"):
       assertTrue(
         keys(server.value, "paths", "/catalogue", "get", "responses").contains("503"),
@@ -105,7 +115,7 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
           declared.contains("Book"),
           declared.contains("Problem"),
           declared.contains("Category"),
-          declared.length == 11
+          declared.length == 10
         )
       ,
       test("are referred to by $ref from the operations that use them"):

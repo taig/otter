@@ -2,6 +2,41 @@
 
 [Rendering compatibility](docs/rendering-compatibility.md)
 
+## Tagged JSON unions
+
+`branch.nested` wraps a payload under `value`; `branch.merged` adds the discriminator to a record. Both compose with
+`:+` and `.to[Enum]` like ordinary branches:
+
+```scala
+import io.taig.otter.component.JsonComponent.*
+
+enum Answer:
+  case Code(value: String)
+  case None
+
+val answer = (
+  branch.nested("code", string).to[Answer.Code] :+
+    branch.nested("none", TNil.to[Answer.None.type])
+).to[Answer]
+// {"type":"code","value":"ABC"} or {"type":"none"}
+
+val merged = branch.merged("allow", field("includes", collection.list(string)).toRecord)
+// {"type":"allow","includes":["a","b"]}
+```
+
+Pass `JsonDiscriminator.Nested(tag = "kind", value = "data")` or `JsonDiscriminator.Merged(tag = "kind")` as the
+third argument to customize the keys. Nested payloads can be any JSON schema; an empty tuple (`TNil`), including a
+conversion to a singleton case, omits `value`. An empty record is still an object and writes `"value": {}`.
+
+A tagged union uses one discriminator key and unique branch names. Nested and merged branches may share that key;
+mixing tagged and untagged branches is rejected at construction. Merged branches require records, and a field that
+collides with the tag key is rejected. Reads select one branch by tag: missing and unknown tags fail at the tag key,
+and payload violations use their wire paths without unrelated branches' errors.
+
+JSON Schema renders `oneOf` with required literal tags, OpenAPI adds its discriminator and reference mappings, and
+Effect renders a union of structs with literal tags for TypeScript narrowing. The sample API's `Problem` enum uses
+merged branches under its existing `kind` key.
+
 ## Declared HTTP errors
 
 `ErrorPolicy` declares execution errors using ordinary Otter `Response` schemas. `Api` owns the global policy, the

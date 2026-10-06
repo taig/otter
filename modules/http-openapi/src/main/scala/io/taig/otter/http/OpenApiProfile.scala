@@ -26,6 +26,7 @@ object OpenApiProfile:
     dictionaries = true,
     coercion = true,
     branchTitles = true,
+    discriminator = true,
     nullability = JsonSchemaProfile.Nullability.AnyOf,
     constraints = true,
     formats = None

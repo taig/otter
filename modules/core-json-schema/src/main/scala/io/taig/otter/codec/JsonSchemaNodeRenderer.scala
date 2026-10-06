@@ -53,9 +53,26 @@ final class JsonSchemaNodeRenderer(
     case Json.Primitive.Text.Schema(annotation)   => text(annotation.self)
     case Json.Record.Schema(node)                 =>
       node.self.fields.toList.traverse(reference => field(reference.value)).map(record)
-    case Json.Tuple.Schema(node) => tuple(node.self)
-    case Json.Union.Schema(node) =>
-      node.self.branches.toNonEmptyList.traverse(reference => branch(reference.value)).map(JsonSchema.anyOf)
+    case Json.Tuple.Schema(node)         => tuple(node.self)
+    case union @ Json.Union.Schema(node) =>
+      node.self.branches.toNonEmptyList
+        .traverse(reference => branch(reference.value))
+        .map: branches =>
+          union.discriminator match
+            case None      => JsonSchema.anyOf(branches)
+            case Some(key) =>
+              val schema = CirceJson.obj("oneOf" -> CirceJson.fromValues(branches.toList))
+              if !profile.discriminator then schema
+              else
+                val mapping = node.self.branches.toNonEmptyList.toList
+                  .zip(branches.toList)
+                  .flatMap: (reference, branch) =>
+                    branch.asObject.flatMap(_("$ref")).map(reference.value.self.self.name -> _)
+                val discriminator = CirceJson.obj(
+                  (List("propertyName" -> CirceJson.fromString(key)) ++
+                    Option.when(mapping.nonEmpty)("mapping" -> CirceJson.obj(mapping*)).toList)*
+                )
+                JsonSchema.merge(schema, "discriminator" -> discriminator)
 
   private def child(json: Json.Node[?, ?]): State[JsonSchemaContext, CirceJson] = renderer.render(json)
 
@@ -111,9 +128,8 @@ final class JsonSchemaNodeRenderer(
 
   /** A branch, labelled by the name it carries where the profile wants one.
     *
-    * Nothing on the wire says which branch a document belongs to, and the name is never written out, so `title` -- the
-    * one slot JSON Schema has for a label nothing reads back -- is where it belongs. A validator ignores it and a
-    * producer choosing between branches does not.
+    * The branch's schema already includes its wire tag when discriminated. The title also labels untagged branches,
+    * whose names otherwise never reach the wire.
     */
   private def branch(json: Json.Branch.Node[?, ?]): State[JsonSchemaContext, CirceJson] =
     child(json.self.self.schema.value).map: schema =>

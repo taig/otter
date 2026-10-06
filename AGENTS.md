@@ -67,6 +67,21 @@ not. **borer reads 6% to 17% slower**, and that is not the adapter: it is that `
 `JsonObject` is already `String` keyed. So borer is the clear choice where writes dominate, and circe stays the better
 reader. Both are the same alphabet, so a caller can use one of each if the traffic is lopsided enough to care.
 
+`branch.nested` and `branch.merged` build ordinary wire records while keeping a private discriminator annotation on
+branches. `Json.Union.Schema` validates one shared key and unique names at construction, and caches readers with the
+union's conversions lifted into them. `JsonUnionDecoder` looks up one reader by tag, so only that payload is decoded
+and its violations keep wire paths. Untagged branches retain ordered attempts. Nested and merged branches may mix
+under the same key; tagged and untagged branches may not. A merged payload must be a record and cannot declare the tag
+key. A nested empty tuple, including a singleton conversion, omits its value; an empty record remains `{}`.
+
+The wire records let both encoders and the TypeScript renderers reuse their existing walks, including borer's deferred
+writes. JSON Schema uses `oneOf` for tagged unions, and the profile's `discriminator` flag adds OpenAPI's property name
+and mappings to referenced branches. Merged records keep their annotations on the tagged wire record, so named
+branches refer to definitions containing the tag. The sample's `Problem` is an enum of merged branches under `kind`.
+A compile probe with 100 case classes in an enum, one record per branch and `.to` at both tiers compiled each tagged
+form in 2 seconds of sbt task time (Scala 3.9.0, Java 21); it uses the existing implicit ladders with no new inline
+search. This is a capacity check, not a runtime benchmark.
+
 `core-json`/`core-json-circe`, `core-json`/`core-json-borer` and `core-csv`/`core-csv-fs2-data` are the same pair
 three times: a module defining a format's alphabet, and a module interpreting it into a library's data model.
 

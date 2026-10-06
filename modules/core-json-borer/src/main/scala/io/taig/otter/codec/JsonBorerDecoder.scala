@@ -31,7 +31,8 @@ object JsonBorerDecoder extends Decoder[Json.Node, Dom.Element]:
     */
   private lazy val record: RecordDecoder[Json.Field.Node, Dom.Element] = RecordDecoder(JsonFieldBorerDecoder)
 
-  private lazy val union: UnionDecoder[Json.Branch.Node, Dom.Element] = UnionDecoder(JsonBranchBorerDecoder)
+  private lazy val union: JsonUnionDecoder[Dom.Element] =
+    JsonUnionDecoder(this, JsonBranchBorerDecoder, JsonBorerDecoder.members)
 
   override def decode[R](schema: Json.Node[Nothing, R], element: Dom.Element): Validated[Violations, R] =
     schema match
@@ -48,8 +49,8 @@ object JsonBorerDecoder extends Decoder[Json.Node, Dom.Element]:
       case schema @ Json.Primitive.Text.Schema(_)    => JsonPrimitiveBorerDecoder.decode(schema, element)
       case Json.Record.Schema(node)                  =>
         JsonBorerDecoder.members(element).map(Fields.from).andThen(record.decode(node.self, _))
-      case Json.Tuple.Schema(node) => JsonBorerDecoder.array(element).andThen(tuple.decode(node.self, _))
-      case Json.Union.Schema(node) => union.decode(node.self, element)
+      case Json.Tuple.Schema(node)       => JsonBorerDecoder.array(element).andThen(tuple.decode(node.self, _))
+      case schema @ Json.Union.Schema(_) => union.decode(schema, element)
 
   private def mismatch(name: String, element: Dom.Element): Violations =
     Violations(
