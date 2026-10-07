@@ -43,7 +43,7 @@ object LibraryShortfallTest extends ZIOSpecDefault:
     import io.taig.otter.sample.api.books
     import scodec.bits.ByteVector
     Http4s.routes[IO](Route(books.upload,
-      (_: (Isbn, (Book.Patch, Option[ByteVector]))) => IO.unit))(Http4sCirce.Payload)
+      (_: (Isbn, (Book.Patch, Option[ByteVector]))) => IO.pure(io.taig.otter.sample.api.Uploaded.Stored)))(Http4sCirce.Payload)
   """
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryShortfallTest")(
@@ -87,7 +87,23 @@ object LibraryShortfallTest extends ZIOSpecDefault:
         Http4s.routes[IO](Route(books.report, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """))
     ,
-    test("the compiler identifies the unsupported requirement"):
+    test("the missing multipart interpreter is rejected at the interpreter argument"):
       val errors = typeCheckErrors(LibraryShortfallTest.MultipartRoute)
-      assertTrue(errors.exists(_.message.contains("Multipart")))
+      assertTrue(
+        errors.exists(error =>
+          error.message.contains("Http4sPayload") && error.lineContent.contains("Http4sCirce.Payload")
+        )
+      )
+    ,
+    test("the cover upload and a converted multipart response work with explicit registration"):
+      assertTrue(typeChecks("""
+        import cats.effect.IO
+        import io.taig.otter.http.*
+        import io.taig.otter.sample.*
+        import io.taig.otter.sample.api.books
+        Http4s.routes[IO](
+          Route(books.upload, (value: (Isbn, (Book.Patch, Option[scodec.bits.ByteVector]))) => IO.pure[io.taig.otter.sample.api.Uploaded](io.taig.otter.sample.api.Uploaded.Stored)),
+          Route(LibraryShortfallTest.convertedMultipart, (_: Unit) => IO.raiseError[LibraryShortfallTest.Upload](new IllegalStateException("unused")))
+        )(LibraryRoutes.payload)
+      """))
   )

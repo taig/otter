@@ -28,6 +28,7 @@ object api:
     books.patch,
     books.delete,
     books.scan,
+    books.upload,
     books.intake,
     books.catalogue,
     loans.fetch,
@@ -36,9 +37,6 @@ object api:
 
   /** The endpoints nothing here answers, and why each one cannot be.
     *
-    *   - [[books.upload]] carries a [[io.taig.otter.http.Multipart]] payload, which no interpreter here reads. The
-    *     http4s backend refuses it where the routes are built rather than on the request that first takes that branch,
-    *     and the TypeScript renderer reports it as `TypescriptIssue.Multipart`.
     *   - [[books.exported]] answers with a streamed body. What a sequence of elements is belongs to whoever has an
     *     effect type to say it in, and `otter-http` deliberately has none, so every interpreter here reports it.
     *   - [[books.report]] answers with a stream whose elements are written in the CSV alphabet, which is a payload
@@ -52,7 +50,7 @@ object api:
     * returns a document and a list of issues; it never throws and never half emits, and `LibraryShortfallTest` holds it
     * to that.
     */
-  val unserved: Chain[Endpoint.Declaration.Node] = Chain(books.upload, books.exported, books.report)
+  val unserved: Chain[Endpoint.Declaration.Node] = Chain(books.exported, books.report)
 
   /** Everything, with the global error policy shared by every consumer and the answers to a request none of it names.
     */

@@ -2,8 +2,10 @@ package io.taig.otter.sample
 
 import cats.effect.Concurrent
 import io.taig.otter.Json
+import io.taig.otter.http.Body
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
+import io.taig.otter.http.Http4sMultipart
 import io.taig.otter.http.Route
 import io.taig.otter.http.Routes
 import io.taig.otter.http.codec.Http4sPayload
@@ -36,8 +38,13 @@ import org.http4s.HttpApp
   * leaves them to be discovered.
   */
 object LibraryRoutes:
+  type Payload = Body.Or[Json.Node, Http4sMultipart.Parts[Json.Node]]
+
+  val payload: Http4sPayload.Of[LibraryRoutes.Payload] =
+    Http4sCirce.Payload.orElse(Http4sMultipart.payload(Http4sCirce.Payload))
+
   /** Every served endpoint, answered by `library`, in the order a request is matched against them. */
-  def routes[F[_]](library: Library[F]): Routes[F, Http4sPayload.Supported[Json.Node]] = Routes(
+  def routes[F[_]](library: Library[F]): Routes[F, Http4sPayload.Supported[LibraryRoutes.Payload]] = Routes(
     Route(loans.health, (_: Unit) => library.health),
     Route(books.list, (filter, _) => library.list(filter)),
     Route(books.create, library.create),
@@ -45,6 +52,7 @@ object LibraryRoutes:
     Route(books.patch, library.patch.tupled),
     Route(books.delete, library.delete),
     Route(books.scan, library.scan.tupled),
+    Route(books.upload, library.upload.tupled),
     Route(books.intake, library.intake),
     Route(books.catalogue, (_: Unit) => library.catalogue),
     Route(loans.fetch, library.member),
@@ -53,4 +61,4 @@ object LibraryRoutes:
 
   /** Every served endpoint, answered by `library`, and every other request answered as the API declares. */
   def apply[F[_]: Concurrent](library: Library[F]): HttpApp[F] =
-    Http4s.app[F](api.all, LibraryRoutes.routes(library).values.toList*)(Http4sCirce.Payload)
+    Http4s.app[F](api.all, LibraryRoutes.routes(library).values.toList*)(LibraryRoutes.payload)

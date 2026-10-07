@@ -81,8 +81,8 @@ object Http4s:
         payload: Http4sPayload[P],
         observe: Http4sObservation[F] => F[Unit]
     ): HttpRoutes[F] =
-      val decoder = Http4sRequestDecoder(payload)
-      val encoder = Http4sResponseEncoder(payload)
+      val decoder = Http4sRequestDecoder[F, P](payload)
+      val encoder = Http4sResponseEncoder[F, P](payload)
 
       HttpRoutes[F]: request =>
         val method = Http4sEnvelope.toMethod(request.method)
@@ -190,7 +190,7 @@ object Http4s:
       policy: UnroutedPolicy[Http4sPayload.Supported[P]],
       payload: Http4sPayload[P]
   )(using F: Concurrent[F]): Http4sRequest[F] => F[Http4sResponse[F]] =
-    val encoder = Http4sResponseEncoder(payload)
+    val encoder = Http4sResponseEncoder[F, P](payload)
 
     request =>
       F.unit
@@ -198,7 +198,8 @@ object Http4s:
           F.catchNonFatal:
             val unrouted =
               routes.unrouted(Http4sEnvelope.toMethod(request.method), Http4sEnvelope.toPath(request.uri.path))
-            encoder.encode(policy.responses, unrouted).map(Http4s.allow(unrouted, _))
+            encoder.encode(policy.responses, unrouted).map(_.map(Http4s.allow(unrouted, _)))
+        .flatten
         .flatMap(Http4s.respond[F])
 
   /** Every `405` carries `Allow`, and an empty one where the declaration answered a path no route spells with a `405`,
@@ -227,7 +228,7 @@ object Http4s:
     * Construction performs no requests; the caller owns the underlying transport's lifetime.
     */
   def client[F[_]: Concurrent, P[-_, +_]](
-      payload: Http4sPayload[P],
+      payload: Http4sPayload.Of[P],
       base: Uri,
       transport: Http4sClient[F]
   ): Http4s.Client[F, P] = new Http4s.Client(payload, base, transport)
@@ -237,8 +238,8 @@ object Http4s:
       base: Uri,
       transport: Http4sClient[F]
   ):
-    private val encoder = Http4sRequestEncoder(payload)
-    private val decoder = Http4sResponseDecoder(payload)
+    private val encoder = Http4sRequestEncoder[F, P](payload)
+    private val decoder = Http4sResponseDecoder[F, P](payload)
 
     /** Apply API defaults and endpoint-local overrides, independently of documentation membership. */
     def withApi[E](api: Api[Http4sPayload.Supported[P], E]): Http4s.ApiClient[F, P, E] =
@@ -253,7 +254,7 @@ object Http4s:
     def apply[A, B](endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]): A => F[B] =
       value =>
         for
-          wire <- Http4s.raise[F, Http4sWire.Request](encoder.encode(endpoint.request, value))
+          wire <- encoder.encode(endpoint.request, value).flatMap(Http4s.raise[F, Http4sWire.Request])
           method <- Http4sEnvelope
             .toHttp4sMethod(endpoint.request.method)
             .leftMap(failure => Http4sFailure.Method(endpoint.request.method, failure.message))
@@ -263,8 +264,7 @@ object Http4s:
             .use(response => Http4s.toWire(response).map((response.status.code, _)))
           decoded <- decoder
             .decode(endpoint.responses, Http4sWire.Response(Status(response._1), response._2._1, response._2._2))
-            .leftMap(Http4sFailure.Response.apply)
-            .liftTo[F]
+            .flatMap(_.leftMap(Http4sFailure.Response.apply).liftTo[F])
         yield decoded
 
   final class ApiClient[F[_], P[-_, +_], E] private[Http4s] (

@@ -60,7 +60,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     test("request failures retain categories, parser causes, and accumulated violations"):
       val schema = request(method.post, __ / segment("id", int))
         .queries(query("page", int).toRecord)(body.json(payload.int))
-      val decoder = Http4sRequestDecoder(Http4sCirce.Payload)
+      val decoder = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
       def decode(content: String, media: MediaType, page: String = "1") =
         decoder
           .decodeDetailed(
@@ -72,26 +72,26 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
               (Some(media), ByteVector.encodeUtf8(content).getOrElse(ByteVector.empty))
             )
           )
-          .swap
-          .toOption
+          .map(_.swap.toOption)
       val syntax = decode("not json", dsl.mediaType.json)
       val validation = decode("\"text\"", dsl.mediaType.json)
       val unsupported = decode("1", dsl.mediaType.text)
       val mixed = decode("not json", dsl.mediaType.json, "invalid")
-      assertTrue(
-        syntax.exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty),
-        validation.exists(_.category == Failure.Category.Validation),
-        unsupported.exists(_.category == Failure.Category.ContentType),
-        mixed.exists(failure =>
-          failure.category == Failure.Category.Envelope &&
-            Http4s.report(failure.violations).contains("$.query.page") &&
-            Http4s.report(failure.violations).contains("$.body")
+      run((syntax, validation, unsupported, mixed).tupled).map: (syntax, validation, unsupported, mixed) =>
+        assertTrue(
+          syntax.exists(failure => failure.category == Failure.Category.Syntax && failure.cause.nonEmpty),
+          validation.exists(_.category == Failure.Category.Validation),
+          unsupported.exists(_.category == Failure.Category.ContentType),
+          mixed.exists(failure =>
+            failure.category == Failure.Category.Envelope &&
+              Http4s.report(failure.violations).contains("$.query.page") &&
+              Http4s.report(failure.violations).contains("$.body")
+          )
         )
-      )
     ,
     test("an eligible payload failure takes priority over a different alternative's content type"):
       val schema = request(method.post, __)(body.json(payload.int) :+ body.binary(dsl.mediaType.pdf))
-      val result = Http4sRequestDecoder(Http4sCirce.Payload).decodeDetailed(
+      val result = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload).decodeDetailed(
         schema,
         Http4sWire.Request(
           Vector.empty,
@@ -100,7 +100,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
           (Some(dsl.mediaType.json), ByteVector.encodeUtf8("not json").getOrElse(ByteVector.empty))
         )
       )
-      assertTrue(result.swap.toOption.exists(_.category == Failure.Category.Syntax))
+      run(result).map(result => assertTrue(result.swap.toOption.exists(_.category == Failure.Category.Syntax)))
     ,
     test("unexpected effect failures use a bodyless 500 and retain their cause"):
       run(failed(_ => IO.raiseError(cause))).map { (status, bytes, events) =>

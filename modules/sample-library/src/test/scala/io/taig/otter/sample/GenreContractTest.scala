@@ -2,6 +2,7 @@ package io.taig.otter.sample
 
 import cats.data.Chain
 import cats.data.Validated
+import cats.effect.unsafe.implicits.global
 import io.circe.parser.parse
 import io.taig.otter.codec.JsonCirceDecoder
 import io.taig.otter.codec.JsonCirceEncoder
@@ -28,9 +29,9 @@ object GenreContractTest extends ZIOSpecDefault:
     Genre.Thriller -> "thriller"
   )
 
-  private val requestDecoder = new Http4sRequestDecoder(Http4sCirce.Payload)
+  private val requestDecoder = new Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
 
-  private val requestEncoder = new Http4sRequestEncoder(Http4sCirce.Payload)
+  private val requestEncoder = new Http4sRequestEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
 
   private def query(value: List[String]): Http4sWire.Request =
     Http4sWire.Request(
@@ -61,8 +62,8 @@ object GenreContractTest extends ZIOSpecDefault:
       val spellings = genres.map(_._2)
       val filter = BookFilter(page = 1, size = 20, genres = values, available = false)
       val tracing = Tracing(requestId = "contract-test", languages = None)
-      val encoded = requestEncoder.encode(books.list.self.self.request, (filter, tracing))
-      val decoded = requestDecoder.decode(books.list.self.self.request, query(spellings))
+      val encoded = requestEncoder.encode(books.list.self.self.request, (filter, tracing)).unsafeRunSync()
+      val decoded = requestDecoder.decode(books.list.self.self.request, query(spellings)).unsafeRunSync()
 
       assertTrue(
         encoded.exists(_.queries.toList.collect { case ("genre", Some(value)) => value } == spellings),
@@ -71,7 +72,7 @@ object GenreContractTest extends ZIOSpecDefault:
     ,
     test("the books query rejects unknown and differently cased spellings"):
       assertTrue(
-        requestDecoder.decode(books.list.self.self.request, query(List("unknown"))).isInvalid,
-        requestDecoder.decode(books.list.self.self.request, query(List("Fantasy"))).isInvalid
+        requestDecoder.decode(books.list.self.self.request, query(List("unknown"))).unsafeRunSync().isInvalid,
+        requestDecoder.decode(books.list.self.self.request, query(List("Fantasy"))).unsafeRunSync().isInvalid
       )
   )

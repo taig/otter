@@ -59,7 +59,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     Failure.Category.Unexpected -> 500
   )
 
-  private val encoder = Http4sResponseEncoder(Http4sCirce.Payload)
+  private val encoder = Http4sResponseEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
   private val cause = new IllegalStateException("private diagnostic")
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
@@ -78,57 +78,92 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sPolicyDslTest")(
     test("every named category writes its own status and body regardless of argument order"):
-      assertTrue(expected.forall { (category, code, message) =>
-        encoder
-          .encode(policy.responses, Failure(category))
-          .exists(wire => wire.status == Status(code) && wire.body.exists(_._2.decodeUtf8 == Right(s"\"$message\"")))
-      })
+      ZIO.fromFuture(_ =>
+        expected
+          .traverse { (category, code, message) =>
+            encoder
+              .encode(policy.responses, Failure(category))
+              .map(
+                _.exists(wire =>
+                  wire.status == Status(code) && wire.body.exists(_._2.decodeUtf8 == Right(s"\"$message\""))
+                )
+              )
+          }
+          .map(results => assertTrue(results.forall(identity)))
+          .unsafeToFuture()
+      )
     ,
     test("an empty policy uses the documented bodyless default for every category"):
       val policy = errorPolicy()
-      assertTrue(defaults.forall { (category, code) =>
-        encoder
-          .encode(policy.responses, Failure(category))
-          .exists(wire => wire.status == Status(code) && wire.body.isEmpty)
-      })
+      ZIO.fromFuture(_ =>
+        defaults
+          .traverse { (category, code) =>
+            encoder
+              .encode(policy.responses, Failure(category))
+              .map(_.exists(wire => wire.status == Status(code) && wire.body.isEmpty))
+          }
+          .map(results => assertTrue(results.forall(identity)))
+          .unsafeToFuture()
+      )
     ,
     test("omitted categories keep bodyless defaults and only the named response changes"):
       val partial = errorPolicy(unexpected = answer(503, "local"))
-      assertTrue(defaults.forall { (category, code) =>
-        encoder
-          .encode(partial.responses, Failure(category))
-          .exists(wire =>
-            if category == Failure.Category.Unexpected then
-              wire.status == Status(503) && wire.body.exists(_._2.decodeUtf8 == Right("\"local\""))
-            else wire.status == Status(code) && wire.body.isEmpty
-          )
-      })
+      ZIO.fromFuture(_ =>
+        defaults
+          .traverse { (category, code) =>
+            encoder
+              .encode(partial.responses, Failure(category))
+              .map(
+                _.exists(wire =>
+                  if category == Failure.Category.Unexpected then
+                    wire.status == Status(503) && wire.body.exists(_._2.decodeUtf8 == Right("\"local\""))
+                  else wire.status == Status(code) && wire.body.isEmpty
+                )
+              )
+          }
+          .map(results => assertTrue(results.forall(identity)))
+          .unsafeToFuture()
+      )
     ,
     test("a custom baseline fills every omitted category and an empty override inherits everything"):
       val baseline = errorPolicy.from(answer(502, "baseline"))()
       val inherited = errorOverrides()(baseline)
-      assertTrue(
-        inherited == baseline,
-        Failure.Category.values.forall(category =>
-          encoder
-            .encode(inherited.responses, Failure(category))
-            .exists(wire => wire.status == Status(502) && wire.body.exists(_._2.decodeUtf8 == Right("\"baseline\"")))
-        )
+      ZIO.fromFuture(_ =>
+        Failure.Category.values.toList
+          .traverse(category =>
+            encoder
+              .encode(inherited.responses, Failure(category))
+              .map(
+                _.exists(wire =>
+                  wire.status == Status(502) && wire.body.exists(_._2.decodeUtf8 == Right("\"baseline\""))
+                )
+              )
+          )
+          .map(results => assertTrue(inherited == baseline, results.forall(identity)))
+          .unsafeToFuture()
       )
     ,
     test("an endpoint override replaces one category and inherits every other response"):
       val domain = endpoint(request(method.get, __), response(status.noContent))
       val declared = domain.withErrors(errorOverrides(syntax = Some(answer(409, "local"))))
       val composed = declared.compose(policy)
-      assertTrue(expected.forall { (category, code, message) =>
-        val (expectedCode, expectedMessage) =
-          if category == Failure.Category.Syntax then (409, "local") else (code, message)
-        encoder
-          .encode(composed.errors.responses, Failure(category))
-          .exists(wire =>
-            wire.status == Status(expectedCode) && wire.body.exists(_._2.decodeUtf8 == Right(s"\"$expectedMessage\""))
-          )
-      })
+      ZIO.fromFuture(_ =>
+        expected
+          .traverse { (category, code, message) =>
+            val (expectedCode, expectedMessage) =
+              if category == Failure.Category.Syntax then (409, "local") else (code, message)
+            encoder
+              .encode(composed.errors.responses, Failure(category))
+              .map(
+                _.exists(wire =>
+                  wire.status == Status(expectedCode) && wire.body
+                    .exists(_._2.decodeUtf8 == Right(s"\"$expectedMessage\""))
+                )
+              )
+          }
+          .map(results => assertTrue(results.forall(identity)))
+          .unsafeToFuture()
+      )
     ,
     test("actual interpreter failures select all eight named responses"):
       val plain = endpoint(request(method.get, __), response(status.noContent))

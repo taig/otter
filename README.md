@@ -274,7 +274,7 @@ JVM-only and published nowhere.
 sbt start          # alias for sample-library/run
 ```
 
-Ember listens on `http://0.0.0.0:8080`. It serves eleven endpoints, seeded in memory with three books and two members:
+Ember listens on `http://0.0.0.0:8080`. It serves twelve endpoints, seeded in memory with three books and two members:
 
 ```
 GET     /health
@@ -284,15 +284,38 @@ GET     /books/{isbn}
 PATCH   /books/{isbn}
 DELETE  /books/{isbn}
 POST    /books/{isbn}/scan
+POST    /books/{isbn}/cover         Update metadata and optionally replace a cover image
 GET     /catalogue
 POST    /intake
 GET     /members/{reference}        A member, their membership and what they owe
 POST    /members/{reference}/loans  Lend a book to a member
 ```
 
-Three further endpoints — `POST /books/{isbn}/cover` (multipart), `GET /books/export` (ndjson stream) and
-`GET /books/report` (CSV stream) — are described and documented but deliberately **not** served. They mark the current
-shortfalls of the http4s backend, and `LibraryShortfallTest` asserts that each is reported rather than half served.
+The cover upload accepts a required JSON `metadata` part and an optional binary `image` part. It atomically patches
+an existing book and stores any supplied cover in memory, returning 204; an unknown ISBN returns a JSON 404. Omitting
+the image preserves the previous cover. Deleting the book also removes its cover.
+
+```bash
+curl -X POST http://localhost:8080/books/9780261102217/cover \
+  -F 'metadata={"title":"The Hobbit"};type=application/json' \
+  -F 'image=@cover.png;type=application/octet-stream'
+```
+
+Multipart support is registered with the interpreter for its parts:
+
+```scala
+val payload = Http4sCirce.Payload.orElse(Http4sMultipart.payload(Http4sCirce.Payload))
+```
+
+For JSON and CSV parts, pass their combined registry to `Http4sMultipart.payload`. Adding CSV only outside that
+registration does not support CSV parts. Register multipart once per level; compose its part interpreters first. Nested multipart requires registering its
+interpreter inside the outer one.
+Bodies remain buffered; requests and responses share the same support, and filenames are write-time hints, not
+constraints on incoming uploads. Streaming parts remain unsupported.
+
+Two further endpoints — `GET /books/export` (ndjson stream) and `GET /books/report` (CSV stream) — are described and
+documented but deliberately **not** served. `LibraryShortfallTest` records the remaining streaming limitations and the
+need to register multipart support explicitly.
 
 ### Generate the documents
 
@@ -316,8 +339,9 @@ without `metadata` because it fills in a default, while a generated client alway
 them would misstate requiredness to half your audience. The `paths` are identical; every difference is inside
 `components/schemas`.
 
-Expect a handful of issues in the output. Renderers never throw and never half-emit: the three unserved endpoints are
-reported by name and the rest of the document still comes back.
+Expect a handful of issues in the output. The two streaming endpoints are reported by name. TypeScript additionally
+reports the multipart cover upload, which the backend now serves but the descriptor generator does not support.
+Renderers still return the rest of each document.
 
 ## Browsing the API in a GUI
 

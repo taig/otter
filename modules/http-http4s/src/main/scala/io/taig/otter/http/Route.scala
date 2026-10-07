@@ -95,8 +95,8 @@ object Route:
     */
   private[http] def run[F[_], P[-_, +_], A, B](
       route: Route[F, Http4sPayload.Supported[P], A, B],
-      decoder: Http4sRequestDecoder[P],
-      encoder: Http4sResponseEncoder[P],
+      decoder: Http4sRequestDecoder[F, P],
+      encoder: Http4sResponseEncoder[F, P],
       observe: Http4sObservation[F] => F[Unit],
       request: Http4sRequest[F],
       segments: Vector[String]
@@ -121,24 +121,25 @@ object Route:
             body = (Http4sEnvelope.toMediaType(request.headers), bytes)
           )
           decoder.decodeDetailed(route.endpoint.request, wire)
-        .flatMap:
-          case cats.data.Validated.Invalid(refused) => F.pure(Left(refused.failure))
-          case cats.data.Validated.Valid(value)     =>
-            evaluate(route.handler(value)).flatten
-              .flatMap(value =>
-                evaluate(encoder.encode(route.endpoint.responses, value)).handleErrorWith(cause =>
-                  F.raiseError(Http4sFailure.Execution(Failure(Failure.Category.Encoding, cause = Some(cause))))
+        .flatten
+          .flatMap:
+            case cats.data.Validated.Invalid(refused) => F.pure(Left(refused.failure))
+            case cats.data.Validated.Valid(value)     =>
+              evaluate(route.handler(value)).flatten
+                .flatMap(value =>
+                  evaluate(encoder.encode(route.endpoint.responses, value)).flatten.handleErrorWith(cause =>
+                    F.raiseError(Http4sFailure.Execution(Failure(Failure.Category.Encoding, cause = Some(cause))))
+                  )
                 )
-              )
-              .flatMap(Http4s.respond[F])
-              .map(Right(_))
+                .flatMap(Http4s.respond[F])
+                .map(Right(_))
 
     val respond = execute
       .handleError(cause => Left(failure(cause)))
       .flatMap:
         case Right(response) => F.pure(response)
         case Left(refused)   =>
-          val render = evaluate(encoder.encode(route.errors.responses, refused))
+          val render = evaluate(encoder.encode(route.errors.responses, refused)).flatten
             .flatMap(Http4s.respond[F])
             .handleErrorWith: cause =>
               notify(Http4sObservation.Event.ErrorResponseFailed(cause)).attempt *> F.raiseError(cause)

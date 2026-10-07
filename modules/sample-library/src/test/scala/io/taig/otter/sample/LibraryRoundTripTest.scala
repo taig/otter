@@ -3,7 +3,6 @@ package io.taig.otter.sample
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.github.iltotore.iron.autoRefine
-import io.taig.otter.Json
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Http4sEnvelope
@@ -61,12 +60,12 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
   private val tracing: Tracing = Tracing(requestId = "abc-123", languages = None)
 
   /** A fresh catalogue per workflow, shared by every endpoint called within it. */
-  private def withClient[A](run: Http4s.ApiClient[IO, Json.Node, Problem] => IO[A]): Task[A] =
+  private def withClient[A](run: Http4s.ApiClient[IO, LibraryRoutes.Payload, Problem] => IO[A]): Task[A] =
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
         .flatMap: library =>
           val transport = Http4sClient.fromHttpApp(LibraryRoutes(library))
-          val client = Http4s.client(Http4sCirce.Payload, Base, transport).withApi(api.all)
+          val client = Http4s.client(LibraryRoutes.payload, Base, transport).withApi(api.all)
           run(client)
         .unsafeToFuture()
 

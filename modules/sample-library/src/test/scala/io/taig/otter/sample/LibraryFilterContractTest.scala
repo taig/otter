@@ -2,6 +2,7 @@ package io.taig.otter.sample
 
 import cats.data.Chain
 import cats.data.Validated
+import cats.effect.unsafe.implicits.global
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Http4sWire
@@ -57,9 +58,9 @@ object LibraryFilterContractTest extends ZIOSpecDefault:
 
   private val tracing = Tracing(requestId = "abc-123", languages = Some(List("en", "de")))
 
-  private val encoder = new Http4sRequestEncoder(Http4sCirce.Payload)
+  private val encoder = new Http4sRequestEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
 
-  private val decoder = new Http4sRequestDecoder(Http4sCirce.Payload)
+  private val decoder = new Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
 
   private val before = Chain.one[Endpoint.Declaration.Node](structural)
 
@@ -67,24 +68,27 @@ object LibraryFilterContractTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryFilterContractTest")(
     test("the named input writes the request the tuples wrote"):
-      val named = encoder.encode(books.list.self.self.request, (filter, tracing))
-      val tupled = encoder.encode(
-        structural.self.self.request,
-        (2, 5, List(Genre.Romance, Genre.Poetry), true, ("abc-123", Some(List("en", "de"))))
-      )
+      val named = encoder.encode(books.list.self.self.request, (filter, tracing)).unsafeRunSync()
+      val tupled = encoder
+        .encode(
+          structural.self.self.request,
+          (2, 5, List(Genre.Romance, Genre.Poetry), true, ("abc-123", Some(List("en", "de"))))
+        )
+        .unsafeRunSync()
       assertTrue(named.isRight, named == tupled)
     ,
     test("and reads it back as the named input"):
       val decoded = encoder
         .encode(books.list.self.self.request, (filter, tracing))
-        .map(decoder.decode(books.list.self.self.request, _))
+        .unsafeRunSync()
+        .map(decoder.decode(books.list.self.self.request, _).unsafeRunSync())
       assertTrue(decoded == Right(Validated.valid((filter, tracing))))
     ,
     test("an absent query parameter reaches the named input as its default"):
       val wire = Http4sWire
         .Request(Vector("books"), Chain.empty, Chain.one("X-Request-Id" -> "abc-123"), (None, ByteVector.empty))
       assertTrue(
-        decoder.decode(books.list.self.self.request, wire) ==
+        decoder.decode(books.list.self.self.request, wire).unsafeRunSync() ==
           Validated.valid(
             (BookFilter(page = 1, size = 20, genres = Nil, available = false), Tracing("abc-123", None))
           )
@@ -92,7 +96,7 @@ object LibraryFilterContractTest extends ZIOSpecDefault:
     ,
     test("a missing required header is still refused"):
       val wire = Http4sWire.Request(Vector("books"), Chain.empty, Chain.empty, (None, ByteVector.empty))
-      assertTrue(decoder.decode(books.list.self.self.request, wire).isInvalid)
+      assertTrue(decoder.decode(books.list.self.self.request, wire).unsafeRunSync().isInvalid)
     ,
     test("naming the input preserves both OpenAPI contracts"):
       val payload = OpenApiPayload.json(OpenApiProfile.V31)

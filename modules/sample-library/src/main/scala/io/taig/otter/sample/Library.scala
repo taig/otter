@@ -7,6 +7,7 @@ import io.taig.otter.sample.api.BookFilter
 import io.taig.otter.sample.api.Borrowed
 import io.taig.otter.sample.api.Created
 import io.taig.otter.sample.api.Deleted
+import io.taig.otter.sample.api.Uploaded
 import scodec.bits.ByteVector
 
 import java.time.Clock
@@ -59,7 +60,17 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
   def delete(isbn: Isbn): F[Deleted] = state.modify: current =>
     if current.loans.values.exists(_.isbn == isbn) then
       (current, Deleted.Conflict(Problem.conflict(s"${isbn.value} is on loan")))
-    else (current.copy(books = current.books.removed(isbn)), Deleted.Removed)
+    else (current.copy(books = current.books.removed(isbn), covers = current.covers.removed(isbn)), Deleted.Removed)
+
+  def cover(isbn: Isbn): F[Option[ByteVector]] = state.get.map(_.covers.get(isbn))
+
+  def upload(isbn: Isbn, cover: (Book.Patch, Option[ByteVector])): F[Uploaded] = state.modify: current =>
+    current.books.get(isbn) match
+      case None       => (current, Uploaded.Missing(Problem.missing(s"${isbn.value} is not in the catalogue")))
+      case Some(book) =>
+        val (patch, image) = cover
+        val covers = image.fold(current.covers)(bytes => current.covers.updated(isbn, bytes))
+        (current.copy(books = current.books.updated(isbn, patch(book)), covers = covers), Uploaded.Stored)
 
   /** Bytes in, bytes out. Nothing is stored, because what a scan *is* is not this sample's subject.
     *
@@ -106,7 +117,8 @@ object Library:
   final case class State(
       books: SortedMap[Isbn, Book],
       members: SortedMap[UUID, Member],
-      loans: SortedMap[UUID, Loan]
+      loans: SortedMap[UUID, Loan],
+      covers: SortedMap[Isbn, ByteVector] = SortedMap.empty
   )
 
   object State:
