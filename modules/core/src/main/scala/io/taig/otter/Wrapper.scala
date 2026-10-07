@@ -8,6 +8,9 @@ import cats.Invariant
 import cats.arrow.Profunctor
 import cats.data.Chain
 import cats.data.NonEmptyChain
+import cats.data.NonEmptyList
+import cats.data.NonEmptySet
+import cats.data.NonEmptyVector
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter as Self
 import io.taig.otter.operation.*
@@ -21,6 +24,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 import scala.collection.immutable.SortedMap
+import scala.collection.immutable.SortedSet
 
 /** Derives the instances a format's wrapper type needs from those of the node it wraps.
   *
@@ -221,6 +225,48 @@ object Wrapper:
           validation: Validation[Constraint.Collection, List[R]]
       ): Outer[S, List[W], List[R]] =
         Collection.this.apply[S, List[W], List[R]](Self.Collection.Linked(schema, validation))
+
+      override def nonEmptyChained[W, R](
+          schema: Reference[S, W, R],
+          validation: Validation[Constraint.Collection, NonEmptyChain[R]]
+      ): Outer[S, NonEmptyChain[W], NonEmptyChain[R]] =
+        Collection.this.apply[S, NonEmptyChain[W], NonEmptyChain[R]](
+          Self.Collection.NonEmptyChained(schema, validation)
+        )
+
+      override def nonEmptyIndexed[W, R](
+          schema: Reference[S, W, R],
+          validation: Validation[Constraint.Collection, NonEmptyVector[R]]
+      ): Outer[S, NonEmptyVector[W], NonEmptyVector[R]] =
+        Collection.this.apply[S, NonEmptyVector[W], NonEmptyVector[R]](
+          Self.Collection.NonEmptyIndexed(schema, validation)
+        )
+
+      override def nonEmptyLinked[W, R](
+          schema: Reference[S, W, R],
+          validation: Validation[Constraint.Collection, NonEmptyList[R]]
+      ): Outer[S, NonEmptyList[W], NonEmptyList[R]] =
+        Collection.this.apply[S, NonEmptyList[W], NonEmptyList[R]](Self.Collection.NonEmptyLinked(schema, validation))
+
+      override def sorted[W, R](
+          schema: Reference[S, W, R],
+          writeOrdering: Ordering[W],
+          readOrdering: Ordering[R],
+          validation: Validation[Constraint.Collection, SortedSet[R]]
+      ): Outer[S, SortedSet[W], SortedSet[R]] =
+        Collection.this.apply[S, SortedSet[W], SortedSet[R]](
+          Self.Collection.Sorted(schema, writeOrdering, readOrdering, validation)
+        )
+
+      override def nonEmptySorted[W, R](
+          schema: Reference[S, W, R],
+          writeOrdering: Ordering[W],
+          readOrdering: Ordering[R],
+          validation: Validation[Constraint.Collection, NonEmptySet[R]]
+      ): Outer[S, NonEmptySet[W], NonEmptySet[R]] =
+        Collection.this.apply[S, NonEmptySet[W], NonEmptySet[R]](
+          Self.Collection.NonEmptySorted(schema, writeOrdering, readOrdering, validation)
+        )
 
       extension [W, R](fa: Outer[S, W, R]) override def schema: Reference[S, ?, ?] = node(fa).schema
 

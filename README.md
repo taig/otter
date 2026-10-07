@@ -2,6 +2,32 @@
 
 [Rendering compatibility](docs/rendering-compatibility.md)
 
+## Non-empty and sorted collections
+
+JSON and HTTP parameters share `collection.nonEmptyList`, `nonEmptyVector`, `nonEmptyChain`, `sortedSet`, and
+`nonEmptySet`, alongside `list`, `vector`, and `chain`. The non-empty variants return cats collections;
+`sortedSet` returns an immutable Scala `SortedSet`. Each constructor also accepts a validation over its result:
+
+```scala
+import cats.data.NonEmptyList
+import io.taig.otter.component.JsonComponent.*
+import io.taig.validation.std
+
+val items = collection.nonEmptyList(string, std.collection.maximum[NonEmptyList[String]](10))
+val tags = collection.nonEmptySet(string)
+```
+
+Empty input to a non-empty shape fails the same minimum-one constraint as a validated list. Sets reject duplicates
+under their read-side `cats.Order`, reporting the zero-based positions of repeated occurrences. Unsorted input is
+accepted. Writes use the schema's write-side `Order`, even when the supplied set uses another ordering; they sort
+without collapsing elements. Write and read element types can differ, with an `Order` required for each. Caller
+validation runs on successful reads, as it does for ordinary collections.
+
+JSON Schema and OpenAPI expose `minItems: 1` and `uniqueItems: true`. TypeScript uses readonly non-empty arrays and
+Effect uses `Schema.NonEmptyArray` with size checks. Effect does not check set uniqueness, and neither renderer can
+reproduce arbitrary Scala ordering; see [rendering compatibility](docs/rendering-compatibility.md). CSV cells do not
+support collection schemas.
+
 ## Tagged JSON unions
 
 `branch.nested` wraps a payload under `value`; `branch.merged` adds the discriminator to a record. Both compose with

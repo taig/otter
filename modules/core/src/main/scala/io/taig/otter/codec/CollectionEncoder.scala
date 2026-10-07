@@ -17,6 +17,26 @@ final class CollectionEncoder[F[-_, +_], T, M: Monoid](encoder: Encoder[F, T], e
       Monoid[M].combineAll(w.iterator.map(value => element(encoder.encode(reference.value, value))))
     case Collection.Linked(reference, _) =>
       Monoid[M].combineAll(w.iterator.map(value => element(encoder.encode(reference.value, value))))
+    case Collection.NonEmptyChained(reference, _) =>
+      Monoid[M].combineAll(w.toChain.iterator.map(value => element(encoder.encode(reference.value, value))))
+    case Collection.NonEmptyIndexed(reference, _) =>
+      Monoid[M].combineAll(w.toVector.iterator.map(value => element(encoder.encode(reference.value, value))))
+    case Collection.NonEmptyLinked(reference, _) =>
+      Monoid[M].combineAll(w.toList.iterator.map(value => element(encoder.encode(reference.value, value))))
+    case Collection.Sorted(reference, ordering, _, _) =>
+      Monoid[M].combineAll(
+        w.iterator.toVector
+          .sorted(using ordering)
+          .iterator
+          .map(value => element(encoder.encode(reference.value, value)))
+      )
+    case Collection.NonEmptySorted(reference, ordering, _, _) =>
+      Monoid[M].combineAll(
+        w.toSortedSet.iterator.toVector
+          .sorted(using ordering)
+          .iterator
+          .map(value => element(encoder.encode(reference.value, value)))
+      )
     case Collection.Modify(self, _, g) => encode(self, g(w))
 
 object CollectionEncoder:

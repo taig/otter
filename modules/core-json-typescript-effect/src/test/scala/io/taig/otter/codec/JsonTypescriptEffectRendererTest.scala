@@ -1,5 +1,6 @@
 package io.taig.otter.codec
 
+import cats.data.NonEmptyList
 import io.taig.otter.Json
 import io.taig.otter.Keys
 import io.taig.otter.Typescript
@@ -26,6 +27,24 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
     JsonTypescriptEffectRenderer.writer.render(schema).mkString("\n\n")
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptEffectRendererTest")(
+    test("non-empty shapes use Effect non-empty arrays while set uniqueness remains a documented limitation"):
+      val schemas = List(
+        collection.nonEmptyList(string),
+        collection.nonEmptyVector(string),
+        collection.nonEmptyChain(string),
+        collection.nonEmptySet(string)
+      )
+      assertTrue(
+        schemas.forall(schema => render(schema) == "Schema.NonEmptyArray(Schema.String)"),
+        render(collection.sortedSet(string)) == "Schema.Array(Schema.String)",
+        render(collection.nonEmptyList(string, collections.maximum[NonEmptyList[String]](10))) ==
+          "Schema.NonEmptyArray(Schema.String).check(Schema.isMaxLength(10))",
+        render(collection.nonEmptyList(string, collections.minimum[NonEmptyList[String]](3))) ==
+          "Schema.NonEmptyArray(Schema.String).check(Schema.isMinLength(3))",
+        render(collection.nonEmptyList(string, collections.maximum[NonEmptyList[String]](0))) ==
+          "Schema.NonEmptyArray(Schema.String).check(Schema.isMaxLength(0))"
+      )
+    ,
     suite("primitive")(
       test("a boolean and a text"):
         assertTrue(render(boolean) == "Schema.Boolean", render(string) == "Schema.String")

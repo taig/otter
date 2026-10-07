@@ -3,6 +3,10 @@ package io.taig.otter.component
 import cats.Eq
 import cats.arrow.Profunctor
 import cats.data.Chain
+import cats.data.NonEmptyChain
+import cats.data.NonEmptyList
+import cats.data.NonEmptySet
+import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
@@ -23,6 +27,7 @@ import zio.test.*
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
+import scala.collection.immutable.SortedSet
 
 object IronComponentTest extends ZIOSpecDefault, IronComponent.Unrefined:
   /** The bare AST is a format too, and the only one `core` offers. */
@@ -72,6 +77,36 @@ object IronComponentTest extends ZIOSpecDefault, IronComponent.Unrefined:
         schema: Reference[S, W, R],
         validation: Validation[Constraint.Collection, List[R]]
     ): Collection[S, List[W], List[R]] = Collection.Linked(schema, validation)
+
+    override def nonEmptyChained[W, R](
+        schema: Reference[S, W, R],
+        validation: Validation[Constraint.Collection, NonEmptyChain[R]]
+    ): Collection[S, NonEmptyChain[W], NonEmptyChain[R]] = Collection.NonEmptyChained(schema, validation)
+
+    override def nonEmptyIndexed[W, R](
+        schema: Reference[S, W, R],
+        validation: Validation[Constraint.Collection, NonEmptyVector[R]]
+    ): Collection[S, NonEmptyVector[W], NonEmptyVector[R]] = Collection.NonEmptyIndexed(schema, validation)
+
+    override def nonEmptyLinked[W, R](
+        schema: Reference[S, W, R],
+        validation: Validation[Constraint.Collection, NonEmptyList[R]]
+    ): Collection[S, NonEmptyList[W], NonEmptyList[R]] = Collection.NonEmptyLinked(schema, validation)
+
+    override def sorted[W, R](
+        schema: Reference[S, W, R],
+        writeOrdering: Ordering[W],
+        readOrdering: Ordering[R],
+        validation: Validation[Constraint.Collection, SortedSet[R]]
+    ): Collection[S, SortedSet[W], SortedSet[R]] = Collection.Sorted(schema, writeOrdering, readOrdering, validation)
+
+    override def nonEmptySorted[W, R](
+        schema: Reference[S, W, R],
+        writeOrdering: Ordering[W],
+        readOrdering: Ordering[R],
+        validation: Validation[Constraint.Collection, NonEmptySet[R]]
+    ): Collection[S, NonEmptySet[W], NonEmptySet[R]] =
+      Collection.NonEmptySorted(schema, writeOrdering, readOrdering, validation)
 
     extension [W, R](fa: Collection[S, W, R]) override def schema: Reference[S, ?, ?] = fa.schema
 

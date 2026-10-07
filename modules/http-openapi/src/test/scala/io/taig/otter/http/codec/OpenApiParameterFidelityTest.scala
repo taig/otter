@@ -15,6 +15,26 @@ object OpenApiParameterFidelityTest extends ZIOSpecDefault:
     OpenApiParameterRenderer(JsonSchemaProfile.Draft202012, NonEmptyList.one(Metadata.Namespace.Global))
 
   override val spec: Spec[TestEnvironment & Scope, Any] = suite("OpenApiParameterFidelityTest")(
+    test("non-empty and sorted parameter collections expose their intrinsic constraints"):
+      val schemas = List(
+        collection.nonEmptyList(string),
+        collection.nonEmptyVector(string),
+        collection.nonEmptyChain(string),
+        collection.nonEmptySet(string)
+      )
+      val sorted = renderer.render(collection.sortedSet(string))
+      val nonEmptySorted = renderer.render(collection.nonEmptySet(string))
+      val bounded = renderer.render(collection.nonEmptyList(string, std.collection.maximum[NonEmptyList[String]](10)))
+      assertTrue(
+        schemas.forall(schema => renderer.render(schema).value.hcursor.get[Long]("minItems").contains(1L)),
+        sorted.value.hcursor.get[Boolean]("uniqueItems").contains(true),
+        nonEmptySorted.value.hcursor.get[Boolean]("uniqueItems").contains(true),
+        bounded.value.hcursor.get[Long]("maxItems").contains(10L),
+        sorted.issues.isEmpty,
+        nonEmptySorted.issues.isEmpty,
+        bounded.issues.isEmpty
+      )
+    ,
     test("parameter bounds retain their carrier and repeated constraints"):
       val document = renderer.render(
         int(std.number.minimum[Int](Comparison(10, false)) & std.number.minimum[Int](Comparison(0, false)))
