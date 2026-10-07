@@ -33,11 +33,3 @@ final case class UnroutedPolicy[+S[-_, +_]](
             case unrouted: Unrouted.MethodNotAllowed => Right(unrouted)
       )
     )
-
-object UnroutedPolicy:
-  /** Bodyless answers, which work with every payload interpreter. */
-  val default: UnroutedPolicy[Nothing] =
-    def response[A](status: Int): Response.Writer.Of[Nothing, A] =
-      Response.Schema(Response.Value.Modify(Response.Value.Root(Status(status)), _ => (), (_: A) => ()))
-
-    UnroutedPolicy(response(404), response(405))

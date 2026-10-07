@@ -7,6 +7,7 @@ import io.taig.otter.http.codec.Http4sPayload
 import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sResponseEncoder
 import io.taig.otter.http.codec.PathTemplate
+import io.taig.otter.http.component.ErrorPolicyComponent
 import org.http4s.Request as Http4sRequest
 import org.http4s.Response as Http4sResponse
 import scodec.bits.ByteVector
@@ -74,7 +75,7 @@ object Route:
       endpoint: Endpoint.Declaration[S, Nothing, A, B, Any, E],
       handler: A => F[B]
   ): Route[F, S, A, B] =
-    new Route(endpoint, handler, endpoint.compose(ErrorPolicy.default).errors)
+    new Route(endpoint, handler, endpoint.compose(ErrorPolicyComponent.default).errors)
 
   /** A route for an endpoint already composed with its error policy, which it keeps under an API's policy as well.
     *

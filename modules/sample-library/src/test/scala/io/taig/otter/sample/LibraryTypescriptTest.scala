@@ -36,6 +36,8 @@ object LibraryTypescriptTest extends ZIOSpecDefault:
         catalogue.contains("\"503\":"),
         catalogue.contains("\"500\":"),
         catalogue.contains("\"400\":"),
+        catalogue.contains("\"415\":"),
+        catalogue.contains("\"422\":"),
         catalogue.contains("Schema.Schema.Type<typeof Problem>"),
         catalogue.contains("Schema.Codec.Encoded<typeof Problem>")
       )

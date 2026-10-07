@@ -6,7 +6,6 @@ import io.circe.Json as CirceJson
 import io.taig.otter.Keys
 import io.taig.otter.http.Api
 import io.taig.otter.http.Endpoint
-import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.ErrorPolicy
 import io.taig.otter.http.Failure
 import io.taig.otter.http.OpenApi
@@ -14,7 +13,6 @@ import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
 import io.taig.otter.http.OpenApiProfile
 import io.taig.otter.http.Status
-import io.taig.otter.http.UnroutedPolicy
 import io.taig.otter.http.fixture.dsl
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.fixture.payload
@@ -46,7 +44,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
     test("composed errors are rendered from declarations without executing mappings"):
       val error = response(Status(503))(body.json(payload.string))
         .dimap[Failure, String](OpenApiResponseAlternativesTest.unexpectedMapping)(identity)
-      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, response(status.noContent)))
+      val composed = errorPolicy(unexpected = error)(endpoint(requestSchema, response(status.noContent)))
       val document = render(composed.effective)
       val responses =
         document.value.hcursor.downField("paths").downField("/alternatives").downField("get").downField("responses")
@@ -183,10 +181,10 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
     test("standalone endpoint overrides inherit the default error policy"):
       val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "unavailable")(identity)
       val declared = endpoint(requestSchema, response(status.noContent))
-        .withErrors(ErrorOverrides(unexpected = Some(error)))
+        .withErrors(errorOverrides(unexpected = Some(error)))
       val document = renderer.render(OpenApi.Info("Standalone", "1"), Chain.one(declared))
       val expected =
-        renderer.render(OpenApi.Info("Standalone", "1"), Api(ErrorPolicy.default, UnroutedPolicy.default, declared))
+        renderer.render(OpenApi.Info("Standalone", "1"), Api(errorPolicy.default, unroutedPolicy.default, declared))
       assertTrue(document == expected)
     ,
     test("an API inherits defaults and replaces only the categories it overrides"):
@@ -194,9 +192,9 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
         endpoint(request(method.get, __ / "api-first"), response(status.ok).toUnion)
       val second: Endpoint.Server[dsl.Payload, Unit, Unit] =
         endpoint(request(method.get, __ / "api-second"), response(status.ok).toUnion)
-      val defaults: ErrorPolicy[dsl.Payload, Status] = ErrorPolicy.default
+      val defaults: ErrorPolicy[dsl.Payload, Status] = errorPolicy.default
       val syntax = response(Status(400))(body.json(payload.string)).dimap[Failure, Status](_ => "")(_ => Status(400))
-      val api = Api(defaults, UnroutedPolicy.default, first, second.withErrors(ErrorOverrides(syntax = Some(syntax))))
+      val api = Api(defaults, unroutedPolicy.default, first, second.withErrors(errorOverrides(syntax = Some(syntax))))
       val document = renderer.render(OpenApi.Info("Alternatives", "1"), api)
       val paths = document.value.hcursor.downField("paths")
       val firstResponse = paths.downField("/api-first").downField("get").downField("responses").downField("400")
@@ -213,7 +211,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
     ,
     test("duplicate operations are reported by the renderer without rejecting the API"):
       val registered = endpoint(request(method.get, __ / "registered"), response(status.ok).toUnion)
-      val api = Api(ErrorPolicy.default, UnroutedPolicy.default, registered, registered)
+      val api = Api(errorPolicy.default, unroutedPolicy.default, registered, registered)
       val document = renderer.render(OpenApi.Info("Duplicates", "1"), api)
       assertTrue(document.issues.contains(OpenApiIssue.Duplicate("get /registered")))
     ,

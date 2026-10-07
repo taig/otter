@@ -21,11 +21,11 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
     val jsonRequest = endpoint(request(method.post, __)(body.json(payload.string)), response(status.noContent))
     val jsonResponse = endpoint(request(method.get, __), response(status.ok)(body.json(payload.string)))
     val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
-    val overridden = plain.withErrors(ErrorOverrides(unexpected = Some(error)))
-    val api = Api(ErrorPolicy.default, UnroutedPolicy.default)
-    val errors = Api(ErrorPolicy.default.copy(unexpected = error), UnroutedPolicy.default)
+    val overridden = plain.withErrors(errorOverrides(unexpected = Some(error)))
+    val api = Api(errorPolicy.default, unroutedPolicy.default)
+    val errors = Api(errorPolicy(unexpected = error), unroutedPolicy.default)
     val answer = response(Status(404))(body.json(payload.string)).dimap[Unrouted, String](_ => "unrouted")(identity)
-    val unrouted = Api(ErrorPolicy.default, UnroutedPolicy(answer, answer))
+    val unrouted = Api(errorPolicy.default, unroutedPolicy(notFound = answer, methodNotAllowed = answer))
     val client = Http4s.client(Http4sPayload.Empty, uri"http://test", transport)
     val jsonClient = Http4s.client(Http4sCirce.Payload, uri"http://test", transport)
   """
@@ -48,7 +48,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         val configured = jsonClient.withApi(api)
         val inherited = configured(jsonResponse)
         val local = configured(overridden)
-        val explicit = jsonClient(overridden.compose(ErrorPolicy.default).client)
+        val explicit = jsonClient(overridden.compose(errorPolicy.default).client)
         inferred(fetch).is[Unit => IO[String]]
         inferred(write).is[String => IO[Unit]]
         inferred(differentSides).is[String => IO[Long]]
@@ -104,7 +104,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.dsl.*
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
-        val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
+        val e = errorPolicy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
         Http4s.routes[IO](Route.composed(e, (_: Unit) => IO.unit))(Http4sPayload.Empty)
       """))
     },
@@ -116,7 +116,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.dsl.*
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
-        val e = ErrorPolicy.default.copy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
+        val e = errorPolicy(unexpected = error)(endpoint(request(method.get, __), response(status.noContent)))
         Http4s.routes[IO](Route.composed(e, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """)
       assertTrue(errors.isEmpty)
@@ -130,8 +130,8 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.dsl.*
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
-        val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(ErrorOverrides(unexpected = Some(error)))
-        Http4s.routes[IO](Api(ErrorPolicy.default, UnroutedPolicy.default), Route(e, (_: Unit) => IO.unit))(Http4sPayload.Empty)
+        val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(errorOverrides(unexpected = Some(error)))
+        Http4s.routes[IO](Api(errorPolicy.default, unroutedPolicy.default), Route(e, (_: Unit) => IO.unit))(Http4sPayload.Empty)
       """))
     },
     test("endpoint overrides are accepted by the interpreter that covers them") {
@@ -142,8 +142,8 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.dsl.*
         import io.taig.otter.http.fixture.payload
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
-        val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(ErrorOverrides(unexpected = Some(error)))
-        Http4s.routes[IO](Api(ErrorPolicy.default, UnroutedPolicy.default), Route(e, (_: Unit) => IO.unit))(Http4sCirce.Payload)
+        val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(errorOverrides(unexpected = Some(error)))
+        Http4s.routes[IO](Api(errorPolicy.default, unroutedPolicy.default), Route(e, (_: Unit) => IO.unit))(Http4sCirce.Payload)
       """)
       assertTrue(errors.isEmpty)
     },
@@ -157,11 +157,11 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
       """
       assertTrue(
         typeCheckErrors(prelude + "Route(e, (a, b) => handle(a, b))").isEmpty,
-        typeCheckErrors(prelude + "Route(e.withErrors(ErrorOverrides()), (a, b) => handle(a, b))").isEmpty,
+        typeCheckErrors(prelude + "Route(e.withErrors(errorOverrides()), (a, b) => handle(a, b))").isEmpty,
         typeCheckErrors(
-          prelude + "Route(Api(ErrorPolicy.default, UnroutedPolicy.default), e, (a, b) => handle(a, b))"
+          prelude + "Route(Api(errorPolicy.default, unroutedPolicy.default), e, (a, b) => handle(a, b))"
         ).isEmpty,
-        typeCheckErrors(prelude + "Route.composed(ErrorPolicy.default(e), (a, b) => handle(a, b))").isEmpty
+        typeCheckErrors(prelude + "Route.composed(errorPolicy.default(e), (a, b) => handle(a, b))").isEmpty
       )
     },
     test("unrouted payload requirements are checked wherever the API is interpreted") {
@@ -173,7 +173,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.dsl.*
         import io.taig.otter.http.fixture.payload
         val answer = response(Status(404))(body.json(payload.string)).dimap[Unrouted, String](_ => "unrouted")(identity)
-        val api = Api(ErrorPolicy.default, UnroutedPolicy(answer, answer))
+        val api = Api(errorPolicy.default, unroutedPolicy(notFound = answer, methodNotAllowed = answer))
         val e = endpoint(request(method.get, __), response(status.noContent))
       """
       assertTrue(
@@ -194,8 +194,8 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.payload
         val answer = response(Status(404))(body.json(payload.string)).dimap[Unrouted, String](_ => "unrouted")(identity)
         val error = response(Status(500))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
-        val policy: ErrorPolicy[Body.Whole[Json.Node], String] = ErrorPolicy(error, error, error, error, error, error, error, error)
-        val api: Api[Body.Whole[Json.Node], String] = Api(policy, UnroutedPolicy(answer, answer))
+        val policy: ErrorPolicy[Body.Whole[Json.Node], String] = errorPolicy.from(error)()
+        val api: Api[Body.Whole[Json.Node], String] = Api(policy, unroutedPolicy(notFound = answer, methodNotAllowed = answer))
       """)
       assertTrue(errors.isEmpty)
     },
@@ -206,7 +206,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.dsl.*
         import io.taig.otter.http.fixture.payload
         val e = endpoint(request(method.get, __), response(status.ok)(body.json(payload.string)))
-          .withErrors(ErrorOverrides())
+          .withErrors(errorOverrides())
       """
       assertTrue(
         typeChecks(prelude + "Route(e, (_: Unit) => IO.pure(\"domain response\"))"),
@@ -223,10 +223,10 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.payload
         import org.http4s.implicits.*
         val error = response(Status(503))(body.json(payload.string)).dimap[Failure, String](_ => "failed")(identity)
-        val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(ErrorOverrides(unexpected = Some(error)))
+        val e = endpoint(request(method.get, __), response(status.noContent)).withErrors(errorOverrides(unexpected = Some(error)))
         val client = org.http4s.client.Client.fromHttpApp(org.http4s.HttpApp[IO](_ => IO.pure(org.http4s.Response[IO]())))
         val call: Unit => IO[Either[Status | String, Unit]] =
-          Http4s.client(Http4sCirce.Payload, uri"http://test", client).withApi(Api(ErrorPolicy.default, UnroutedPolicy.default))(e)
+          Http4s.client(Http4sCirce.Payload, uri"http://test", client).withApi(Api(errorPolicy.default, unroutedPolicy.default))(e)
       """)
       assertTrue(errors.isEmpty)
     },

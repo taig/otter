@@ -4,7 +4,6 @@ import io.taig.otter.Keys
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
 import io.taig.otter.http.Endpoint
-import io.taig.otter.http.ErrorOverrides
 import io.taig.otter.http.Frame
 import io.taig.otter.http.Headers
 import io.taig.otter.http.Multipart
@@ -246,4 +245,4 @@ object books:
   ).attr(openapi.operationId, "catalogue")
     .attr(Keys.description, "Shelves, and the shelves inside them, to any depth")
     .attr(openapi.tags, "catalogue")
-    .withErrors(ErrorOverrides(unexpected = Some(contract.answer(503))))
+    .withErrors(errorOverrides(unexpected = Some(contract.answer(503))))

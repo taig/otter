@@ -11,7 +11,9 @@ import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sRequestEncoder
 import io.taig.otter.http.codec.Http4sResponseDecoder
 import io.taig.otter.http.codec.Http4sResponseEncoder
+import io.taig.otter.http.component.ErrorPolicyComponent
 import io.taig.otter.http.component.MediaTypeComponent
+import io.taig.otter.http.component.UnroutedPolicyComponent
 import org.http4s.Entity
 import org.http4s.HttpApp
 import org.http4s.HttpRoutes
@@ -94,8 +96,9 @@ object Http4s:
     *
     * The answer is one only the router can give. A path some route spells under other methods is a `405` carrying
     * `Allow`, and any other is a `404`; after falling through, nothing could tell the two apart or name the methods.
-    * Both are written through the API's [[UnroutedPolicy]], and without an API through [[UnroutedPolicy.default]],
-    * exactly as a route without one is answered by [[ErrorPolicy.default]].
+    * Both are written through the API's [[UnroutedPolicy]], and without an API through
+    * [[UnroutedPolicyComponent.default]], exactly as a route without one is answered by
+    * [[ErrorPolicyComponent.default]].
     *
     * `Allow` is written by the interpreter whenever the declared answer is a `405`, and replaces any the declaration
     * wrote, because only the router knows the set. It lists what is routed, never what is merely documented.
@@ -144,7 +147,7 @@ object Http4s:
     def apply[P[-_, +_]](routes: Routes[F, Http4sPayload.Supported[P]])(
         payload: Http4sPayload[P],
         observe: Http4sObservation[F] => F[Unit]
-    ): HttpApp[F] = Http4s.terminal(routes, UnroutedPolicy.default)(payload, observe)
+    ): HttpApp[F] = Http4s.terminal(routes, UnroutedPolicyComponent.default)(payload, observe)
 
   /** The answer [[Http4s.app]] gives a request its routes did not match, as `HttpRoutes` that never fall through.
     *
@@ -170,7 +173,7 @@ object Http4s:
     def apply[P[-_, +_]](routes: Routes[F, Http4sPayload.Supported[P]])(
         payload: Http4sPayload[P]
     ): HttpRoutes[F] =
-      val answer = Http4s.unroutedAnswer(routes, UnroutedPolicy.default, payload)
+      val answer = Http4s.unroutedAnswer(routes, UnroutedPolicyComponent.default, payload)
       HttpRoutes[F](request => OptionT.liftF(answer(request)))
 
   private def terminal[F[_]: Concurrent, P[-_, +_]](
@@ -244,7 +247,7 @@ object Http4s:
     /** Standalone overrides inherit the bodyless default policy. */
     def apply[A, B, D](
         endpoint: Endpoint.WithErrors[Http4sPayload.Supported[P], A, Any, Nothing, B, D]
-    ): A => F[Either[Status | D, B]] = apply(endpoint.compose(ErrorPolicy.default).client)
+    ): A => F[Either[Status | D, B]] = apply(endpoint.compose(ErrorPolicyComponent.default).client)
 
     /** Plain and explicitly composed schemas retain exactly the response type they declare. */
     def apply[A, B](endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]): A => F[B] =

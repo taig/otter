@@ -44,7 +44,8 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
     ,
     test("catalogue overrides unexpected failures and inherits the other global errors"):
       assertTrue(
-        keys(server.value, "paths", "/catalogue", "get", "responses").contains("503"),
+        keys(server.value, "paths", "/catalogue", "get", "responses") ==
+          List("200", "400", "415", "422", "500", "503"),
         keys(server.value, "paths", "/catalogue", "get", "responses").contains("500"),
         keys(client.value, "paths", "/catalogue", "get", "responses").contains("503"),
         !keys(server.value, "paths", "/books", "get", "responses").contains("503")

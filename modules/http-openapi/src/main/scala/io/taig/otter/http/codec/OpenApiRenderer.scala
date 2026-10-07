@@ -28,6 +28,7 @@ import io.taig.otter.http.Response as HttpResponse
 import io.taig.otter.http.Responses
 import io.taig.otter.http.Status
 import io.taig.otter.http.component.MediaTypeComponent
+import io.taig.otter.http.syntax.ErrorPolicySyntax.*
 
 import scala.collection.immutable.ListMap
 import scala.compiletime.asMatchable

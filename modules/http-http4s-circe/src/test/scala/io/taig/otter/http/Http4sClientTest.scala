@@ -41,7 +41,7 @@ object Http4sClientTest extends ZIOSpecDefault:
         )
         client = Http4s.client(Http4sPayload.Empty, base, transport)
         plain = client(empty)
-        configured = client.withApi(Api(ErrorPolicy.default, UnroutedPolicy.default))
+        configured = client.withApi(Api(errorPolicy.default, unroutedPolicy.default))
         declared = configured(empty)
         before <- paths.get
         _ <- plain(())
@@ -55,7 +55,7 @@ object Http4sClientTest extends ZIOSpecDefault:
       val transport = Http4sClient[IO](_ => Resource.eval(IO.raiseError[Http4sResponse[IO]](cause)))
       val client = Http4s
         .client(Http4sPayload.Empty, base, transport)
-        .withApi(Api(ErrorPolicy.default, UnroutedPolicy.default))
+        .withApi(Api(errorPolicy.default, unroutedPolicy.default))
       run(client(empty)(()).attempt).map(answer => assertTrue(answer == Left(cause)))
     ,
     test("malformed responses fail decoding and release the response resource"):
@@ -68,7 +68,7 @@ object Http4sClientTest extends ZIOSpecDefault:
         transport = Http4sClient[IO](_ => Resource.make(IO.pure(response))(_ => released.set(true)))
         client = Http4s
           .client(Http4sCirce.Payload, base, transport)
-          .withApi(Api(ErrorPolicy.default, UnroutedPolicy.default))
+          .withApi(Api(errorPolicy.default, unroutedPolicy.default))
         result <- client(text)(()).attempt
         finalized <- released.get
       yield assertTrue(result.left.exists { case _: Http4sFailure.Response => true; case _ => false }, finalized))

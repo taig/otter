@@ -24,6 +24,7 @@ import io.taig.otter.http.Responses
 import io.taig.otter.http.Status
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
+import io.taig.otter.http.syntax.ErrorPolicySyntax.*
 
 import java.math.BigDecimal as JBigDecimal
 import scala.compiletime.asMatchable
