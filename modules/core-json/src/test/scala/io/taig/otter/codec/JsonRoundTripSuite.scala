@@ -33,6 +33,25 @@ abstract class JsonRoundTripSuite(interpreter: JsonInterpreter) extends ZIOSpecD
     test("enum through a union"):
       check(gen.shape)(roundTrips(json.shape, _))
     ,
+    test("Scala union members through untagged, nested, and merged schemas"):
+      val plain = ScalaUnion.documents.forall((value, document) =>
+        interpreter.roundTrip(ScalaUnion.plain, value) == Validated.valid(value) &&
+          interpreter.encode(ScalaUnion.plain, value) == document &&
+          interpreter.decode(ScalaUnion.plain, document) == Validated.valid(value)
+      )
+      val nested = ScalaUnion.nestedDocuments.forall((value, document) =>
+        interpreter.roundTrip(ScalaUnion.nested, value) == Validated.valid(value) &&
+          interpreter.encode(ScalaUnion.nested, value) == document &&
+          interpreter.decode(ScalaUnion.nested, document) == Validated.valid(value)
+      )
+      val merged = ScalaUnion.mergedDocuments.forall((value, document) =>
+        interpreter.roundTrip(ScalaUnion.merged, value) == Validated.valid(value) &&
+          interpreter.encode(ScalaUnion.merged, value) == document &&
+          interpreter.decode(ScalaUnion.merged, document) == Validated.valid(value)
+      )
+
+      assertTrue(plain, nested, merged)
+    ,
     test("enum through a union whose branches read the same type"):
       check(gen.verdict)(roundTrips(json.verdict, _))
     ,
