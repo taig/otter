@@ -176,7 +176,7 @@ form that keeps it -- a `405` carrying `Allow` where a route spells the path, a 
 through `Api.unrouted`, an `UnroutedPolicy` beside `errors` and not in it: an unrouted request belongs to no endpoint,
 so a `Failure.Category` for it would be the removed `Interpreter` again. The policy is write only and has no `E`,
 because nothing decodes or documents it -- a client meets one only when it and the server disagree about what exists,
-and OpenAPI has no response that belongs to no operation -- which is also what lets `UnroutedPolicy.default` be
+and OpenAPI has no response that belongs to no operation -- which is also what lets `unroutedPolicy.default` be
 bodyless beside any error type. Its requirement still joins the `Api`'s `S`, so whatever serves or calls the `Api`
 must cover it; the renderers take any `Api` and check nothing. `Allow` is written by the interpreter on every `405`,
 replacing any the declaration wrote, and lists what is routed and never what is only documented; a fallback asks only

@@ -24,6 +24,7 @@ import io.taig.otter.http.Segment
 import io.taig.otter.http.Status
 import io.taig.otter.http.codec.ParameterPrimitiveEncoder
 import io.taig.otter.http.syntax.EndpointSyntax
+import io.taig.otter.http.syntax.ErrorPolicySyntax
 import io.taig.otter.http.syntax.HttpSyntax
 import io.taig.otter.http.syntax.PathSyntax
 import io.taig.otter.operation.RecordOperation
@@ -42,6 +43,7 @@ import io.taig.otter.syntax.AllSyntax
 trait HttpComponent
     extends AllSyntax,
       EndpointSyntax,
+      ErrorPolicySyntax,
       HttpSyntax,
       PathSyntax,
       PrimitiveComponent.Boolean[Parameter.Primitive.Boolean.Schema],
@@ -96,6 +98,12 @@ trait HttpComponent
       response: Response.Schema[S2, BW, BR]
   ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
     endpoint[S1, S2, AW, AR, BW, BR](request, response.toUnion)
+
+  object errorPolicy extends ErrorPolicyComponent
+
+  object errorOverrides extends ErrorOverridesComponent
+
+  object unroutedPolicy extends UnroutedPolicyComponent
 
   object status extends StatusComponent
 

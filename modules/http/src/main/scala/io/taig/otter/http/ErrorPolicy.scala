@@ -40,23 +40,3 @@ final case class ErrorPolicy[+S[-_, +_], +E](
     Responses.Schema(entries.foldLeft(leaf(envelope)) { case (self, (category, response)) =>
       append(self, category, response)
     })
-
-  def apply[T[-w, +r] >: S[w, r], AW, AR, BW, BR](
-      endpoint: Endpoint.Schema[T, AW, AR, BW, BR]
-  ): ComposedEndpoint[T, AW, AR, BW, BR, E] = ComposedEndpoint(endpoint, this)
-
-object ErrorPolicy:
-  /** Bodyless defaults work with every payload interpreter. Errors on the wire are identified by status. */
-  val default: ErrorPolicy[Nothing, Status] =
-    def response(status: Int): Response.Schema[Nothing, Failure, Status] =
-      Response.Schema(Response.Value.Modify(Response.Value.Root(Status(status)), _ => Status(status), _ => ()))
-    ErrorPolicy(
-      response(400),
-      response(400),
-      response(415),
-      response(422),
-      response(500),
-      response(500),
-      response(500),
-      response(500)
-    )

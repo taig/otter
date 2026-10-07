@@ -21,20 +21,16 @@ object Http4sApiTest extends ZIOSpecDefault:
 
   private val badRequest = answer(400, "global request error")
   private val serverError = answer(502, "global server error")
-  private val policy = ErrorPolicy(
-    badRequest,
-    badRequest,
-    badRequest,
-    badRequest,
-    serverError,
-    serverError,
-    serverError,
-    serverError
+  private val policy = errorPolicy.from(serverError)(
+    envelope = badRequest,
+    syntax = badRequest,
+    contentType = badRequest,
+    validation = badRequest
   )
-  private val api = Api(policy, UnroutedPolicy.default)
+  private val api = Api(policy, unroutedPolicy.default)
   private val inherited = endpoint(request(method.get, __), response(status.noContent))
   private val overridden = endpoint(request(method.get, __ / segment("id", int)), response(status.noContent))
-    .withErrors(ErrorOverrides(unexpected = Some(answer(503, "local server error"))))
+    .withErrors(errorOverrides(unexpected = Some(answer(503, "local server error"))))
   private val cause = new IllegalStateException("handler failed")
 
   private def run[A](value: IO[A]): Task[A] = ZIO.fromFuture(_ => value.unsafeToFuture())

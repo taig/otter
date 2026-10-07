@@ -2,24 +2,24 @@ package io.taig.otter.http
 
 /** The error declarations an endpoint replaces; every missing entry inherits the API policy. */
 final case class ErrorOverrides[+S[-_, +_], +E](
-    envelope: Option[Response.Schema[S, Failure, E]] = None,
-    syntax: Option[Response.Schema[S, Failure, E]] = None,
-    contentType: Option[Response.Schema[S, Failure, E]] = None,
-    validation: Option[Response.Schema[S, Failure, E]] = None,
-    entityRead: Option[Response.Schema[S, Failure, E]] = None,
-    encoding: Option[Response.Schema[S, Failure, E]] = None,
-    status: Option[Response.Schema[S, Failure, E]] = None,
-    unexpected: Option[Response.Schema[S, Failure, E]] = None
+    envelope: Option[Response.Schema[S, Failure, E]],
+    syntax: Option[Response.Schema[S, Failure, E]],
+    contentType: Option[Response.Schema[S, Failure, E]],
+    validation: Option[Response.Schema[S, Failure, E]],
+    entityRead: Option[Response.Schema[S, Failure, E]],
+    encoding: Option[Response.Schema[S, Failure, E]],
+    status: Option[Response.Schema[S, Failure, E]],
+    unexpected: Option[Response.Schema[S, Failure, E]]
 ):
   def apply[T[-w, +r] >: S[w, r], F](defaults: ErrorPolicy[T, F]): ErrorPolicy[T, E | F] = ErrorPolicy(
-    envelope.getOrElse(defaults.envelope),
-    syntax.getOrElse(defaults.syntax),
-    contentType.getOrElse(defaults.contentType),
-    validation.getOrElse(defaults.validation),
-    entityRead.getOrElse(defaults.entityRead),
-    encoding.getOrElse(defaults.encoding),
-    status.getOrElse(defaults.status),
-    unexpected.getOrElse(defaults.unexpected)
+    envelope = envelope.getOrElse(defaults.envelope),
+    syntax = syntax.getOrElse(defaults.syntax),
+    contentType = contentType.getOrElse(defaults.contentType),
+    validation = validation.getOrElse(defaults.validation),
+    entityRead = entityRead.getOrElse(defaults.entityRead),
+    encoding = encoding.getOrElse(defaults.encoding),
+    status = status.getOrElse(defaults.status),
+    unexpected = unexpected.getOrElse(defaults.unexpected)
   )
 
 object ErrorOverrides:

@@ -65,13 +65,15 @@ merged branches under its existing `kind` key.
 
 ## Declared HTTP errors
 
-`ErrorPolicy` declares execution errors using ordinary Otter `Response` schemas. `Api` owns the global policy, the
-answers to a request no endpoint is addressed to, and an ordered collection for documentation. Endpoints inherit the
+`ErrorPolicy` declares execution errors using ordinary Otter `Response` schemas. The HTTP DSL's `errorPolicy`,
+`errorOverrides`, and `unroutedPolicy` namespaces construct the core records with named defaults. `Api` owns the
+global policy, the answers to a request no endpoint is addressed to, and an ordered collection for documentation.
+Endpoints inherit the
 global policy; `.withErrors` declares the categories an endpoint overrides:
 
 ```scala
 val create = endpoint(createRequest, createResponse)
-  .withErrors(ErrorOverrides(unexpected = Some(unavailable)))
+  .withErrors(errorOverrides(unexpected = Some(unavailable)))
 val api = Api(errors, unrouted, health, create)
 
 val app = Http4s.app[IO](
@@ -103,9 +105,9 @@ Transport and response-decoding failures remain failures in the effect; declared
 This replaces `Http4s.client[F, A, B](api, endpoint)(payload, base, transport)` and the standalone per-endpoint builders.
 For an explicitly composed contract, use `Http4s.client(payload, base, transport).apply(composed.client)`.
 
-Without an API, an endpoint carrying overrides inherits `ErrorPolicy.default` for every omitted category. Standalone
+Without an API, an endpoint carrying overrides inherits `errorPolicy.default` for every omitted category. Standalone
 routes, clients, and renderers all honor those overrides. Plain endpoint clients and renderers retain their domain-only
-behavior. Explicit `ErrorPolicy(endpoint)` composition and `ComposedEndpoint` remain available.
+behavior. Explicit `policy(endpoint)` composition and `ComposedEndpoint` remain available.
 
 Defaults have no body and decode to their `Status`. Envelope validation and payload syntax errors return 400,
 unsupported content types return 415, and body schema validation returns 422. Entity-read, response-encoding,
@@ -113,13 +115,35 @@ status-conversion, and unexpected execution failures return 500. Causes remain d
 When request failures accumulate, envelope errors take precedence; a payload alternative with an eligible content
 type supplies the syntax or validation failure instead of an ineligible alternative's content-type mismatch.
 
-Replace policy entries with schemas, using `dimap` to construct a body from `Failure` while retaining its reader:
+Supply named responses, using `dimap` to construct a body from `Failure` while retaining its reader:
 
 ```scala
 val unavailable = response(Status(503))(body.json(problemSchema))
   .dimap[Failure, Problem](_ => Problem.unavailable)(identity)
-val errors = ErrorPolicy.default.copy(unexpected = unavailable)
+val errors = errorPolicy(unexpected = unavailable)
 ```
+
+`errorPolicy(...)` fills omitted categories from `errorPolicy.default`; the example therefore decodes errors as
+`Status | Problem`. To use one custom response for omitted categories, start with `errorPolicy.from(response)`:
+
+```scala
+val errors: ErrorPolicy[dsl.Payload, Problem] = errorPolicy.from(answer(500))(
+  envelope = answer(400),
+  syntax = answer(400),
+  contentType = answer(415),
+  validation = answer(422)
+)
+```
+
+Here `answer` returns a statically declared `Response.Schema[dsl.Payload, Failure, Problem]`, as in the sample
+contract. The four omitted categories share its 500 response, and the decoded error type remains `Problem`.
+`errorOverrides(syntax = Some(customSyntax))` replaces only syntax failures; every other category inherits the
+consumer's global policy. Empty overrides inherit everything. A composed endpoint's `.declaration` makes its whole
+policy explicit, so applying a different API policy later cannot replace it.
+
+Defaults and construction shortcuts live in the DSL components and extensions imported through `HttpComponent`.
+The core `ErrorPolicy`, `ErrorOverrides`, and `UnroutedPolicy` records require all fields explicitly. The DSL supplies
+`.withErrors`, `policy(endpoint)`, and standalone `.effective`; core `.compose(policy)` merges an explicit policy.
 
 The status, headers, and body schema are inspectable without running the mapping. A custom policy's payload
 requirements are checked along with the endpoint's. See `sample-library`'s `api.contract` for a complete JSON policy.
@@ -148,16 +172,19 @@ required violation tree and an optional diagnostic cause; `decode` retains the v
 `Unrouted` value (the method, the path and, for a `405`, the methods it takes):
 
 ```scala
-val unrouted = UnroutedPolicy(
-  response(status.notFound)(body.json(problemSchema)).dimap[Unrouted.NotFound, Problem](_ => Problem.notFound)(identity),
-  response(status.methodNotAllowed)(body.json(problemSchema))
+val unrouted = unroutedPolicy(
+  notFound = response(status.notFound)(body.json(problemSchema))
+    .dimap[Unrouted.NotFound, Problem](_ => Problem.notFound)(identity),
+  methodNotAllowed = response(status.methodNotAllowed)(body.json(problemSchema))
     .dimap[Unrouted.MethodNotAllowed, Problem](unrouted =>
       Problem.methodNotAllowed(unrouted.allowed.toChain.toList.map(_.name))
     )(identity)
 )
 ```
 
-`UnroutedPolicy.default` answers both without a body, and is what an app built without an API uses. The policy is
+`unroutedPolicy.default` answers both without a body, and is what an app built without an API uses.
+`unroutedPolicy(notFound = gone)` replaces the 404 declaration while retaining the bodyless 405; the two named
+parameters are `notFound` and `methodNotAllowed`. The policy is
 write only: clients do not decode it and renderers do not document it, because it belongs to no endpoint. `Allow` is
 written by the interpreter from the routes it serves. To mount other routes beside Otter's, compose
 `Http4s.fallback` last: `(health <+> Http4s.routes[IO](api, served*)(payload) <+> Http4s.fallback[IO](api,

@@ -27,7 +27,7 @@ import zio.test.*
 object Http4sErrorPolicyTest extends ZIOSpecDefault:
   private val base: Uri = uri"http://otter.test"
   private val domain = endpoint(request(method.get, __), response(status.noContent))
-  private val composed = ErrorPolicy.default(domain)
+  private val composed = errorPolicy.default(domain)
   private val cause = new IllegalStateException("private diagnostic")
 
   /** Injects a synchronous exception to verify the interpreter's effect boundary. */
@@ -140,7 +140,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("overlapping wire responses retain domain priority"):
       val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
-        ErrorPolicy.default(endpoint(request(method.get, __), response(Status(500))))
+        errorPolicy.default(endpoint(request(method.get, __), response(Status(500))))
       val client =
         Client.fromHttpApp(
           Http4s.routes[IO](Route.composed(value, (_: Unit) => IO.unit))(Http4sPayload.Empty).orNotFound
@@ -152,7 +152,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       val error = response(Status(503))
         .headers(header("Retry-After", int).toRecord)(body.json(payload.string))
         .dimap[Failure, String](_ => (5, "unavailable"))(_._2)
-      val policy: ErrorPolicy[Body.Whole[Json.Node], Status | String] = ErrorPolicy.default.copy(unexpected = error)
+      val policy: ErrorPolicy[Body.Whole[Json.Node], Status | String] = errorPolicy(unexpected = error)
       val value = policy(domain)
       val app = Http4s
         .routes[IO](Route.composed(value, (_: Unit) => IO.raiseError[Unit](cause)))(Http4sCirce.Payload)
@@ -172,7 +172,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       )
     ,
     test("entity read failures are observed separately and do not call the handler"):
-      val value = ErrorPolicy.default(endpoint(request(method.post, __)(body.binary), response(status.noContent)))
+      val value = errorPolicy.default(endpoint(request(method.post, __)(body.binary), response(status.noContent)))
       run(
         for
           events <- IO.ref(List.empty[Http4sObservation.Event])
@@ -200,7 +200,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("an invalid domain status uses the declared status-error response"):
       val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
-        ErrorPolicy.default(endpoint(request(method.get, __), response(Status(-1))))
+        errorPolicy.default(endpoint(request(method.get, __), response(Status(-1))))
       run(
         Http4s
           .routes[IO](Route.composed(value, (_: Unit) => IO.unit))(Http4sPayload.Empty)
@@ -210,7 +210,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("an error mapping failure is observed once and never recursively handled"):
       val broken = response(Status(503)).dimap[Failure, Status](_ => Http4sErrorPolicyTest.crash)(_ => Status(503))
-      val value = ErrorPolicy.default.copy(unexpected = broken)(domain)
+      val value = errorPolicy(unexpected = broken)(domain)
       run(for
         events <- IO.ref(List.empty[Http4sObservation.Event])
         response <- Http4s
@@ -243,7 +243,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     test("response encoding exceptions have their own category"):
       val answer =
         response(status.ok)(body.json(payload.string)).dimap[Unit, String](_ => Http4sErrorPolicyTest.crash)(identity)
-      val value = ErrorPolicy.default(endpoint(request(method.get, __), answer))
+      val value = errorPolicy.default(endpoint(request(method.get, __), answer))
       run(for
         events <- IO.ref(List.empty[Http4sObservation.Event])
         response <- Http4s
@@ -260,7 +260,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     // one it knows, so a registry that falls short is rejected where the routes are built. `LibraryShortfallTest` and
     // `Http4sFs2DataTest` are where that is now asserted, and they assert it of the compiler.
     test("a codec that recognizes a body and cannot write it is an encoding failure"):
-      val value = ErrorPolicy.default(endpoint(request(method.get, __), response(status.ok)(body.json(payload.string))))
+      val value = errorPolicy.default(endpoint(request(method.get, __), response(status.ok)(body.json(payload.string))))
       val answer =
         for
           events <- IO.ref(List.empty[Http4sObservation.Event])
@@ -281,8 +281,8 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("a composed route keeps its own policy under an API's"):
       val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
-      val value = ErrorPolicy.default.copy(unexpected = unavailable)(domain)
-      val api = Api(ErrorPolicy.default, UnroutedPolicy.default)
+      val value = errorPolicy(unexpected = unavailable)(domain)
+      val api = Api(errorPolicy.default, unroutedPolicy.default)
       run(
         Http4s
           .app[IO](api, Route.composed(value, (_: Unit) => IO.raiseError[Unit](cause)))(Http4sPayload.Empty)
@@ -291,8 +291,8 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("a route's declaration is the one it was built from"):
       val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
-      val overridden = domain.withErrors(ErrorOverrides(unexpected = Some(unavailable)))
-      val api = Api(ErrorPolicy.default, UnroutedPolicy.default)
+      val overridden = domain.withErrors(errorOverrides(unexpected = Some(unavailable)))
+      val api = Api(errorPolicy.default, unroutedPolicy.default)
       val handler = (_: Unit) => IO.unit
       val plain = Route(domain, handler)
       val under = Route(api, domain, handler)
@@ -307,7 +307,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("a composed route's declaration carries its policy under any other"):
       val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
-      val value = ErrorPolicy.default.copy(unexpected = unavailable)(domain)
+      val value = errorPolicy(unexpected = unavailable)(domain)
       val declaration = Route.composed(value, (_: Unit) => IO.unit).declaration
-      assertTrue(declaration.domain == domain, declaration.compose(ErrorPolicy.default).errors == value.errors)
+      assertTrue(declaration.domain == domain, declaration.compose(errorPolicy.default).errors == value.errors)
   )

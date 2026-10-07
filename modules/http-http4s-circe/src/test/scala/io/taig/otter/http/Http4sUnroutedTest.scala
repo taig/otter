@@ -36,16 +36,17 @@ object Http4sUnroutedTest extends ZIOSpecDefault:
   private val remove = endpoint(request(method.delete, __ / segment("id", int)), response(status.noContent))
   private val root = endpoint(request(method.get, __), response(status.noContent))
 
-  private val declared = UnroutedPolicy(
-    response(status.notFound)(body.json(payload.string)).dimap[Unrouted.NotFound, String](unrouted =>
+  private val declared = unroutedPolicy(
+    notFound = response(status.notFound)(body.json(payload.string)).dimap[Unrouted.NotFound, String](unrouted =>
       s"nothing at /${unrouted.path.mkString("/")} for ${unrouted.method.name}"
     )(identity),
-    response(status.methodNotAllowed)(body.json(payload.string)).dimap[Unrouted.MethodNotAllowed, String](unrouted =>
-      s"only ${unrouted.allowed.toChain.toList.map(_.name).mkString(" and ")}"
-    )(identity)
+    methodNotAllowed =
+      response(status.methodNotAllowed)(body.json(payload.string)).dimap[Unrouted.MethodNotAllowed, String](unrouted =>
+        s"only ${unrouted.allowed.toChain.toList.map(_.name).mkString(" and ")}"
+      )(identity)
   )
 
-  private val api = Api(ErrorPolicy.default, declared)
+  private val api = Api(errorPolicy.default, declared)
 
   private def run[A](value: IO[A]): Task[A] = ZIO.fromFuture(_ => value.unsafeToFuture())
 
@@ -135,7 +136,7 @@ object Http4sUnroutedTest extends ZIOSpecDefault:
           .dimap[Unrouted.MethodNotAllowed, (String, String)](_ => ("POST", "refused"))(identity)
         val app =
           Http4s.app[IO](
-            Api(ErrorPolicy.default, declared.copy(methodNotAllowed = claimed)),
+            Api(errorPolicy.default, declared.copy(methodNotAllowed = claimed)),
             Route(one, (_: Int) => IO.unit)
           )(
             Http4sCirce.Payload
@@ -150,7 +151,7 @@ object Http4sUnroutedTest extends ZIOSpecDefault:
             Unrouted.NotFound(unrouted.method, unrouted.path)
           )
         )
-        val app = Http4s.app[IO](Api(ErrorPolicy.default, hidden), Route(one, (_: Int) => IO.unit))(Http4sCirce.Payload)
+        val app = Http4s.app[IO](Api(errorPolicy.default, hidden), Route(one, (_: Int) => IO.unit))(Http4sCirce.Payload)
         run(send(app, Http4sMethod.PUT, base / "1")).map((code, allow, _) => assertTrue(code == 404, allow.isEmpty))
       ,
       test("a not found declared as a method not allowed still carries an Allow, and an empty one"):
@@ -160,7 +161,7 @@ object Http4sUnroutedTest extends ZIOSpecDefault:
           )
         )
         val app =
-          Http4s.app[IO](Api(ErrorPolicy.default, refusing), Route(one, (_: Int) => IO.unit))(Http4sCirce.Payload)
+          Http4s.app[IO](Api(errorPolicy.default, refusing), Route(one, (_: Int) => IO.unit))(Http4sCirce.Payload)
         run(send(app, Http4sMethod.GET, base / "a" / "b"))
           .map((code, allow, _) => assertTrue(code == 405, allow == List("")))
       ,
@@ -177,7 +178,7 @@ object Http4sUnroutedTest extends ZIOSpecDefault:
         run(
           for
             events <- IO.ref(List.empty[Http4sObservation.Event])
-            app = Http4s.app[IO](Api(ErrorPolicy.default, broken), Route(one, (_: Int) => IO.unit))(
+            app = Http4s.app[IO](Api(errorPolicy.default, broken), Route(one, (_: Int) => IO.unit))(
               Http4sCirce.Payload,
               observation => events.update(_ :+ observation.event)
             )

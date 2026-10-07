@@ -38,15 +38,11 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
       response(Status(status))(body.binary(dsl.mediaType.text)).contramap[Failure](failure =>
         ByteVector.encodeUtf8(failure.violations.fold("")(Http4s.report)).getOrElse(ByteVector.empty)
       )
-    ErrorPolicy(
-      answer(400),
-      answer(400),
-      answer(415),
-      answer(422),
-      answer(500),
-      answer(500),
-      answer(500),
-      answer(500)
+    errorPolicy.from(answer(500))(
+      envelope = answer(400),
+      syntax = answer(400),
+      contentType = answer(415),
+      validation = answer(422)
     )
 
   private val Base: Uri = uri"http://otter.test"

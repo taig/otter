@@ -36,9 +36,6 @@ object Endpoint:
     def domain: Endpoint.Schema[S, AW, AR, BW, BR]
     def overrides: ErrorOverrides[S, E]
 
-    /** Standalone documentation: plain schemas stay plain; overrides inherit the bodyless default policy. */
-    def effective: Endpoint.Node
-
     final def compose[T[-w, +r] >: S[w, r], F](
         defaults: ErrorPolicy[T, F]
     ): ComposedEndpoint[T, AW, AR, BW, BR, E | F] =
@@ -50,9 +47,7 @@ object Endpoint:
   final case class WithErrors[+S[-_, +_], -AW, +AR, -BW, +BR, +E](
       override val domain: Endpoint.Schema[S, AW, AR, BW, BR],
       override val overrides: ErrorOverrides[S, E]
-  ) extends Endpoint.Declaration[S, AW, AR, BW, BR, E]:
-    override def effective: Endpoint.Schema[S, AW, AR, Either[Failure, BW], Either[E | Status, BR]] =
-      compose(ErrorPolicy.default).effective
+  ) extends Endpoint.Declaration[S, AW, AR, BW, BR, E]
 
   object WithErrors:
     given annotated: [S[-w, +r], AW, AR, BW, BR, E] => Annotated[Endpoint.WithErrors[S, AW, AR, BW, BR, E]]:
@@ -66,12 +61,16 @@ object Endpoint:
   final case class Schema[+S[-_, +_], -AW, +AR, -BW, +BR](self: Annotation[Endpoint.Value[S, AW, AR, BW, BR]])
       extends Endpoint.Declaration[S, AW, AR, BW, BR, Nothing]:
     override def domain: Endpoint.Schema[S, AW, AR, BW, BR] = this
-    override def effective: Endpoint.Schema[S, AW, AR, BW, BR] = this
-    override def overrides: ErrorOverrides[Nothing, Nothing] = ErrorOverrides()
-
-    def withErrors[T[-w, +r] >: S[w, r], E](
-        overrides: ErrorOverrides[T, E]
-    ): Endpoint.WithErrors[T, AW, AR, BW, BR, E] = Endpoint.WithErrors(this, overrides)
+    override def overrides: ErrorOverrides[Nothing, Nothing] = ErrorOverrides(
+      envelope = None,
+      syntax = None,
+      contentType = None,
+      validation = None,
+      entityRead = None,
+      encoding = None,
+      status = None,
+      unexpected = None
+    )
 
     export self.self.{request, responses}
 

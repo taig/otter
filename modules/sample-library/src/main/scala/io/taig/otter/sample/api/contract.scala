@@ -31,22 +31,20 @@ object contract:
           Problem.internal
     )(identity)
 
-  val errors: ErrorPolicy[dsl.Payload, Problem] = ErrorPolicy(
+  val errors: ErrorPolicy[dsl.Payload, Problem] = errorPolicy.from(answer(500))(
     envelope = answer(400),
     syntax = answer(400),
     contentType = answer(415),
-    validation = answer(422),
-    entityRead = answer(500),
-    encoding = answer(500),
-    status = answer(500),
-    unexpected = answer(500)
+    validation = answer(422)
   )
 
-  val unrouted: UnroutedPolicy[dsl.Payload] = UnroutedPolicy(
-    response(status.notFound)(body.json(schema.problem)).dimap[Unrouted.NotFound, Problem](_ => Problem.notFound)(
-      identity
-    ),
-    response(status.methodNotAllowed)(body.json(schema.problem)).dimap[Unrouted.MethodNotAllowed, Problem](unrouted =>
-      Problem.methodNotAllowed(unrouted.allowed.toChain.toList.map(_.name))
-    )(identity)
+  val unrouted: UnroutedPolicy[dsl.Payload] = unroutedPolicy(
+    notFound =
+      response(status.notFound)(body.json(schema.problem)).dimap[Unrouted.NotFound, Problem](_ => Problem.notFound)(
+        identity
+      ),
+    methodNotAllowed =
+      response(status.methodNotAllowed)(body.json(schema.problem)).dimap[Unrouted.MethodNotAllowed, Problem](unrouted =>
+        Problem.methodNotAllowed(unrouted.allowed.toChain.toList.map(_.name))
+      )(identity)
   )

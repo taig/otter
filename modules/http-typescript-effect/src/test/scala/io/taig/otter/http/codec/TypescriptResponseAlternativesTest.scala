@@ -5,14 +5,11 @@ import cats.syntax.all.*
 import io.taig.otter.Keys
 import io.taig.otter.http.Api
 import io.taig.otter.http.Endpoint
-import io.taig.otter.http.ErrorOverrides
-import io.taig.otter.http.ErrorPolicy
 import io.taig.otter.http.Failure
 import io.taig.otter.http.HttpTypescriptKeys
 import io.taig.otter.http.Status
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
-import io.taig.otter.http.UnroutedPolicy
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.fixture.payload
 import zio.Scope
@@ -36,7 +33,7 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
     test("composed errors contribute encoded and decoded types without executing mappings"):
       val error = response(Status(503))(body.json(payload.string.attr(Keys.name, "ErrorText")))
         .dimap[Failure, String](TypescriptResponseAlternativesTest.unexpectedMapping)(identity)
-      val composed = ErrorPolicy.default.copy(unexpected = error)(endpoint(requestSchema, response(status.noContent)))
+      val composed = errorPolicy(unexpected = error)(endpoint(requestSchema, response(status.noContent)))
       val module = render(composed.effective)
       val source = module.render
       assertTrue(
@@ -53,10 +50,10 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
       val error = response(Status(503))(body.json(payload.string.attr(Keys.name, "ErrorText")))
         .dimap[Failure, String](TypescriptResponseAlternativesTest.unexpectedMapping)(identity)
       val declared = endpoint(requestSchema, response(status.noContent))
-        .withErrors(ErrorOverrides(unexpected = Some(error)))
+        .withErrors(errorOverrides(unexpected = Some(error)))
         .attr(HttpTypescriptKeys.operationId, "standalone")
       val module = renderer.render(Chain.one(declared))
-      val expected = renderer.render(Api(ErrorPolicy.default, UnroutedPolicy.default, declared))
+      val expected = renderer.render(Api(errorPolicy.default, unroutedPolicy.default, declared))
       assertTrue(
         module == expected,
         module.render.contains("export const standalone = {"),
