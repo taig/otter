@@ -1,5 +1,7 @@
 package io.taig.otter.http.codec
 
+import cats.effect.Concurrent
+import cats.syntax.all.*
 import io.taig.otter.codec.Encoder
 import io.taig.otter.http.Body
 import io.taig.otter.http.Http4sIssue
@@ -17,22 +19,20 @@ import scodec.bits.ByteVector
   * alphabet might not be covered at all is no longer among the answers -- the requirement parameter settles it before a
   * route is built -- so what remains here depends on the value and on nothing else.
   */
-final class Http4sBodyEncoder[P[-_, +_]](payload: Http4sPayload[P])
-    extends Encoder[Body.Schema[Http4sPayload.Supported[P], *, *], Either[Http4sIssue, (MediaType, ByteVector)]]:
+final class Http4sBodyEncoder[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload[P])
+    extends Encoder[Body.Schema[Http4sPayload.Supported[P], *, *], F[Either[Http4sIssue, (MediaType, ByteVector)]]]:
   override def encode[W](
       schema: Body.Schema[Http4sPayload.Supported[P], W, Any],
       value: W
-  ): Either[Http4sIssue, (MediaType, ByteVector)] = encode(schema.self.self, value)
+  ): F[Either[Http4sIssue, (MediaType, ByteVector)]] = encode(schema.self.self, value)
 
   private def encode[W](
       body: Body.Value[Http4sPayload.Supported[P], W, Any],
       w: W
-  ): Either[Http4sIssue, (MediaType, ByteVector)] = body match
+  ): F[Either[Http4sIssue, (MediaType, ByteVector)]] = body match
     case Body.Value.Modify(self, _, g)          => encode(self, g(w))
     case Body.Value.Whole(mediaType, reference) =>
       payload
-        .encode(reference.value, w)
-        .left
-        .map(Http4sIssue.Encoding(mediaType, _))
-        .map((mediaType, _))
-    case Body.Value.Binary(mediaType) => Right((mediaType, w))
+        .encode[F, W](reference.value, mediaType, w)
+        .map(_.leftMap(Http4sIssue.Encoding(mediaType, _)))
+    case Body.Value.Binary(mediaType) => Right((mediaType, w)).pure[F]

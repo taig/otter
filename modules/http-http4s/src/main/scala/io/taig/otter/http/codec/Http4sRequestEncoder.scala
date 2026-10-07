@@ -1,6 +1,8 @@
 package io.taig.otter.http.codec
 
 import cats.data.Chain
+import cats.data.EitherT
+import cats.effect.Concurrent
 import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.UnionEncoder
 import io.taig.otter.http.Http4sIssue
@@ -14,21 +16,23 @@ import scodec.bits.ByteVector
   * field that is optional or defaulted genuinely differs between them. What keeps them honest is that the same endpoint
   * value drives both, so a disagreement is a test failure rather than a silent divergence.
   */
-final class Http4sRequestEncoder[P[-_, +_]](payload: Http4sPayload[P])
-    extends Encoder[Request.Schema[Http4sPayload.Supported[P], *, *], Either[Http4sIssue, Http4sWire.Request]]:
-  private val bodies = UnionEncoder(Http4sBodyEncoder(payload))
+final class Http4sRequestEncoder[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload[P])
+    extends Encoder[Request.Schema[Http4sPayload.Supported[P], *, *], F[Either[Http4sIssue, Http4sWire.Request]]]:
+  private val bodies = UnionEncoder(Http4sBodyEncoder[F, P](payload))
 
   override def encode[W](
       schema: Request.Schema[Http4sPayload.Supported[P], W, Any],
       value: W
-  ): Either[Http4sIssue, Http4sWire.Request] = encode(schema.self.self, value)
+  ): F[Either[Http4sIssue, Http4sWire.Request]] = encode(schema.self.self, value).value
 
   private def encode[W](
       request: Request.Value[Http4sPayload.Supported[P], W, Any],
       w: W
-  ): Either[Http4sIssue, Http4sWire.Request] = request match
+  ): EitherT[F, Http4sIssue, Http4sWire.Request] = request match
     case Request.Value.Root(_, path) =>
-      Right(Http4sWire.Request(PathEncoder.encode(path.value, w), Chain.empty, Chain.empty, (None, ByteVector.empty)))
+      EitherT.rightT(
+        Http4sWire.Request(PathEncoder.encode(path.value, w), Chain.empty, Chain.empty, (None, ByteVector.empty))
+      )
     case Request.Value.Queries(self, queries) =>
       encode(self, w._1).map(wire => wire.copy(queries = wire.queries ++ QueriesEncoder.encode(queries.value, w._2)))
     case Request.Value.Headers(self, headers) =>
@@ -36,7 +40,7 @@ final class Http4sRequestEncoder[P[-_, +_]](payload: Http4sPayload[P])
     case Request.Value.Entity(self, values) =>
       for
         wire <- encode(self, w._1)
-        body <- bodies.encode(values.value.self.self, w._2)
+        body <- EitherT(bodies.encode(values.value.self.self, w._2))
       yield wire.copy(body = (Some(body._1), body._2))
     // Nothing is written for an absence: the wire body stays `(None, ByteVector.empty)`, which reaches http4s as an
     // empty entity with no `Content-Type`, and that is what a request carrying no entity looks like.
@@ -45,7 +49,7 @@ final class Http4sRequestEncoder[P[-_, +_]](payload: Http4sPayload[P])
         case Some(value) =>
           for
             wire <- encode(self, w._1)
-            body <- bodies.encode(values.value.self.self, value)
+            body <- EitherT(bodies.encode(values.value.self.self, value))
           yield wire.copy(body = (Some(body._1), body._2))
         case None => encode(self, w._1)
     case Request.Value.Modify(self, _, g) => encode(self, g(w))

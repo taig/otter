@@ -261,7 +261,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.api
         import io.taig.otter.Reference
         val b = Body.Schema(Body.Value.Whole(MediaType("application", "json"), Reference.now(api.report)))
-        Http4sBodyDecoder(Http4sCirce.Payload).decode(b, (None, scodec.bits.ByteVector.empty))
+        Http4sBodyDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload).decode(b, (None, scodec.bits.ByteVector.empty))
       """))
     },
     test("client requires its JSON interpreter") {
@@ -295,7 +295,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.api
         import io.taig.otter.Reference
         val b = Body.Schema(Body.Value.Whole(MediaType("application", "json"), Reference.now(api.report)))
-        Http4sBodyDecoder(Http4sPayload.Empty).decode(b, (None, scodec.bits.ByteVector.empty))
+        Http4sBodyDecoder[cats.effect.IO, Nothing](Http4sPayload.Empty).decode(b, (None, scodec.bits.ByteVector.empty))
       """))
     },
     test("direct streamed constructors cannot be decoded") {
@@ -305,7 +305,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.fixture.api
         import io.taig.otter.Reference
         val body = Body.Schema(Body.Value.Streamed(MediaType("application", "json"), Frame.Lines, Reference.now(api.report)))
-        Http4sBodyDecoder(Http4sCirce.Payload).decode(body, (None, scodec.bits.ByteVector.empty))
+        Http4sBodyDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload).decode(body, (None, scodec.bits.ByteVector.empty))
       """))
     },
     test("widened bodies cannot be decoded") {
@@ -314,7 +314,7 @@ object Http4sRequirementsTest extends ZIOSpecDefault:
         import io.taig.otter.http.codec.*
         import io.taig.otter.http.fixture.api
         val body: Body.Node[Nothing, io.taig.otter.http.fixture.Report] = api.reported
-        Http4sBodyDecoder(Http4sCirce.Payload).decode(body, (None, scodec.bits.ByteVector.empty))
+        Http4sBodyDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload).decode(body, (None, scodec.bits.ByteVector.empty))
       """))
     }
   )

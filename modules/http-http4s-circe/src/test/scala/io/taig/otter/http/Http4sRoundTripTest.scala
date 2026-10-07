@@ -264,26 +264,26 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         """))
       ,
       test("a response under a status no branch names says which it expected"):
-        val report = Http4sResponseDecoder(Http4sCirce.Payload)
+        val report = Http4sResponseDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
           .decode(fetch.responses, Http4sWire.Response(Status(500), Chain.empty, None))
-          .swap
-          .toOption
-          .map(Http4s.report)
+          .map(_.swap.toOption.map(Http4s.report))
 
-        assertTrue(report.exists(_.contains("oneof"))) && assertTrue(report.exists(_.contains("500")))
+        ZIO
+          .fromFuture(_ => report.unsafeToFuture())
+          .map(report => assertTrue(report.exists(_.contains("oneof")), report.exists(_.contains("500"))))
     ),
     suite("reporting")(
       test("a malformed parameter is reported at the position it was found"):
-        val report = Http4sRequestDecoder(Http4sCirce.Payload)
+        val report = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
           .decode(
             ping.request,
             Http4sWire.Request(Vector("reports", "nope"), Chain.empty, Chain.empty, (None, ByteVector.empty))
           )
-          .swap
-          .toOption
-          .map(Http4s.report)
+          .map(_.swap.toOption.map(Http4s.report))
 
-        assertTrue(report.exists(_.contains(".path"))) && assertTrue(report.exists(_.contains(".id")))
+        ZIO
+          .fromFuture(_ => report.unsafeToFuture())
+          .map(report => assertTrue(report.exists(_.contains(".path")), report.exists(_.contains(".id"))))
     ),
     suite("a request that does not hold what the endpoint describes")(
       test("a body that parses and breaks the schema is unprocessable, not malformed"):

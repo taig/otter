@@ -77,19 +77,22 @@ object Http4sEnvelope:
   def toHttp4sHeaders(headers: Chain[(String, String)]): Http4sHeaders =
     Http4sHeaders(headers.toList.map((name, value) => Http4sHeader.Raw(CIString(name), value)))
 
-  /** The essence of a `Content-Type` line, which is all a body is chosen by.
-    *
-    * Parsed here rather than through http4s's own `MediaType`, and only as far as the `/`. The parameters a media type
-    * carries say how bytes became text and where a part ends -- real, but not what tells two bodies apart, and
-    * [[Http4sBodyDecoder]] compares on `essence` for exactly that reason. Folding the case with `Locale.ROOT` for the
-    * reason [[io.taig.otter.http.codec.HeadersDecoder]] does: a machine in Turkey should not read `TEXT/PLAIN`
-    * differently.
-    */
+  /** The complete media type, including decoded parameters such as a multipart boundary. */
   def toMediaType(value: String): Option[MediaType] =
-    value.takeWhile(_ != ';').trim.split('/') match
-      case Array(primary, secondary) =>
-        MediaType(primary.trim.toLowerCase(Locale.ROOT), secondary.trim.toLowerCase(Locale.ROOT)).some
-      case _ => none
+    org.http4s.headers.`Content-Type`
+      .parse(value)
+      .toOption
+      .map: header =>
+        val mediaType = header.mediaType
+        MediaType(
+          mediaType.mainType.toLowerCase(Locale.ROOT),
+          mediaType.subType.toLowerCase(Locale.ROOT),
+          scala.collection.immutable.ListMap.from(
+            mediaType.extensions.toList.map((key, value) =>
+              (key.toLowerCase(Locale.ROOT), value)
+            ) ++ header.charset.toList.map(charset => ("charset", charset.toString))
+          )
+        )
 
   /** The `Content-Type` of a message, if it named one it could read. */
   def toMediaType(headers: Http4sHeaders): Option[MediaType] =

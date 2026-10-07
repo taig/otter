@@ -226,8 +226,8 @@ object LibraryRoutesTest extends ZIOSpecDefault:
         respond(Http4sRequest[IO](method = Http4sMethod.PUT, uri = uri"http://library.test/books/export"))
           .map((code, allow, _) => assertTrue(code == 405, allow.contains("GET, PATCH, DELETE")))
       ,
-      test("a literal one segment longer is not shadowed, and is not found"):
+      test("a cover upload is routed and rejects a missing multipart boundary"):
         answer(Http4sRequest[IO](method = Http4sMethod.POST, uri = uri"http://library.test/books/9780261102217/cover"))
-          .map((code, body) => assertTrue(code == 404, body.contains("\"kind\":\"unrouted\"")))
+          .map((code, body) => assertTrue(code == 400, body.contains("multipart")))
     )
   )

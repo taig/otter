@@ -1,12 +1,13 @@
 package io.taig.otter.http.codec
 
 import cats.data.Validated
+import cats.effect.Concurrent
 import cats.syntax.all.*
 import io.taig.data.Data
 import io.taig.data.syntax.*
 import io.taig.otter.Constraint
+import io.taig.otter.Union
 import io.taig.otter.Violations
-import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Body
 import io.taig.otter.http.DecodingFailure
 import io.taig.otter.http.Failure
@@ -29,30 +30,42 @@ import scodec.bits.ByteVector
   * all: its requirement is [[Body.Requirement.Streamed]], which no `Supported[P]` admits, so the compiler already knows
   * one cannot arrive.
   */
-final class Http4sBodyDecoder[P[-_, +_]](payload: Http4sPayload[P])
-    extends Decoder[Body.Schema[Http4sPayload.Supported[P], *, *], (Option[MediaType], ByteVector)]:
-  override def decode[R](
+final class Http4sBodyDecoder[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload[P]):
+  def decode[R](
       schema: Body.Schema[Http4sPayload.Supported[P], Nothing, R],
       value: (Option[MediaType], ByteVector)
-  ): Validated[Violations, R] = decodeDetailed(schema, value).leftMap(_.violations)
+  ): F[Validated[Violations, R]] = decodeDetailed(schema, value).map(_.leftMap(_.violations))
 
   /** Retains the error category as well as its structured violations. */
   def decodeDetailed[R](
       schema: Body.Schema[Http4sPayload.Supported[P], Nothing, R],
       value: (Option[MediaType], ByteVector)
-  ): Validated[DecodingFailure, R] = decode(schema.self.self, value)
+  ): F[Validated[DecodingFailure, R]] = decode(schema.self.self, value)
+
+  private[http] def bodies[R](
+      schema: Union[Body.Schema[Http4sPayload.Supported[P], *, *], Nothing, R],
+      value: (Option[MediaType], ByteVector)
+  ): F[Validated[DecodingFailure, R]] = schema match
+    case Union.Root(branch)           => decodeDetailed(branch.value, value)
+    case Union.Modify(self, f, _)     => bodies(self, value).map(_.map(f))
+    case Union.Coproduct(left, right) =>
+      bodies(left, value).flatMap:
+        case Validated.Valid(result)    => Validated.valid(Left(result)).pure[F]
+        case Validated.Invalid(failure) => bodies(right, value).map(_.map(Right(_)).leftMap(failure |+| _))
 
   private def decode[R](
       body: Body.Value[Http4sPayload.Supported[P], Nothing, R],
       value: (Option[MediaType], ByteVector)
-  ): Validated[DecodingFailure, R] =
+  ): F[Validated[DecodingFailure, R]] =
     val (mediaType, bytes) = value
 
     body match
-      case Body.Value.Modify(self, f, _)         => decode(self, value).map(f)
+      case Body.Value.Modify(self, f, _)         => decode(self, value).map(_.map(f))
       case Body.Value.Whole(declared, reference) =>
-        Http4sBodyDecoder.matches(declared, mediaType).andThen(_ => payload.decode(reference.value, bytes))
-      case Body.Value.Binary(declared) => Http4sBodyDecoder.matches(declared, mediaType).map(_ => bytes)
+        Http4sBodyDecoder.matches(declared, mediaType) match
+          case Validated.Valid(_)         => payload.decode(reference.value, mediaType, bytes)
+          case Validated.Invalid(failure) => Validated.invalid[DecodingFailure, R](failure).pure[F]
+      case Body.Value.Binary(declared) => Http4sBodyDecoder.matches(declared, mediaType).map(_ => bytes).pure[F]
 
 private[http] object Http4sBodyDecoder:
   /** Whether bytes announced as `actual` may be read as `declared`.

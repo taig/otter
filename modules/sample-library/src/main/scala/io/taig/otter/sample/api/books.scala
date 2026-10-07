@@ -42,6 +42,11 @@ enum Deleted:
   case Removed
   case Conflict(problem: Problem)
 
+/** What answers a cover upload: the update, or an ISBN absent from the catalogue. */
+enum Uploaded:
+  case Stored
+  case Missing(problem: Problem)
+
 /** What `GET /books` asks of the catalogue: which page, how large, of which genres, and whether only what is on the
   * shelf.
   *
@@ -205,11 +210,16 @@ object books:
     part("metadata", body.json(schema.patch)) :*
       part("image", body.binary(mediaType.octetStream)).filename("cover.png").optional
 
-  /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
-  val upload: Endpoint.Of[Multipart.Requirement[Payload], (Isbn, (Book.Patch, Option[ByteVector])), Unit] =
+  /** `POST /books/{isbn}/cover`. Atomically updates metadata and any supplied image. */
+  val upload: Endpoint.Of[
+    Body.Or[Multipart.Requirement[Payload], Payload],
+    (Isbn, (Book.Patch, Option[ByteVector])),
+    Uploaded
+  ] =
     endpoint(
       request(method.post, books.one / "cover")(body.multipart(books.cover)),
-      response(status.noContent)
+      (response(status.noContent).to[Uploaded.Stored.type] :+
+        response(status.notFound)(body.json(schema.problem)).to[Uploaded.Missing]).to[Uploaded]
     ).attr(openapi.operationId, "uploadCover")
       .attr(openapi.tags, "books")
 

@@ -1,6 +1,7 @@
 package io.taig.otter.sample
 
 import cats.data.Chain
+import cats.effect.unsafe.implicits.global
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.OpenApiProfile
@@ -37,8 +38,8 @@ object LibraryDeletionContractTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryDeletionContractTest")(
     test("every case of an all-bodyless sum writes its status and reads back without an entity"):
-      val encoder = new Http4sResponseEncoder(Http4sCirce.Payload)
-      val decoder = new Http4sResponseDecoder(Http4sCirce.Payload)
+      val encoder = new Http4sResponseEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+      val decoder = new Http4sResponseDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
       val cases = List(
         LibraryDeletionContractTest.Empty.Removed -> status.noContent,
         LibraryDeletionContractTest.Empty.Missing -> status.notFound,
@@ -47,8 +48,13 @@ object LibraryDeletionContractTest extends ZIOSpecDefault:
       assertTrue(cases.forall: (value, status) =>
         encoder
           .encode(empty, value)
+          .unsafeRunSync()
           .exists: wire =>
-            wire.status == status && wire.body.isEmpty && decoder.decode(empty, wire).toOption.contains(value))
+            wire.status == status && wire.body.isEmpty && decoder
+              .decode(empty, wire)
+              .unsafeRunSync()
+              .toOption
+              .contains(value))
     ,
     test("named cases preserve both OpenAPI contracts, metadata, references and issues"):
       val payload = OpenApiPayload.json(OpenApiProfile.V31)

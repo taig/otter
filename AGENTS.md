@@ -145,8 +145,8 @@ Three things there are worth reading before extending it. `Http4sPayload` is *no
 difference is the point. A renderer holds a payload whose alphabet is genuinely existential, so it dispatches at
 runtime and reports what it does not recognise. A backend does not: the requirement `S` that every body, endpoint and
 route carries accumulates through `Body.Or` and is checked where the routes are built, so an alphabet that reaches the
-interpreter is one somebody registered. `Http4sPayload` is therefore *total* -- `decode[R](payload: P[Nothing, R],
-bytes)` returns a `Validated` and not an `Option[Validated]` -- and the walks are written at `Supported[P]` rather than
+interpreter is one somebody registered. `Http4sPayload` is therefore *total* -- its effectful `decode[F, R]` returns
+`F[Validated[DecodingFailure, R]]` and never an optional result -- and the walks are written at `Supported[P]` rather than
 at `Body.Node`, which is what lets `Body.Value.Whole` hand its payload over as a `P`. Scala does invert
 `Whole[S] extends Body.Value[Body.Whole[S], W, R]` to recover `S`.
 
@@ -196,8 +196,23 @@ measured trade. `Http4sRoundTripTest` is what the module rests on -- `Client.fro
 read as both sides, so neither half can agree by being written twice the same wrong way, and no socket means it runs on
 Scala.js too.
 
+`Http4sMultipart.payload(parts)` reads and writes buffered multipart requests and responses, with the parts'
+interpreter nested in its advertised requirement. Compose JSON/CSV before passing that registry to it; an alphabet
+registered only outside it does not cover a part. Explicit nesting repeats that construction. Two multipart
+registrations at the same level are rejected during registry construction: their different part requirements erase to
+the same runtime class, so first-match dispatch could hand a CSV part to a JSON interpreter. `Body.Streamed`
+remains outside `Supported[P]` at every depth. Part names use `Fields`' arrival-order consumption, omitted optional
+parts stay omitted, defaults and explicit-empty contracts remain structural, and filenames are output hints only.
+Failures keep the part's name under the body's path and retain their syntax/content-type/validation categories.
+
+`Http4sPayload.Codec` stays pure for document alphabets. `EntityCodec` is effect-polymorphic in `F: Concurrent` and
+also sees the media type, so multipart can reuse http4s's MIME parser without running an effect unsafely. HTTP body,
+request and response codecs sequence those effects; `Http4sWire` still holds buffered values. Media parameters survive
+the envelope crossing. Boundaries are deterministic and checked against the parts' headers and bytes. M48 needs small
+adapters for an empty multipart and quoted disposition parameters; the multipart suite records those cases.
+
 `Http4s.client(payload, base, transport)` binds a reusable transport context, with `F` inferred from the http4s
-client and `P` fixed by the interpreter. `client(endpoint)` then infers each function's input and output without
+client and `P` fixed by the invariant `Http4sPayload.Of[P]` registration. `client(endpoint)` then infers each function's input and output without
 repeating type arguments. `.withApi(api)` binds the global policy and returns `Either[E | D, B]`, including local
 overrides; a standalone plain endpoint returns `B`, and a standalone endpoint with overrides inherits bodyless default
 errors. Explicit composition is called through `composed.client`. The configured capability cannot widen when an
@@ -236,7 +251,7 @@ request out of an input, the `Schema` for each body keyed by media type, and *bo
 encoded type of every answer: a caller names their cache at the encoded type and decodes past it, and when
 to decode is theirs. Nothing generated calls `fetch`, and `TypescriptEndpointRendererTest` asserts that
 outright rather than leaving it to be noticed. A streamed body and a `Multipart` payload are reported
-rather than half emitted, which is the stand `http-http4s` already takes.
+rather than half emitted. The http4s backend supports registered multipart bodies; the TypeScript generator does not.
 
 Response headers are deliberately not in a generated answer type. A descriptor decodes no headers -- they
 are text the caller reads off the `Response` -- and a type claiming a header is a `number` would be
@@ -266,12 +281,14 @@ Its served endpoints are listed twice on purpose: `api.served` with no handler i
 `Library`, and `LibraryRoutes.routes` beside the handlers. `LibraryServedTest` is what keeps them one list -- the
 routes' declarations must be exactly `api.served`, by identity and in order.
 
-What it deliberately does *not* serve is the more useful half. `POST /books/{isbn}/cover` carries a `Multipart`
-payload, `GET /books/export` answers with an ndjson stream, and `GET /books/report` answers with a stream whose
-elements are written in the CSV alphabet -- one payload no interpreter recognises, one shape no interpreter carries,
-and one of each. All three are rendered into both documents and reported by name there; the http4s backend refuses all
-three where the routes are built, and `LibraryShortfallTest` asserts that of the compiler rather than of a response.
-Those tests failing is the signal that a shortfall has been fixed.
+`POST /books/{isbn}/cover` is served through `Http4sMultipart.payload(Http4sCirce.Payload)`, registered beside JSON.
+It patches metadata and stores optional image bytes in the same `Ref` update, returns a bodyless `Uploaded.Stored`
+(204), or a JSON `Uploaded.Missing` (404). Omission preserves a cover, an empty image replaces it, and successful
+book deletion removes it. `LibraryCoverTest` checks the client, wire statuses and state together.
+
+`GET /books/export` and `GET /books/report` still describe streamed answers the backend cannot carry.
+`LibraryShortfallTest` retains those compile-time checks and the checks that an unregistered multipart payload is
+rejected. Both are documented, and TypeScript additionally reports the now-served cover upload as unsupported.
 
 Two product conversion details are worth knowing before writing anything against this library.
 
