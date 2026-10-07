@@ -5,6 +5,7 @@ import io.taig.otter as Self
 import io.taig.otter.Typescript
 import io.taig.otter.codec.PrimitiveTypescriptTypeLiteralEncoder
 import io.taig.otter.codec.Renderer
+import io.taig.otter.codec.TypescriptConstraint
 import io.taig.otter.http.Parameter
 
 /** The TypeScript type of what a path segment, a query parameter or a header holds.
@@ -24,7 +25,11 @@ object ParameterTypescriptRenderer extends Renderer[Parameter.Node, Typescript.T
 
   override def render[W, R](parameter: Parameter.Node[W, R]): Typescript.Type = parameter match
     case Parameter.Collection.Schema(node) =>
-      Typescript.Type.Symbol("ReadonlyArray", List(collection(node.self)))
+      val item = render(element(node.self))
+      val array = Typescript.Type.Symbol("ReadonlyArray", List(item))
+      if TypescriptConstraint.isNonEmpty(node.self.constraints)
+      then Typescript.Type.Readonly(Typescript.Type.Tuple(List(item, Typescript.Type.Rest(array))))
+      else array
     case Parameter.Coerce.Schema(node)         => coerce(node.self)
     case Parameter.Constant.Schema(node)       => constant(node.self)
     case Parameter.Enumeration.Schema(node)    => Typescript.Type.Union(enumeration(node.self))
@@ -73,14 +78,8 @@ object ParameterTypescriptRenderer extends Renderer[Parameter.Node, Typescript.T
     case Typescript.Type.Literal.String(_) => true
     case _                                 => false
 
-  private def collection(schema: Self.Collection[Parameter.Value.Node, ?, ?]): Typescript.Type =
-    render(element(schema))
-
-  private def element(schema: Self.Collection[Parameter.Value.Node, ?, ?]): Parameter.Value.Node[?, ?] = schema match
-    case Self.Collection.Modify(self, _, _)    => element(self)
-    case Self.Collection.Chained(reference, _) => reference.value
-    case Self.Collection.Indexed(reference, _) => reference.value
-    case Self.Collection.Linked(reference, _)  => reference.value
+  private def element(schema: Self.Collection[Parameter.Value.Node, ?, ?]): Parameter.Value.Node[?, ?] =
+    schema.schema.value
 
   private def coerce(schema: Self.Coerce[Parameter.Primitive.Node, ?, ?]): Typescript.Type = render(canonical(schema))
 

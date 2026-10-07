@@ -460,6 +460,26 @@ than `:*` and `++`, which is the direction and the grouping a URL is read with. 
 - Commit without formatting
 - Delete or skip tests to make CI pass
 
+## Collection contracts
+
+`CollectionComponent` exposes `chain`, `vector`, `list`, `nonEmptyChain`, `nonEmptyVector`, `nonEmptyList`,
+`sortedSet` and cats `nonEmptySet`. JSON and HTTP parameters share these constructors; CSV cells have no collection
+alphabet. Each constructor accepts an optional `Validation` over its resulting read collection. Write and read element
+types remain independent, and sorted constructors require an `Order` for each.
+
+Non-empty shapes reject empty input with the same minimum-one violation as a validated list. Sets accept unsorted
+input but reject duplicates under the read-side `Order` before construction. Their `Unique` violation contains the
+zero-based indices of repeated occurrences, so domain elements need no data encoder. Element failures accumulate at
+wire indices before collection requirements are checked; caller validation runs only after successful construction.
+Writes use the schema's write-side ordering even if a supplied set uses another ordering, sorting a sequence without
+collapsing elements. As with the existing collections, writes do not run read validation.
+
+`Collection.constraints` includes intrinsic minimum-one and uniqueness constraints as well as caller validation,
+including through `Modify`. JSON Schema and OpenAPI render these as `minItems` and `uniqueItems`; repeated bounds
+remain conjunctive. TypeScript uses readonly non-empty arrays and Effect uses `Schema.NonEmptyArray` plus size checks.
+Effect still omits uniqueness checks: arbitrary Scala ordering cannot be translated faithfully. JSON Schema expresses
+wire-level uniqueness, but cannot express custom ordering equivalence or canonical write ordering either.
+
 ## Field absence contracts
 
 Field absence lives in `Field.Optional.presence` or `Field.Default.absent`, never in metadata. Optional contracts

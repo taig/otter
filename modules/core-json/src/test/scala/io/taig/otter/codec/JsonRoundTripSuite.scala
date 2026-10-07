@@ -22,6 +22,7 @@ abstract class JsonRoundTripSuite(interpreter: JsonInterpreter) extends ZIOSpecD
     assertTrue(interpreter.roundTrip(schema, value) == Validated.valid(value))
 
   private val contract: Spec[TestEnvironment & Scope, Any] = suite("contract")(
+    JsonCollectionContract.roundTrip(interpreter),
     test("tagged nested and merged enums"):
       check(Gen.fromIterable(Tagged.nestedDocuments.map(_._1))): value =>
         roundTrips(Tagged.nested, value) && roundTrips(Tagged.merged, value)

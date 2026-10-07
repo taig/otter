@@ -54,11 +54,7 @@ final class OpenApiParameterRenderer(
 
   private def collection(
       schema: Self.Collection[Parameter.Value.Node, ?, ?]
-  ): (CirceJson, Chain[JsonSchemaIssue]) = schema match
-    case Self.Collection.Modify(self, _, _)             => collection(self)
-    case Self.Collection.Chained(reference, validation) => items(reference.value, validation.constraints)
-    case Self.Collection.Indexed(reference, validation) => items(reference.value, validation.constraints)
-    case Self.Collection.Linked(reference, validation)  => items(reference.value, validation.constraints)
+  ): (CirceJson, Chain[JsonSchemaIssue]) = items(schema.schema.value, schema.constraints)
 
   private def items(
       element: Parameter.Value.Node[?, ?],

@@ -48,6 +48,7 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
     result.fold(violations.paths, _ => Nil)
 
   private val contract: Spec[TestEnvironment & Scope, Any] = suite("contract")(
+    JsonCollectionContract.decoder(interpreter),
     JsonDiscriminatorContract(interpreter),
     JsonAbsenceContract(interpreter),
     JsonDynamicContract(interpreter),

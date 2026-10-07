@@ -31,6 +31,7 @@ abstract class JsonEncoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
   private def encode[A](schema: Json.Writer[A], value: A): String = interpreter.encode(schema, value)
 
   private val contract: Spec[TestEnvironment & Scope, Any] = suite("contract")(
+    JsonCollectionContract.encoder(interpreter),
     test("nested empty records remain values, while empty tuples omit the value"):
       val schema = branch.nested("record", RNil) :+ branch.nested("unit", TNil)
       assertTrue(

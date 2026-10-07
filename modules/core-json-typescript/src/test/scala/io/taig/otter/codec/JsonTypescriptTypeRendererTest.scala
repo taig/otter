@@ -18,6 +18,20 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
   private def both(schema: Json.Node[?, ?]): String = read(schema)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptTypeRendererTest")(
+    test("non-empty collection shapes have a first element on both sides"):
+      val schemas = List(
+        collection.nonEmptyList(string),
+        collection.nonEmptyVector(string),
+        collection.nonEmptyChain(string),
+        collection.nonEmptySet(string)
+      )
+      assertTrue(
+        schemas.forall(schema =>
+          read(schema) == "readonly [string, ...ReadonlyArray<string>]" && write(schema) == read(schema)
+        ),
+        read(collection.sortedSet(string)) == "ReadonlyArray<string>"
+      )
+    ,
     test("a record names its members"):
       assertTrue(
         read(json.book) == write(json.book),

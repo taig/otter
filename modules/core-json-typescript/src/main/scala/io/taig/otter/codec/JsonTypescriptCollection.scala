@@ -11,8 +11,4 @@ import io.taig.otter.Json
   * collection is ever empty, and a declaration that disagrees with its own value does not compile.
   */
 object JsonTypescriptCollection:
-  def constraints[W, R](schema: Collection[Json.Node, W, R]): Chain[Constraint] = schema match
-    case Collection.Chained(_, validation) => validation.constraints
-    case Collection.Indexed(_, validation) => validation.constraints
-    case Collection.Linked(_, validation)  => validation.constraints
-    case Collection.Modify(self, _, _)     => constraints(self)
+  def constraints[W, R](schema: Collection[Json.Node, W, R]): Chain[Constraint] = schema.constraints

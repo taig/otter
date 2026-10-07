@@ -6,7 +6,6 @@ import cats.data.State
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.taig.otter.Coerce
-import io.taig.otter.Collection
 import io.taig.otter.Constraint
 import io.taig.otter.Dictionary
 import io.taig.otter.Json
@@ -38,7 +37,7 @@ final class JsonSchemaNodeRenderer(
     case Json.Coerce.Schema(node)     => coerce(node.self)
     case Json.Collection.Schema(node) =>
       child(node.self.schema.value).flatMap: items =>
-        keywords(collection(node.self)).map: keywords =>
+        keywords(node.self.constraints).map: keywords =>
           JsonSchema.constrained(JsonSchema.merge(JsonSchema.typed("array"), "items" -> items), keywords)
     case Json.Constant.Schema(node) =>
       child(node.self.schema.value).map(JsonSchema.merge(_, "const" -> JsonSchemaLiteral.constant(node.self)))
@@ -317,12 +316,6 @@ final class JsonSchemaNodeRenderer(
       case Primitive.Text.Root(validation)   => constraints ++ validation.constraints
       case Primitive.Text.Format(_, _, _)    => constraints
       case Primitive.Text.Modify(self, _, _) => text(self, constraints)
-
-  private def collection[W, R](schema: Collection[Json.Node, W, R]): Chain[Constraint] = schema match
-    case Collection.Chained(_, validation) => validation.constraints
-    case Collection.Indexed(_, validation) => validation.constraints
-    case Collection.Linked(_, validation)  => validation.constraints
-    case Collection.Modify(self, _, _)     => collection(self)
 
   private def dictionaries[W, R](
       schema: Dictionary[Json.Primitive.Text.Node, Json.Node, W, R]

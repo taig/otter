@@ -22,6 +22,18 @@ object ParameterTypescriptRendererTest extends ZIOSpecDefault:
   private def text(parameter: Parameter.Node[?, ?]): String = ParameterTypescriptRenderer.text(parameter, value).render
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("ParameterTypescriptRendererTest")(
+    test("non-empty parameter collections have a first element"):
+      val schemas = List(
+        collection.nonEmptyList(string),
+        collection.nonEmptyVector(string),
+        collection.nonEmptyChain(string),
+        collection.nonEmptySet(string)
+      )
+      assertTrue(
+        schemas.forall(schema => render(schema) == "readonly [string, ...ReadonlyArray<string>]"),
+        render(collection.sortedSet(string)) == "ReadonlyArray<string>"
+      )
+    ,
     test("builders distinguish omitted values from explicitly empty fields"):
       val fields = io.taig.otter.http.Queries.fields(
         query("omitted", int).optional :* query("empty", int).empty :*
