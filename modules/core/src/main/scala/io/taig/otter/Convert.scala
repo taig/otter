@@ -19,6 +19,68 @@ trait Convert[A, B] extends Convert.Reader[A, B]:
   def from(b: B): A
 
 object Convert:
+  /** Runtime membership evidence for a branch of a Scala union type.
+    *
+    * The derived instance only accepts types whose membership Scala can check without losing type arguments. For an
+    * erased type, supply an explicit test with [[Convert.UnionTest.fromTypeTest]]. Such a test must be sound and
+    * complete for its member; overlapping tests are resolved by the schema's branch order.
+    */
+  trait UnionTest[A] extends scala.reflect.TypeTest[Any, A]
+
+  object UnionTest:
+    /** Supplies a caller-defined runtime test, for example one that inspects collection elements. */
+    def fromTypeTest[A](test: scala.reflect.TypeTest[Any, A]): Convert.UnionTest[A] =
+      new Convert.UnionTest[A]:
+        override def unapply(value: Any): Option[value.type & A] = test.unapply(value)
+
+    inline given derived: [A] => Convert.UnionTest[A] = ${ ConvertMacros.unionTest[A] }
+
+  /** Shape evidence for nested `Either`s. Its output type is the Scala union of the leaf members. */
+  sealed abstract class UnionShape[A]:
+    type Out
+
+    def encode(value: A): Out
+
+    def decode(value: Any): Option[A]
+
+  object UnionShape extends UnionLeaf:
+    type Aux[A, B] = Convert.UnionShape[A] { type Out = B }
+
+    given either: [L, R] => (
+        left: Convert.UnionShape[L],
+        right: Convert.UnionShape[R]
+    ) => Convert.UnionShape.Aux[Either[L, R], left.Out | right.Out] =
+      new Convert.UnionShape[Either[L, R]]:
+        override type Out = left.Out | right.Out
+
+        override def encode(value: Either[L, R]): Out = value.fold(left.encode, right.encode)
+
+        override def decode(value: Any): Option[Either[L, R]] =
+          left.decode(value).map(Left(_)).orElse(right.decode(value).map(Right(_)))
+
+  private[otter] trait UnionLeaf:
+    given leaf: [A] => (
+        notEither: NotGiven[A <:< Either[?, ?]],
+        test: Convert.UnionTest[A]
+    ) => Convert.UnionShape.Aux[A, A] =
+      new Convert.UnionShape[A]:
+        override type Out = A
+
+        override def encode(value: A): A = value
+
+        override def decode(value: Any): Option[A] = test.unapply(value)
+
+  /** Converts a nested `Either` to a Scala union, checking branches in declaration order when writing. */
+  given scalaUnion: [L, R, B] => (
+      shape: Convert.UnionShape.Aux[Either[L, R], B],
+      notSum: NotGiven[Mirror.SumOf[B]]
+  ) => Convert[Either[L, R], B]:
+    override def to(value: Either[L, R]): B = shape.encode(value)
+
+    @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
+    override def from(value: B): Either[L, R] =
+      shape.decode(value).getOrElse(throw new MatchError(value))
+
   /** The read half, which is all a schema that only reads can ask for.
     *
     * Taking a `B` apart has to know which member of the shape it belongs to, so [[Convert.sum]] pins the branches to
