@@ -49,9 +49,16 @@ object Http4sMultipartTest extends ZIOSpecDefault:
   private val value =
     Http4sMultipartTest.Upload(Http4sMultipartTest.Details("Cover", 2), Some(ByteVector(0, 255, 13, 10)))
   private val reader =
-    new Http4sBodyDecoder[IO, Http4sMultipart.Parts[Json.Node]](Http4sMultipart.payload(Http4sCirce.Payload))
+    new Http4sBodyDecoder[IO, Http4sMultipart.Parts[Json.Node], Nothing](Http4sMultipart.payload(Http4sCirce.Payload))
   private val writer =
-    new Http4sBodyEncoder[IO, Http4sMultipart.Parts[Json.Node]](Http4sMultipart.payload(Http4sCirce.Payload))
+    new Http4sBodyEncoder[IO, Http4sMultipart.Parts[Json.Node], Nothing](Http4sMultipart.payload(Http4sCirce.Payload))
+
+  /** Fail the test if a buffered schema starts producing a streamed entity. */
+  @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
+  private def strictBytes(entity: Entity[IO]): ByteVector = entity match
+    case Entity.Strict(bytes) => bytes
+    case Entity.Empty         => ByteVector.empty
+    case _                    => throw new IllegalStateException("Multipart must remain buffered")
 
   private def run[A](io: IO[A]): Task[A] = ZIO.fromFuture(_ => io.unsafeToFuture())
   private def bytes(text: String): ByteVector = ByteVector.view(text.getBytes(java.nio.charset.StandardCharsets.UTF_8))
@@ -64,11 +71,11 @@ object Http4sMultipartTest extends ZIOSpecDefault:
         ) ++ HttpHeaders(contentType.toList.map(value => Header.Raw(CIString("Content-Type"), value)))
       )
 
-  private def wire(parts: HttpPart[IO]*): IO[(Option[MediaType], ByteVector)] =
+  private def wire(parts: HttpPart[IO]*): IO[(Option[MediaType], Entity[IO])] =
     val multipart = HttpParts(parts.toVector, Boundary("external-boundary"))
     Http4sEnvelope
       .toBytes(EntityEncoder.multipartEncoder[IO].toEntity(multipart))
-      .map((Http4sEnvelope.toMediaType(multipart.headers), _))
+      .map(bytes => (Http4sEnvelope.toMediaType(multipart.headers), Entity.strict(bytes)))
 
   private def decode(parts: HttpPart[IO]*) =
     wire(parts*).flatMap(reader.decodeDetailed(body.multipart(Http4sMultipartTest.parts), _))
@@ -90,7 +97,7 @@ object Http4sMultipartTest extends ZIOSpecDefault:
           .flatMap: (mediaType, bytes) =>
             val request = HttpRequest[IO](
               headers = HttpHeaders(Header.Raw(CIString("Content-Type"), mediaType.render)),
-              entity = Entity.strict(bytes)
+              entity = bytes
             )
             EntityDecoder
               .multipart[IO]
@@ -134,7 +141,7 @@ object Http4sMultipartTest extends ZIOSpecDefault:
       )
     ,
     test("part failures accumulate with their request body paths and categories"):
-      val decoder = new Http4sRequestDecoder[IO, Body.Or[Json.Node, Http4sMultipart.Parts[Json.Node]]](payload)
+      val decoder = new Http4sRequestDecoder[IO, Body.Or[Json.Node, Http4sMultipart.Parts[Json.Node]], Nothing](payload)
       run(
         wire(
           rawPart("metadata", """{"title":1,"count":"bad"}""", Some("application/json")),
@@ -180,14 +187,15 @@ object Http4sMultipartTest extends ZIOSpecDefault:
           bytes("--x\r\nContent-Disposition: form-data; name=metadata\r\n\r\n{}")
         )
       )
-      run(malformed.traverse(reader.decodeDetailed(declared, _))).map(results =>
-        assertTrue(
-          results.forall(_.swap.toOption.exists(_.category == Failure.Category.Syntax)),
-          Http4sEnvelope
-            .toMediaType("Multipart/Form-Data; boundary=\"with space\"")
-            .flatMap(_.parameter("boundary"))
-            .contains("with space")
-        )
+      run(malformed.traverse((media, bytes) => reader.decodeDetailed(declared, (media, Entity.strict(bytes))))).map(
+        results =>
+          assertTrue(
+            results.forall(_.swap.toOption.exists(_.category == Failure.Category.Syntax)),
+            Http4sEnvelope
+              .toMediaType("Multipart/Form-Data; boundary=\"with space\"")
+              .flatMap(_.parameter("boundary"))
+              .contains("with space")
+          )
       )
     ,
     test("duplicate schema names consume parts in arrival order"):
@@ -223,11 +231,11 @@ object Http4sMultipartTest extends ZIOSpecDefault:
         absent <- reader.decodeDetailed(body.multipart(empty), (Some(explicit._1), explicit._2))
       yield (encoded, omitted, default, explicit, absent)).map((encoded, omitted, default, explicit, absent) =>
         assertTrue(
-          encoded._2.decodeUtf8.toOption.exists(_.endsWith("--\r\n")),
+          strictBytes(encoded._2).decodeUtf8.toOption.exists(_.endsWith("--\r\n")),
           omitted.toOption.contains(None),
           default.toOption.contains(bytes("default")),
           absent.toOption.contains(None),
-          explicit._2.decodeUtf8.toOption.exists(_.contains("name=\"x\""))
+          strictBytes(explicit._2).decodeUtf8.toOption.exists(_.contains("name=\"x\""))
         )
       )
     ,
@@ -274,7 +282,7 @@ object Http4sMultipartTest extends ZIOSpecDefault:
         assertTrue(
           mediaType.parameter("boundary").contains("otter-boundary-1"),
           result.toOption.contains(file),
-          encoded.decodeUtf8.toOption.exists(_.contains("filename=\"a\\\\b\\\"c.bin\""))
+          strictBytes(encoded).decodeUtf8.toOption.exists(_.contains("filename=\"a\\\\b\\\"c.bin\""))
         )
       )
     ,
@@ -300,7 +308,7 @@ object Http4sMultipartTest extends ZIOSpecDefault:
           Http4s.client(Http4sCirce.Payload, uri"http://multipart.test", transport)(upload)
         """),
         !typeChecks("""
-          val streamed = part("rows", body.ndjson(json.string)).toRecord
+          val streamed = part("rows", body.ndjson[fs2.Stream[IO, +*]](json.string)).toRecord
           val endpoint = io.taig.otter.http.fixture.dsl.endpoint(request(method.post, __)(body.multipart(streamed)), response(status.noContent))
           Http4s.app[IO](Route(endpoint, (_: Unit) => IO.unit))(payload)
         """)

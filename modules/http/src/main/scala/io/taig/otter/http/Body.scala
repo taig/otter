@@ -27,7 +27,7 @@ object Body:
   object Requirement:
     sealed abstract class Whole[+P[-_, +_], -W, +R]
 
-    sealed abstract class Streamed[+P[-_, +_], -W, +R]
+    sealed abstract class Streamed[C[+_], +P[-_, +_], -W, +R]
 
   /** The payload of a body that has none, which is not the same as a body that is not there.
     *
@@ -107,51 +107,19 @@ object Body:
       override def element[W, R](fb: => Body.Schema[S2, W, R]): Bodies.Schema[Body.Or[S1, S2], W, R] =
         Bodies.Schema.apply[Body.Or[S1, S2], W, R](Self.Union.Root(Reference.later(fb)))
 
-  /** A streamed body, at the type of its element.
-    *
-    * [[Body.Schema]] round trips `Unit` for a streamed body, because that is what it contributes to the endpoint. This
-    * carries the element type alongside, so that a backend can ask for the very body it is about to hand a stream for
-    * and have the compiler check that the element is the one the endpoint described:
-    *
-    * {{{
-    * def route[F[_], S[-_, +_], A, B, E](
-    *     endpoint: Endpoint.Server[S, A, B],
-    *     body: Body.Streamed.Schema[S, E, E],
-    *     handler: (A, fs2.Stream[F, E]) => F[B]
-    * ): Route[F, S, A, B]
-    * }}}
-    *
-    * Without it the element type would be recoverable only from a comment. With it, the one thing left to check at
-    * construction is that the body belongs to that endpoint, which is a value comparison and not a type.
-    */
+  /** A stream carrier is chosen by the backend, without introducing an effect into this alphabet. */
   object Streamed:
-    /** Streaming support is distinct from interpreting a whole element. */
-    type Requirement[P[-w, +r]] = [w, r] =>> Body.Requirement.Streamed[P, w, r]
+    type Requirement[C[+_], P[-w, +r]] = [w, r] =>> Body.Requirement.Streamed[C, P, w, r]
 
-    type Of[S[-w, +r], A] = Body.Streamed.Schema[S, A, A]
+  /** Capability required by a raw byte stream. */
+  sealed abstract class Raw[-W, +R]
 
-    /** Holding anything, which is the form an interpreter is written against. */
-    type Node = [w, r] =>> Body.Streamed.Schema[Body.Payload, w, r]
-
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Body.Value.Streamed[S, W, R]]):
-      /** The same body as a [[Request]] sees it, which is as something contributing nothing. */
-      def body: Body.Schema[Body.Streamed.Requirement[S], Unit, Unit] = new Body.Schema(self)
-
-      def frame: Frame = self.self.frame
-
-      def mediaType: MediaType = self.self.mediaType
-
-    object Schema:
-      given annotated: [S[-w, +r], W, R] => Annotated[Body.Streamed.Schema[S, W, R]]:
-        extension (self: Body.Streamed.Schema[S, W, R])
-          override def lens: (Metadata, Metadata => Body.Streamed.Schema[S, W, R]) =
-            (self.self.metadata, metadata => new Body.Streamed.Schema(self.self.copy(metadata = metadata)))
-
-  /** What a body is: three forms, and the profunctor that maps them.
+  /** What a body is, and the profunctor that maps its values.
     *
     * A [[Body.Value.Whole]] is one document. A [[Body.Value.Binary]] is bytes with no document in them at all -- an
     * image, a PDF -- carried as a `ByteVector` so that comparing two of them means comparing their contents. A
-    * [[Body.Value.Streamed]] is a sequence of documents arriving one at a time.
+    * [[Body.Value.Streamed]] is a sequence of documents arriving one at a time. [[Body.Value.Raw]] carries typed bytes
+    * directly, without a document codec or framing.
     */
   sealed abstract class Value[+S[-_, +_], -W, +R]:
     def mediaType: MediaType
@@ -170,20 +138,19 @@ object Body:
       */
     final case class Binary(override val mediaType: MediaType) extends Body.Value[Body.Opaque, ByteVector, ByteVector]
 
-    /** A sequence of documents, arriving one at a time.
-      *
-      * `W` and `R` are the *element*, and the body itself round trips `Unit` -- it contributes nothing to what the
-      * endpoint holds. That is the whole of the streaming design: naming the element and the framing is everything a
-      * description can honestly say, and what a sequence of them is belongs to the interpreter that has an effect type
-      * to say it in. An endpoint carrying one is handed its stream by the backend alongside the value it decoded, and
-      * `Streamed` keeping the element in its own type is what lets that backend pin the element type in the compiler
-      * rather than in a comment.
-      */
-    final case class Streamed[+S[-_, +_], -W, +R](
+    /** Framed documents carried by an abstract covariant stream. */
+    final case class Streamed[C[+_], +S[-_, +_], -W, +R](
         override val mediaType: MediaType,
         frame: Frame,
         element: Reference[S, W, R]
-    ) extends Body.Value[Body.Streamed.Requirement[S], Unit, Unit]
+    ) extends Body.Value[Body.Streamed.Requirement[C, S], C[W], C[R]]:
+      require(frame != Frame.Raw, "Use body.streamed[C].raw for raw byte streams")
+      frame match
+        case Frame.Delimited(separator) => require(separator.nonEmpty, "A stream delimiter must not be empty")
+        case _                          => ()
+
+    final case class Raw[C[+_]](override val mediaType: MediaType)
+        extends Body.Value[Body.Streamed.Requirement[C, Body.Raw], C[Byte], C[Byte]]
 
     final case class Modify[+S[-_, +_], W0, R0, -W, +R](
         self: Body.Value[S, W0, R0],

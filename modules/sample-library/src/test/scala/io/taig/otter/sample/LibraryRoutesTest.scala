@@ -213,9 +213,9 @@ object LibraryRoutesTest extends ZIOSpecDefault:
           .map((code, body) => assertTrue(code == 409, body.contains("\"kind\":\"conflict\"")))
     ),
     suite("a placeholder shadows a literal of the same arity")(
-      test("/books/export is caught by /books/{isbn} and reported as an ISBN that does not parse"):
+      test("/books/export is served before the ISBN placeholder"):
         answer(get(uri"http://library.test/books/export")).map((code, body) =>
-          assertTrue(code == 400, body.contains("isbn"))
+          assertTrue(code == 200, body.contains("isbn"))
         )
       ,
       test("so is a delete, by /books/{isbn} under the same method"):

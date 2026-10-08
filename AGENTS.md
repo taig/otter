@@ -112,9 +112,9 @@ segments, a static segment is a `Constant` (it writes its literal, requires it o
 `Append` drops it), a dynamic one is a `Branch`, a query string and a header set are `Record`s of `Field`s, and
 alternatives -- `Bodies`, `Responses` -- are `Union`s. `Multipart` is a `Record` of `Part`s, which is the *product* of
 bodies that makes a file upload describable; a multipart body is not a case of `Body` but a payload for one, exactly as
-it is in HTTP. A streamed body names its element and its framing and contributes nothing to what the endpoint holds:
-what a sequence of elements *is* belongs to whoever has an effect type to say it in, and `Body.Streamed.Schema` keeps
-the element type so a backend can pin it in the compiler.
+it is in HTTP. A streamed body names its element, framing and abstract covariant carrier `C[+A]`. It contributes `C[W]`/`C[R]`
+to the ordinary endpoint value, so products, conversions and unions preserve the stream type. Core has no fs2
+dependency; http4s instantiates the carrier as `Stream[F, +*]`. Raw byte streams have their own body node.
 
 `Endpoint.Server` and `Endpoint.Client` are `Side` one tier up: a server reads the request and writes the response, and
 a caller does the reverse. The two differ wherever a field is optional or holds a default, so the same endpoint value
@@ -156,10 +156,24 @@ no test of its own and there is no "neither" for anybody to answer. That is what
 interpreters into a total one, and it is the single place the erasure is crossed: a pattern match inside the instance,
 which `DisableSyntax.asInstanceOf` would refuse in any case.
 
-A streamed body and a request carrying one are not cases in those walks at all. Their requirement is
-`Body.Requirement.Streamed`, which no `Supported[P]` admits, so the compiler reports the branches as unreachable and
-the endpoints as unservable. `Http4sIssue` therefore has one case: a body this interpreter carries and this value
-gave it nothing to write. `Http4sFailure.Encoding` is what raises it.
+Streaming is registered separately with `payload.withStreams(Http4sCirce.Streams)` and, for raw bytes,
+`Http4sStreams.Raw`. `Http4sInterpreter.Supported[F, P, Q]` joins buffered `P` with streamed `Q` at exactly the
+carrier `Stream[F, +*]`. A buffered JSON registration alone never admits a JSON stream; multipart's nested registry
+still only accepts buffered parts. The wire carries `Entity[F]`, and only whole-document/binary nodes collect bytes.
+
+The client keeps request and response requirements separate. `client.resource(endpoint)` returns
+`A => Resource[F, B]` and owns the response until the resource closes. The `A => F[B]` convenience accepts buffered
+responses, including streamed uploads. API configuration captures its actual requirement before checking interpreter
+coverage, so a bodyless policy does not widen to the interpreter's streaming capability.
+
+Framing has a configurable 1 MiB limit, backpressure and sequential element decoding. Lines, data-only SSE,
+custom delimiters and raw byte streams are supported. Ambiguous streamed status/media alternatives fail at construction;
+missing media type cannot select between multiple eligible streaming alternatives. Stream failures carry endpoint,
+direction and element index, with violations below `body[index]`. Failures before the response use the error policy;
+late failures terminate the body and notify observers. Optional untyped requests use resource-scoped bounded lookahead.
+
+The M48 `Client.fromHttpApp` drains response bodies on release with an uncancelable producer. Use it for finite
+round trips; use a resource-backed in-memory `Client` for infinite streams and cancellation tests.
 
 Each `Failure.Category` is raised by something a request or a handler does, and there is none for a body nothing can
 read, because no request can reach one. Add a category only for a failure some backend selects: one none selects would
@@ -207,7 +221,7 @@ Failures keep the part's name under the body's path and retain their syntax/cont
 
 `Http4sPayload.Codec` stays pure for document alphabets. `EntityCodec` is effect-polymorphic in `F: Concurrent` and
 also sees the media type, so multipart can reuse http4s's MIME parser without running an effect unsafely. HTTP body,
-request and response codecs sequence those effects; `Http4sWire` still holds buffered values. Media parameters survive
+request and response codecs sequence those effects; `Http4sWire` carries effectful entities; multipart itself remains buffered. Media parameters survive
 the envelope crossing. Boundaries are deterministic and checked against the parts' headers and bytes. M48 needs small
 adapters for an empty multipart and quoted disposition parameters; the multipart suite records those cases.
 
@@ -286,9 +300,10 @@ It patches metadata and stores optional image bytes in the same `Ref` update, re
 (204), or a JSON `Uploaded.Missing` (404). Omission preserves a cover, an empty image replaces it, and successful
 book deletion removes it. `LibraryCoverTest` checks the client, wire statuses and state together.
 
-`GET /books/export` and `GET /books/report` still describe streamed answers the backend cannot carry.
-`LibraryShortfallTest` retains those compile-time checks and the checks that an unregistered multipart payload is
-rejected. Both are documented, and TypeScript additionally reports the now-served cover upload as unsupported.
+`GET /books/export` streams an immutable catalogue snapshot in ISBN order. `api.Definitions[C]` owns stable streamed
+declarations and the sample shares one IO instance across routes, clients and documents. Register the export before
+`/books/{isbn}`. `GET /books/report` remains unserved because CSV row streaming is unregistered. Shortfall tests retain
+missing stream and multipart capability checks. OpenAPI and TypeScript still report their streaming limitations.
 
 Two product conversion details are worth knowing before writing anything against this library.
 
@@ -325,8 +340,8 @@ asserts that the wire and both documents are unchanged.
 A third thing it records rather than leaves to be discovered: **a placeholder shadows a literal of the same arity**.
 `/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever is registered first wins, and a
 literal path must come before the placeholder path that would otherwise swallow it. The shadowing decides `Allow` too:
-`GET` and `DELETE /books/export` are both `400`s for an ISBN that does not parse, and `PUT /books/export` is a `405`
-naming the methods of `/books/{isbn}`, exactly as `PUT /books/{isbn}` is.
+`GET /books/export` now reaches its literal route, while `DELETE /books/export` still reaches the ISBN placeholder
+and returns `400`. `PUT /books/export` is a `405` naming the matching routes' methods.
 
 ### Fast loop
 

@@ -10,6 +10,7 @@ import io.taig.otter.Violations
 import io.taig.otter.codec.JsonCirceDecoder
 import io.taig.otter.codec.JsonCirceEncoder
 import io.taig.otter.http.codec.Http4sPayload
+import io.taig.otter.http.codec.Http4sStreams
 import io.taig.validation.Violation
 import scodec.bits.ByteVector
 
@@ -32,7 +33,7 @@ object Http4sCirce:
       case json: Json.Node[W, R] @unchecked => mine(json)
       case other: Q[W, R] @unchecked        => theirs(other)
 
-  val Payload: Http4sPayload.Of[Json.Node] = Http4sPayload(Http4sCirce.Alphabet)(new Http4sPayload.Codec[Json.Node]:
+  private val codec: Http4sPayload.Codec[Json.Node] = new Http4sPayload.Codec[Json.Node]:
     override def decode[R](payload: Json.Node[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
       Http4sCirce.parse(bytes).andThen(JsonCirceDecoder.decode[R](payload, _))
 
@@ -46,7 +47,14 @@ object Http4sCirce:
         )
 
     override def encode[W](payload: Json.Node[W, Any], value: W): Either[String, ByteVector] =
-      ByteVector.encodeUtf8(JsonCirceEncoder.encode[W](payload, value).noSpaces).leftMap(_.getMessage))
+      ByteVector.encodeUtf8(JsonCirceEncoder.encode[W](payload, value).noSpaces).leftMap(_.getMessage)
+
+  val Payload: Http4sPayload.Of[Json.Node] = Http4sPayload(Http4sCirce.Alphabet)(codec)
+
+  def streams(maxFrameBytes: Int = Http4sStreams.DefaultMaxFrameBytes): Http4sStreams.Of[Json.Node] =
+    Http4sStreams(Http4sCirce.Alphabet, maxFrameBytes)(codec)
+
+  val Streams: Http4sStreams.Of[Json.Node] = streams()
 
   /** The bytes as a document, or the one violation a document that is not one can produce.
     *

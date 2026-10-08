@@ -38,7 +38,7 @@ object Response:
     type Of[+S[-w, +r], -A] = Response.Schema[S, A, Any]
 
   final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Response.Value[S, W, R]]):
-    export self.self.{bodies, headers, status, streamed}
+    export self.self.{bodies, headers, status}
 
   object Schema extends Response.AlternableInstances:
     def apply[S[-_, +_], W, R](self: Response.Value[S, W, R]): Response.Schema[S, W, R] =
@@ -104,21 +104,17 @@ object Response:
 
     def bodies: Option[Reference[Bodies.Schema[S, *, *], ?, ?]]
 
-    def streamed: Option[Reference[Body.Streamed.Node, ?, ?]]
-
   object Value:
     final case class Root(override val status: Status) extends Response.Value[Nothing, Unit, Unit]:
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = None
 
       override def bodies: Option[Reference[Bodies.Schema[Nothing, *, *], ?, ?]] = None
 
-      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = None
-
     final case class Headers[+S[-_, +_], W1, R1, W2, R2](
         self: Response.Value[S, W1, R1],
         values: Reference[io.taig.otter.http.Headers.Node, W2, R2]
     ) extends Response.Value[S, (W1, W2), (R1, R2)]:
-      export self.{bodies, status, streamed}
+      export self.{bodies, status}
 
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = Some(values)
 
@@ -126,19 +122,11 @@ object Response:
         self: Response.Value[S, W1, R1],
         values: Reference[Bodies.Schema[S, *, *], W2, R2]
     ) extends Response.Value[S, (W1, W2), (R1, R2)]:
-      export self.{headers, status, streamed}
+      export self.{headers, status}
 
       override def bodies: Option[Reference[Bodies.Schema[S, *, *], ?, ?]] = Some(values)
 
     /** A streamed body added to a response, which changes what it describes without changing what it holds. */
-    final case class Streamed[+S[-_, +_], W1, R1, W2, R2](
-        self: Response.Value[Body.Streamed.Requirement[S], W1, R1],
-        value: Reference[Body.Streamed.Schema[S, *, *], W2, R2]
-    ) extends Response.Value[Body.Streamed.Requirement[S], W1, R1]:
-      export self.{bodies, headers, status}
-
-      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = Some(value)
-
     final case class Modify[+S[-_, +_], W0, R0, -W, +R](self: Response.Value[S, W0, R0], f: R0 => R, g: W => W0)
         extends Response.Value[S, W, R]:
-      export self.{bodies, headers, status, streamed}
+      export self.{bodies, headers, status}

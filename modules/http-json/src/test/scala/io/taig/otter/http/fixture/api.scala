@@ -72,7 +72,7 @@ object api:
   /** A stream of documents, one per line. The element type is on the body, so a backend handed it knows what its stream
     * yields; the body itself contributes nothing to what a request reads.
     */
-  val reports: Body.Streamed.Of[Json.Node, Report] = body.ndjson(api.report)
+  val reports = body.ndjson[Vector](api.report)
 
   /** `/reports/{id}` */
   val one: Path[Int] = __ :* segment("reports") :* segment("id", int)
@@ -100,7 +100,7 @@ object api:
 
   /** `GET /reports` answering with a stream of reports, which contributes nothing to what the caller is handed here.
     */
-  val stream: Endpoint.Server[Body.Streamed.Requirement[Json.Node], Unit, Unit] =
+  val stream =
     endpoint(
       request(method.get, __ :* segment("reports")),
       response(status.ok)(api.reports).toUnion

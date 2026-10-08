@@ -10,11 +10,16 @@ import cats.data.Chain
   * has to cover it -- the compiler checks one requirement for the whole value, not one per consumer. Where `errors` and
   * `unrouted` are written in different alphabets, ascribe the `Api` type rather than leave the two to be inferred.
   */
-final case class Api[+S[-_, +_], +E](
+final case class Api[S[-_, +_], E](
     endpoints: Chain[Endpoint.Declaration.Node],
     errors: ErrorPolicy[S, E],
     unrouted: UnroutedPolicy[S]
 ):
+  type Requirement[-W, +R] = S[W, R]
+  type Error = E
+
+  private[http] def typed: Api[Api.this.Requirement, Api.this.Error] = this
+
   def effective: Chain[Endpoint.Node] = endpoints.map(_.compose(errors).effective)
 
 object Api:

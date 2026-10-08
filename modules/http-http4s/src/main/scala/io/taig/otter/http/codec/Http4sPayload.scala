@@ -106,7 +106,16 @@ object Http4sPayload:
   final class Of[P[-_, +_]] private[codec] (
       private[codec] val alphabet: Http4sPayload.Alphabet[P],
       private[codec] val codec: Http4sPayload.EntityCodec[P]
-  ) extends Http4sPayload[P]:
+  ) extends Http4sPayload[P]
+      with Http4sInterpreter.Of[P, Nothing]:
+    override def buffered: Http4sPayload[P] = this
+    override def streams: Http4sStreams[Nothing] = Http4sStreams.Empty
+
+    def withStreams[Q[-_, +_]](registered: Http4sStreams.Of[Q]): Http4sInterpreter.Of[P, Q] =
+      new Http4sInterpreter.Of[P, Q]:
+        override def buffered: Http4sPayload[P] = Of.this
+        override def streams: Http4sStreams[Q] = registered
+
     override private[http] def decode[F[_]: Concurrent, R](
         payload: P[Nothing, R],
         mediaType: Option[MediaType],

@@ -238,17 +238,12 @@ final class OpenApiRenderer(
       .map(reference => this.content(operation, request, reference.value))
       .getOrElse((Nil, Collected.Empty))
 
-    val (streamed, framed) = schema.streamed
-      .map(reference => this.streamed(operation, request, reference.value))
-      .map((entry, collected) => (List(entry), collected))
-      .getOrElse((Nil, Collected.Empty))
-
-    val entries = whole ++ streamed
+    val entries = whole
 
     val rendered = Option.when(entries.nonEmpty):
       OpenApi.obj("required" -> CirceJson.fromBoolean(schema.required), "content" -> OpenApi.content(entries))
 
-    (rendered, described ++ framed ++ this.encodingAlternatives(operation, entries))
+    (rendered, described ++ this.encodingAlternatives(operation, entries))
 
   private def responses(operation: String, schema: Responses.Schema[?, ?, ?]): (ListMap[String, CirceJson], Collected) =
     val (groups, collected) = Responses
@@ -271,16 +266,11 @@ final class OpenApiRenderer(
       .map(reference => this.content(operation, response, reference.value))
       .getOrElse((Nil, Collected.Empty))
 
-    val (streamed, framed) = schema.streamed
-      .map(reference => this.streamed(operation, response, reference.value))
-      .map((entry, collected) => (List(entry), collected))
-      .getOrElse((Nil, Collected.Empty))
-
     val (headers, reported) = schema.headers
       .map(reference => this.headers(operation, reference.value))
       .getOrElse((ListMap.empty, Collected.Empty))
 
-    val entries = whole ++ streamed
+    val entries = whole
 
     /* A description is required by the specification and there is no honest way to omit it, so an answer that says
      * nothing gets the phrase its own status carries. */
@@ -294,7 +284,7 @@ final class OpenApiRenderer(
 
     (
       Response(description, entries.map((media, content) => media -> content.copy(encoding = ListMap.empty)), headers),
-      described ++ framed ++ reported ++ Collected(Chain.fromSeq(unsupported), ListMap.empty)
+      described ++ reported ++ Collected(Chain.fromSeq(unsupported), ListMap.empty)
     )
 
   private def mergedResponse(operation: String, status: Int, alternatives: List[Response]): (CirceJson, Collected) =
@@ -383,7 +373,9 @@ final class OpenApiRenderer(
   private def value(operation: String, side: Side, schema: Body.Value[?, ?, ?]): (OpenApi.Content, Collected) =
     schema match
       case Body.Value.Modify(self, _, _) => this.value(operation, side, self)
-      case Body.Value.Binary(media)      =>
+      case Body.Value.Raw(media)         =>
+        (OpenApi.Content(JsonSchema.typed("string")), Collected.issue(OpenApiIssue.Framed(operation, media.render)))
+      case Body.Value.Binary(media) =>
         /* OpenAPI 3.1 dropped `format: binary` in favour of saying what the bytes are, which is what the body already
          * carries: a string whose content is this media type. */
         (
@@ -485,18 +477,6 @@ final class OpenApiRenderer(
         case (media, alternatives) if alternatives.distinct.size > 1 => OpenApiIssue.Encoding(operation, media)
 
     Collected(Chain.fromSeq(issues), ListMap.empty)
-
-  private def streamed(
-      operation: String,
-      side: Side,
-      schema: Body.Streamed.Schema[?, ?, ?]
-  ): ((String, OpenApi.Content), Collected) =
-    val (rendered, collected) = this.document(operation, side, schema.self.self.element.value)
-
-    (
-      (schema.mediaType.render, OpenApi.Content(JsonSchemaAnnotation(namespaces, schema.self.metadata, rendered))),
-      collected ++ Collected.issue(OpenApiIssue.Framed(operation, schema.mediaType.render))
-    )
 
   /** A payload, handed to whichever renderer knows its alphabet. */
   private def document(operation: String, side: Side, content: Any): (CirceJson, Collected) =

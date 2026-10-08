@@ -37,3 +37,16 @@ object Http4sFailure:
   /** A status http4s will not answer with. */
   final case class Status(status: io.taig.otter.http.Status, reason: String)
       extends Http4sFailure(show"Cannot answer with status '${status.value}': $reason")
+
+  enum Direction:
+    case Request, Response
+
+  final case class Streaming(
+      endpoint: Endpoint.Node,
+      direction: Http4sFailure.Direction,
+      index: Option[Long],
+      failure: Failure
+  ) extends Http4sFailure(
+        s"${endpoint.request.method.name} ${direction} stream failure at element ${index.fold("unknown")(_.toString)}"
+      ):
+    override def getCause: Throwable = failure.cause.orNull

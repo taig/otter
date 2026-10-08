@@ -2,15 +2,16 @@ package io.taig.otter.http
 
 import cats.data.Chain
 import cats.effect.Concurrent
+import cats.effect.Resource
 import cats.syntax.all.*
-import io.taig.otter.http.codec.Http4sPayload
+import io.taig.otter.http.codec.Http4sInterpreter
 import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sResponseEncoder
 import io.taig.otter.http.codec.PathTemplate
 import io.taig.otter.http.component.ErrorPolicyComponent
+import org.http4s.Entity
 import org.http4s.Request as Http4sRequest
 import org.http4s.Response as Http4sResponse
-import scodec.bits.ByteVector
 
 /** An endpoint, and what answers it.
   *
@@ -33,7 +34,7 @@ import scodec.bits.ByteVector
   * API too, and a document rendered from it says so.
   */
 final case class Route[F[_], +S[-_, +_], A, B] private (
-    declaration: Endpoint.Declaration[S, Nothing, A, B, Any, Any],
+    declaration: Endpoint.Declaration[S, S, Nothing, A, B, Any, Any],
     handler: A => F[B],
     errors: ErrorPolicy[S, Any]
 ):
@@ -64,27 +65,23 @@ final case class Route[F[_], +S[-_, +_], A, B] private (
     Route.addresses(PathTemplate(endpoint.request.path.value), segments)
 
 object Route:
-  def apply[F[_], S[-_, +_], A, B, E, D](
-      api: Api[S, E],
-      endpoint: Endpoint.Declaration[S, Nothing, A, B, Any, D],
+  def apply[F[_], Q[-_, +_], S[-_, +_], T[-_, +_], A, B, E, D](
+      api: Api[T, E],
+      endpoint: Endpoint.Declaration[Q, S, Nothing, A, B, Any, D],
       handler: A => F[B]
-  ): Route[F, S, A, B] =
-    new Route(endpoint, handler, endpoint.compose(api.errors).errors)
+  ): Route[F, [w, r] =>> Q[w, r] | S[w, r] | T[w, r], A, B] =
+    new Route(endpoint, handler, endpoint.compose[Body.Or[S, T], E](api.errors).errors)
 
-  def apply[F[_], S[-_, +_], A, B, E](
-      endpoint: Endpoint.Declaration[S, Nothing, A, B, Any, E],
+  def apply[F[_], Q[-_, +_], S[-_, +_], A, B, E](
+      endpoint: Endpoint.Declaration[Q, S, Nothing, A, B, Any, E],
       handler: A => F[B]
-  ): Route[F, S, A, B] =
+  ): Route[F, Body.Or[Q, S], A, B] =
     new Route(endpoint, handler, endpoint.compose(ErrorPolicyComponent.default).errors)
 
-  /** A route for an endpoint already composed with its error policy, which it keeps under an API's policy as well.
-    *
-    * A name of its own rather than an overload of `apply`, for the reason [[Route]] gives.
-    */
-  def composed[F[_], S[-_, +_], A, B, E](
-      endpoint: ComposedEndpoint[S, Nothing, A, B, Any, E],
+  def composed[F[_], Q[-_, +_], S[-_, +_], A, B, E](
+      endpoint: ComposedEndpoint[Q, S, Nothing, A, B, Any, E],
       handler: A => F[B]
-  ): Route[F, S, A, B] = new Route(endpoint.declaration, handler, endpoint.errors)
+  ): Route[F, Body.Or[Q, S], A, B] = new Route(endpoint.declaration, handler, endpoint.errors)
 
   /** This route's answer to a request it has already matched.
     *
@@ -93,10 +90,10 @@ object Route:
     * the two in the same scope: the endpoint's request, its responses and its error policy all widen to it, so the
     * schemas reach the codecs already typed and neither side has to be told what the other holds.
     */
-  private[http] def run[F[_], P[-_, +_], A, B](
-      route: Route[F, Http4sPayload.Supported[P], A, B],
-      decoder: Http4sRequestDecoder[F, P],
-      encoder: Http4sResponseEncoder[F, P],
+  private[http] def run[F[_], P[-_, +_], Q[-_, +_], A, B](
+      route: Route[F, Http4sInterpreter.Supported[F, P, Q], A, B],
+      decoder: Http4sRequestDecoder[F, P, Q],
+      encoder: Http4sResponseEncoder[F, P, Q],
       observe: Http4sObservation[F] => F[Unit],
       request: Http4sRequest[F],
       segments: Vector[String]
@@ -105,34 +102,61 @@ object Route:
     def notify(event: Http4sObservation.Event): F[Unit] =
       evaluate(observe(Http4sObservation(request, route.endpoint, event))).flatten
     def failure(cause: Throwable): Failure = cause match
-      case Http4sFailure.Execution(refused) => refused
-      case _: Http4sFailure.Encoding        => Failure(Failure.Category.Encoding, cause = Some(cause))
-      case _: Http4sFailure.Status          => Failure(Failure.Category.Status, cause = Some(cause))
-      case _                                => Failure(Failure.Category.Unexpected, cause = Some(cause))
+      case Http4sFailure.Execution(refused)   => refused
+      case streaming: Http4sFailure.Streaming => streaming.failure
+      case _: Http4sFailure.Encoding          => Failure(Failure.Category.Encoding, cause = Some(cause))
+      case _: Http4sFailure.Status            => Failure(Failure.Category.Status, cause = Some(cause))
+      case _                                  => Failure(Failure.Category.Unexpected, cause = Some(cause))
 
-    val execute = evaluate(Route.bytes(route.endpoint, request)).flatten.attempt.flatMap:
-      case Left(cause)  => F.pure(Left(Failure(Failure.Category.EntityRead, cause = Some(cause))))
-      case Right(bytes) =>
-        evaluate:
-          val wire = Http4sWire.Request(
-            path = segments,
-            queries = Http4sEnvelope.toQueries(request.uri.query),
-            headers = Http4sEnvelope.toHeaders(request.headers),
-            body = (Http4sEnvelope.toMediaType(request.headers), bytes)
+    def observed(response: Http4sResponse[F], errorResponse: Boolean): Http4sResponse[F] = response.entity match
+      case Entity.Streamed(stream, length) =>
+        val contextual =
+          Http4sStreaming.context(route.endpoint, Http4sFailure.Direction.Response, Failure.Category.Encoding)(stream)
+        response.withEntity(
+          Entity.Streamed(
+            contextual.onFinalizeCase {
+              case Resource.ExitCase.Errored(cause) =>
+                notify(if errorResponse then Http4sObservation.Event.ErrorResponseFailed(cause)
+                else Http4sObservation.Event.Failed(failure(cause)))
+              case Resource.ExitCase.Canceled  => notify(Http4sObservation.Event.Cancelled)
+              case Resource.ExitCase.Succeeded => F.unit
+            },
+            length
           )
-          decoder.decodeDetailed(route.endpoint.request, wire)
-        .flatten
-          .flatMap:
-            case cats.data.Validated.Invalid(refused) => F.pure(Left(refused.failure))
-            case cats.data.Validated.Valid(value)     =>
-              evaluate(route.handler(value)).flatten
-                .flatMap(value =>
-                  evaluate(encoder.encode(route.endpoint.responses, value)).flatten.handleErrorWith(cause =>
-                    F.raiseError(Http4sFailure.Execution(Failure(Failure.Category.Encoding, cause = Some(cause))))
-                  )
-                )
-                .flatMap(Http4s.respond[F])
-                .map(Right(_))
+        )
+      case _ => response
+
+    val wire = Http4sWire.Request[F](
+      segments,
+      Http4sEnvelope.toQueries(request.uri.query),
+      Http4sEnvelope.toHeaders(request.headers),
+      (Http4sEnvelope.toMediaType(request.headers), request.entity)
+    )
+    val decoded = decoder
+      .contextual(route.endpoint)
+      .resource(route.endpoint.request, wire)
+      .handleErrorWith(cause =>
+        Resource.eval(F.raiseError(Http4sFailure.Execution(Failure(Failure.Category.EntityRead, cause = Some(cause)))))
+      )
+    val execute = F.uncancelable: poll =>
+      poll(decoded.evalMap {
+        case cats.data.Validated.Invalid(refused) => F.pure(Left(refused.failure))
+        case cats.data.Validated.Valid(value)     =>
+          evaluate(route.handler(value)).flatten
+            .flatMap(value =>
+              evaluate(encoder.encode(route.endpoint.responses, value)).flatten.handleErrorWith(cause =>
+                F.raiseError(Http4sFailure.Execution(Failure(Failure.Category.Encoding, cause = Some(cause))))
+              )
+            )
+            .flatMap(Http4s.respond[F])
+            .map(response => Right(observed(response, false)))
+      }.allocated).flatMap:
+        case (Right(response), release) =>
+          response.entity match
+            case Entity.Streamed(stream, length) =>
+              F.pure(Right(response.withEntity(Entity.Streamed(stream.onFinalize(release), length))))
+            case _ => release.as(Right(response))
+        case (Left(refused), release) => release.as(Left(refused))
 
     val respond = execute
       .handleError(cause => Left(failure(cause)))
@@ -141,6 +165,7 @@ object Route:
         case Left(refused)   =>
           val render = evaluate(encoder.encode(route.errors.responses, refused)).flatten
             .flatMap(Http4s.respond[F])
+            .map(observed(_, true))
             .handleErrorWith: cause =>
               notify(Http4sObservation.Event.ErrorResponseFailed(cause)).attempt *> F.raiseError(cause)
           notify(Http4sObservation.Event.Failed(refused)) *> render
@@ -156,14 +181,3 @@ object Route:
     template.toList.corresponds(segments):
       case (Left(literal), segment) => literal == segment
       case (Right(_), _)            => true
-
-  /** The request's bytes, read only if the endpoint describes something to read them as.
-    *
-    * An endpoint with no body never touches the entity at all, which is what keeps a `GET` from paying for a stream it
-    * was never going to look at.
-    */
-  private def bytes[F[_]: Concurrent, S[-_, +_]](
-      endpoint: Endpoint.Server[S, ?, ?],
-      request: Http4sRequest[F]
-  ): F[ByteVector] =
-    if endpoint.request.bodies.isEmpty then ByteVector.empty.pure else Http4sEnvelope.toBytes(request.entity)

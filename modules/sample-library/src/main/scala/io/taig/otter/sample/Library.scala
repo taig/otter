@@ -40,6 +40,10 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
         .sortBy(_.isbn.value)
         .slice(offset, offset + filter.size)
 
+  /** One immutable snapshot, traversed lazily in its existing ISBN order. */
+  def exported: F[fs2.Stream[F, Book]] =
+    state.get.map(current => fs2.Stream.fromIterator[F](current.books.valuesIterator, 64))
+
   def create(create: Book.Create): F[Created] = state.modify: current =>
     if current.books.contains(create.isbn) then
       (current, Created.Duplicate(Problem.conflict(s"${create.isbn.value} is already in the catalogue")))

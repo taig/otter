@@ -24,12 +24,12 @@ import scala.annotation.targetName
   *
   * The entity is added by application rather than by name -- `response(status.ok)(body.json(schema.book))` -- because
   * there is only ever one of it and its own type already says which of the shapes it is. A whole document, a choice
-  * between alternatives, one that need not be sent, a stream: four types, four overloads, and nothing for the caller to
-  * pick. The parts there may be several of keep their names, since a name is what tells them apart.
+  * between alternatives, or one that need not be sent each has an overload. Streamed bodies compose through those same
+  * entity nodes. The parts there may be several of keep their names, since a name is what tells them apart.
   *
-  * The overloads carry a `@targetName` because a by-name parameter erases to `Function0`, so `=> Body.Schema`,
-  * `=> Bodies.Schema` and `=> Body.Streamed.Schema` are one signature by the time the JVM sees them. Each is given the
-  * name its method used to have, which is also what a stack trace and a binary compatibility report will say.
+  * The overloads carry a `@targetName` because a by-name parameter erases to `Function0`, so `=> Body.Schema`, and
+  * `=> Bodies.Schema` are one signature by the time the JVM sees them. Each is given the name its method used to have,
+  * which is also what a stack trace and a binary compatibility report will say.
   */
 trait EndpointSyntax:
   extension [S[-_, +_], W1, R1](fa: Request.Schema[S, W1, R1])
@@ -112,13 +112,6 @@ trait EndpointSyntax:
         )
       )
 
-    /** The streamed body this request carries, which changes what it describes and not what it holds. */
-    @targetName("streaming")
-    def apply[S2[-_, +_], W2, R2](
-        value: => Body.Streamed.Schema[S2, W2, R2]
-    ): Request.Schema[Body.Streamed.Requirement[S2], W1, R1] =
-      Request.Schema(Request.Value.Streamed[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
-
   extension [S[-_, +_], W1, R1](fa: Response.Schema[S, W1, R1])
     /** The headers this response writes. */
     def headers[W2, R2](values: => Headers.Node[W2, R2])(using
@@ -160,12 +153,5 @@ trait EndpointSyntax:
           W.split
         )
       )
-
-    /** The streamed body this response carries, which changes what it describes and not what it holds. */
-    @targetName("streaming")
-    def apply[S2[-_, +_], W2, R2](
-        value: => Body.Streamed.Schema[S2, W2, R2]
-    ): Response.Schema[Body.Streamed.Requirement[S2], W1, R1] =
-      Response.Schema(Response.Value.Streamed[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
 object EndpointSyntax extends EndpointSyntax

@@ -60,7 +60,9 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
   private val tracing: Tracing = Tracing(requestId = "abc-123", languages = None)
 
   /** A fresh catalogue per workflow, shared by every endpoint called within it. */
-  private def withClient[A](run: Http4s.ApiClient[IO, LibraryRoutes.Payload, Problem] => IO[A]): Task[A] =
+  private def withClient[A](
+      run: Http4s.ApiClient[IO, LibraryRoutes.Payload, io.taig.otter.Json.Node, api.all.Requirement, Problem] => IO[A]
+  ): Task[A] =
     ZIO.fromFuture: _ =>
       Library[IO](Library.State.Seed, clock)
         .flatMap: library =>

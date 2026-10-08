@@ -19,39 +19,28 @@ object api:
     description = Some("A library management API, written to show what Otter can describe")
   )
 
-  /** The endpoints [[io.taig.otter.sample.LibraryRoutes]] answers, which `LibraryServedTest` holds it to. */
-  val served: Chain[Endpoint.Declaration.Node] = Chain(
-    loans.health,
-    books.list,
-    books.create,
-    books.fetch,
-    books.patch,
-    books.delete,
-    books.scan,
-    books.upload,
-    books.intake,
-    books.catalogue,
-    loans.fetch,
-    loans.borrow
-  )
+  final class Definitions[C[+_]]:
+    val streaming = new books.Streaming[C]
 
-  /** The endpoints nothing here answers, and why each one cannot be.
-    *
-    *   - [[books.exported]] answers with a streamed body. What a sequence of elements is belongs to whoever has an
-    *     effect type to say it in, and `otter-http` deliberately has none, so every interpreter here reports it.
-    *   - [[books.report]] answers with a stream whose elements are written in the CSV alphabet, which is a payload
-    *     nothing in this repository interprets at all.
-    *
-    * Two of them are additionally shadowed: `/books/export` and `/books/report` have the arity and the leading literal
-    * of `/books/{isbn}`, so a request for either reaches `books.fetch` and is answered `400` for an ISBN that does not
-    * parse rather than `404`. Were they ever served, they would have to be registered ahead of it.
-    *
-    * They are here rather than deleted because being told what cannot be carried is the feature. A renderer always
-    * returns a document and a list of issues; it never throws and never half emits, and `LibraryShortfallTest` holds it
-    * to that.
-    */
-  val unserved: Chain[Endpoint.Declaration.Node] = Chain(books.exported, books.report)
+    val served: Chain[Endpoint.Declaration.Node] = Chain(
+      loans.health,
+      books.list,
+      books.create,
+      streaming.exported,
+      books.fetch,
+      books.patch,
+      books.delete,
+      books.scan,
+      books.upload,
+      books.intake,
+      books.catalogue,
+      loans.fetch,
+      loans.borrow
+    )
 
-  /** Everything, with the global error policy shared by every consumer and the answers to a request none of it names.
-    */
-  val all = Api(served ++ unserved, contract.errors, contract.unrouted)
+    val unserved: Chain[Endpoint.Declaration.Node] = Chain(streaming.report)
+
+    val all = Api(served ++ unserved, contract.errors, contract.unrouted)
+
+  val default: api.Definitions[fs2.Stream[cats.effect.IO, +*]] = new api.Definitions
+  export default.{all, served, unserved}

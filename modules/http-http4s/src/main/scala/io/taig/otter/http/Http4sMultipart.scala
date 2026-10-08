@@ -40,7 +40,7 @@ import scala.compiletime.asMatchable
 object Http4sMultipart:
   type Parts[P[-_, +_]] = Multipart.Over[Http4sPayload.Supported[P]]
 
-  def payload[P[-_, +_]](parts: Http4sPayload[P]): Http4sPayload.Of[Http4sMultipart.Parts[P]] =
+  def payload[P[-_, +_]](parts: Http4sPayload.Of[P]): Http4sPayload.Of[Http4sMultipart.Parts[P]] =
     Http4sPayload.entity(new Http4sPayload.Alphabet[Http4sMultipart.Parts[P]]:
       override private[http] def exclusive: Set[String] = Set("multipart")
 
@@ -148,8 +148,8 @@ object Http4sMultipart:
       else Boundary(candidate)
     choose(0)
 
-  final private class Reader[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload[P]):
-    private val body = new Http4sBodyDecoder[F, P](payload)
+  final private class Reader[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload.Of[P]):
+    private val body = new Http4sBodyDecoder[F, P, Nothing](payload)
 
     def record[R](
         schema: Record[Part.Over[Http4sPayload.Supported[P]], Nothing, R],
@@ -178,7 +178,7 @@ object Http4sMultipart:
         else field(self, value).map(_.map(Some(_)))
       case Field.Root(name, reference) =>
         val decoded = value match
-          case Some(value) => body.decodeDetailed(reference.value, value)
+          case Some(value) => body.decodeDetailed(reference.value, (value._1, Entity.strict(value._2)))
           case None        =>
             DecodingFailure(
               Failure.Category.Validation,
@@ -186,8 +186,8 @@ object Http4sMultipart:
             ).invalid[R].pure[F]
         decoded.map(_.leftMap(failure => failure.copy(violations = name /: failure.violations)))
 
-  final private class Writer[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload[P]):
-    private val body = new Http4sBodyEncoder[F, P](payload)
+  final private class Writer[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload.Of[P]):
+    private val body = new Http4sBodyEncoder[F, P, Nothing](payload)
 
     def record[W](
         schema: Record[Part.Over[Http4sPayload.Supported[P]], W, Any],
@@ -218,7 +218,10 @@ object Http4sMultipart:
       case Field.Root(name, reference) =>
         body
           .encode(reference.value, value)
-          .map(_.leftMap(_.show).flatMap((mediaType, bytes) => member(name, filename, mediaType, bytes).map(Vector(_))))
+          .flatMap:
+            case Left(issue)                => Left(issue.show).pure[F]
+            case Right((mediaType, entity)) =>
+              Http4sEnvelope.toBytes(entity).map(bytes => member(name, filename, mediaType, bytes).map(Vector(_)))
 
     private def member(
         name: String,

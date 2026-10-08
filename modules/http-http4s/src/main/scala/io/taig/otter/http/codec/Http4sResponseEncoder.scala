@@ -17,40 +17,44 @@ import io.taig.otter.http.Responses
   * is the whole reason responses are described as a union rather than as a status beside a body -- a handler returning
   * `Left(report)` has already said `200`, and no second decision is needed.
   *
-  * A response that promised a stream is not a case here. Its requirement is [[io.taig.otter.http.Body.Requirement]]'s
-  * streamed form, which no `Supported[P]` admits, so an endpoint describing one cannot be served by this backend and
-  * cannot reach this walk.
+  * Streamed entities remain lazy while the response envelope is written. Element failures therefore terminate the
+  * outgoing stream; they cannot replace a status already sent.
   */
-final class Http4sResponseEncoder[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload[P])
-    extends Encoder[Responses.Schema[Http4sPayload.Supported[P], *, *], F[Either[Http4sIssue, Http4sWire.Response]]]:
-  private val responses = UnionEncoder(Http4sResponseEncoder.One[F, P](payload))
+final class Http4sResponseEncoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](payload: Http4sInterpreter.Of[P, Q])
+    extends Encoder[Responses.Schema[Http4sInterpreter.Supported[F, P, Q], *, *], F[
+      Either[Http4sIssue, Http4sWire.Response[F]]
+    ]]:
+  private val responses = UnionEncoder(Http4sResponseEncoder.One[F, P, Q](payload))
 
   override def encode[W](
-      schema: Responses.Schema[Http4sPayload.Supported[P], W, Any],
+      schema: Responses.Schema[Http4sInterpreter.Supported[F, P, Q], W, Any],
       value: W
-  ): F[Either[Http4sIssue, Http4sWire.Response]] = responses.encode(schema.self.self, value)
+  ): F[Either[Http4sIssue, Http4sWire.Response[F]]] = responses.encode(schema.self.self, value)
 
 private[http] object Http4sResponseEncoder:
   /** One branch of the union, which is one status and what goes out under it. */
-  final private[http] class One[F[_]: Concurrent, P[-_, +_]](payload: Http4sPayload[P])
-      extends Encoder[Response.Schema[Http4sPayload.Supported[P], *, *], F[Either[Http4sIssue, Http4sWire.Response]]]:
-    private val bodies = UnionEncoder(Http4sBodyEncoder[F, P](payload))
+  final private[http] class One[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](payload: Http4sInterpreter.Of[P, Q])
+      extends Encoder[Response.Schema[Http4sInterpreter.Supported[F, P, Q], *, *], F[
+        Either[Http4sIssue, Http4sWire.Response[F]]
+      ]]:
+    private val bodies = UnionEncoder(Http4sBodyEncoder[F, P, Q](payload))
 
     override def encode[W](
-        response: Response.Schema[Http4sPayload.Supported[P], W, Any],
+        response: Response.Schema[Http4sInterpreter.Supported[F, P, Q], W, Any],
         value: W
-    ): F[Either[Http4sIssue, Http4sWire.Response]] = encode(response.self.self, value).value
+    ): F[Either[Http4sIssue, Http4sWire.Response[F]]] = encode(response.self.self, value).value
 
     private def encode[W](
-        response: Response.Value[Http4sPayload.Supported[P], W, Any],
+        response: Response.Value[Http4sInterpreter.Supported[F, P, Q], W, Any],
         w: W
-    ): EitherT[F, Http4sIssue, Http4sWire.Response] = response match
-      case Response.Value.Root(status)           => EitherT.rightT(Http4sWire.Response(status, Chain.empty, None))
+    ): EitherT[F, Http4sIssue, Http4sWire.Response[F]] = response match
+      case Response.Value.Root(status) =>
+        EitherT.rightT(Http4sWire.Response[F](status, Chain.empty, (None, org.http4s.Entity.empty[F])))
       case Response.Value.Headers(self, headers) =>
         encode(self, w._1).map(wire => wire.copy(headers = wire.headers ++ HeadersEncoder.encode(headers.value, w._2)))
       case Response.Value.Entity(self, values) =>
         for
           wire <- encode(self, w._1)
           body <- EitherT(bodies.encode(values.value.self.self, w._2))
-        yield wire.copy(body = Some(body))
+        yield wire.copy(body = (Some(body._1), body._2))
       case Response.Value.Modify(self, _, g) => encode(self, g(w))
