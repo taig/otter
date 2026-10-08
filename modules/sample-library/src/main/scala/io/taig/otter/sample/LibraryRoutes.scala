@@ -1,6 +1,8 @@
 package io.taig.otter.sample
 
 import cats.effect.Concurrent
+import cats.effect.IO
+import fs2.Stream
 import io.taig.otter.Json
 import io.taig.otter.http.Body
 import io.taig.otter.http.Http4s
@@ -8,7 +10,7 @@ import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Http4sMultipart
 import io.taig.otter.http.Route
 import io.taig.otter.http.Routes
-import io.taig.otter.http.codec.Http4sPayload
+import io.taig.otter.http.codec.Http4sInterpreter
 import io.taig.otter.sample.api.api
 import io.taig.otter.sample.api.books
 import io.taig.otter.sample.api.loans
@@ -31,23 +33,27 @@ import org.http4s.HttpApp
   *
   * The consequence is worth knowing before adding a route: **a placeholder shadows a literal of the same arity**.
   * `/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever of the two is listed first
-  * wins, and a literal path must be registered before the placeholder path it would otherwise be swallowed by. Neither
-  * `/books/export` nor `/books/report` is served here -- see [[io.taig.otter.sample.api.api.unserved]] -- so both are
-  * caught by `books.fetch` and answered `400` for an ISBN that does not parse, and the shadowing decides `Allow` too: a
-  * `PUT` to either is a `405` listing the methods of `/books/{isbn}`. `LibraryRoutesTest` records both rather than
-  * leaves them to be discovered.
+  * wins. The export is therefore registered first. The unserved CSV report still reaches the ISBN placeholder, as do
+  * other methods on `/books/export` when their method selects that placeholder. `LibraryRoutesTest` records the
+  * resulting statuses and `Allow` headers.
   */
 object LibraryRoutes:
   type Payload = Body.Or[Json.Node, Http4sMultipart.Parts[Json.Node]]
 
-  val payload: Http4sPayload.Of[LibraryRoutes.Payload] =
-    Http4sCirce.Payload.orElse(Http4sMultipart.payload(Http4sCirce.Payload))
+  val payload =
+    Http4sCirce.Payload.orElse(Http4sMultipart.payload(Http4sCirce.Payload)).withStreams(Http4sCirce.Streams)
 
-  /** Every served endpoint, answered by `library`, in the order a request is matched against them. */
-  def routes[F[_]](library: Library[F]): Routes[F, Http4sPayload.Supported[LibraryRoutes.Payload]] = Routes(
+  def routes(library: Library[IO]): Routes[IO, Http4sInterpreter.Supported[IO, LibraryRoutes.Payload, Json.Node]] =
+    routes(library, api.default)
+
+  def routes[F[_]: Concurrent](
+      library: Library[F],
+      definitions: api.Definitions[Stream[F, +*]]
+  ): Routes[F, Http4sInterpreter.Supported[F, LibraryRoutes.Payload, Json.Node]] = Routes(
     Route(loans.health, (_: Unit) => library.health),
     Route(books.list, (filter, _) => library.list(filter)),
     Route(books.create, library.create),
+    Route(definitions.streaming.exported, (_: Unit) => library.exported),
     Route(books.fetch, library.fetch),
     Route(books.patch, library.patch.tupled),
     Route(books.delete, library.delete),
@@ -59,6 +65,7 @@ object LibraryRoutes:
     Route(loans.borrow, library.borrow.tupled)
   )
 
-  /** Every served endpoint, answered by `library`, and every other request answered as the API declares. */
-  def apply[F[_]: Concurrent](library: Library[F]): HttpApp[F] =
-    Http4s.app[F](api.all, LibraryRoutes.routes(library).values.toList*)(LibraryRoutes.payload)
+  def apply(library: Library[IO]): HttpApp[IO] = apply(library, api.default)
+
+  def apply[F[_]: Concurrent](library: Library[F], definitions: api.Definitions[Stream[F, +*]]): HttpApp[F] =
+    Http4s.app[F](definitions.all, LibraryRoutes.routes(library, definitions).values.toList*)(LibraryRoutes.payload)

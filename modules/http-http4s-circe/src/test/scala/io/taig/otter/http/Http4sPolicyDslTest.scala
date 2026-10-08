@@ -24,6 +24,13 @@ import zio.test.*
 import scala.compiletime.testing.typeCheckErrors
 
 object Http4sPolicyDslTest extends ZIOSpecDefault:
+  /** Fail the test if a buffered schema starts producing a streamed entity. */
+  @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
+  private def strictBytes(entity: org.http4s.Entity[cats.effect.IO]): scodec.bits.ByteVector = entity match
+    case org.http4s.Entity.Strict(bytes) => bytes
+    case org.http4s.Entity.Empty         => scodec.bits.ByteVector.empty
+    case _                               => throw new IllegalStateException("Expected buffered body")
+
   private def answer(code: Int, message: String): Response.Schema[Body.Whole[Json.Node], Failure, String] =
     response(Status(code))(body.json(payload.string)).dimap[Failure, String](_ => message)(identity)
 
@@ -59,7 +66,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     Failure.Category.Unexpected -> 500
   )
 
-  private val encoder = Http4sResponseEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+  private val encoder = Http4sResponseEncoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
   private val cause = new IllegalStateException("private diagnostic")
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
@@ -85,7 +92,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
               .encode(policy.responses, Failure(category))
               .map(
                 _.exists(wire =>
-                  wire.status == Status(code) && wire.body.exists(_._2.decodeUtf8 == Right(s"\"$message\""))
+                  wire.status == Status(code) && strictBytes(wire.body._2).decodeUtf8 == Right(s"\"$message\"")
                 )
               )
           }
@@ -100,7 +107,11 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
           .traverse { (category, code) =>
             encoder
               .encode(policy.responses, Failure(category))
-              .map(_.exists(wire => wire.status == Status(code) && wire.body.isEmpty))
+              .map(
+                _.exists(wire =>
+                  wire.status == Status(code) && (wire.body._1.isEmpty && wire.body._2.length.contains(0L))
+                )
+              )
           }
           .map(results => assertTrue(results.forall(identity)))
           .unsafeToFuture()
@@ -116,8 +127,8 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
               .map(
                 _.exists(wire =>
                   if category == Failure.Category.Unexpected then
-                    wire.status == Status(503) && wire.body.exists(_._2.decodeUtf8 == Right("\"local\""))
-                  else wire.status == Status(code) && wire.body.isEmpty
+                    wire.status == Status(503) && strictBytes(wire.body._2).decodeUtf8 == Right("\"local\"")
+                  else wire.status == Status(code) && (wire.body._1.isEmpty && wire.body._2.length.contains(0L))
                 )
               )
           }
@@ -135,7 +146,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
               .encode(inherited.responses, Failure(category))
               .map(
                 _.exists(wire =>
-                  wire.status == Status(502) && wire.body.exists(_._2.decodeUtf8 == Right("\"baseline\""))
+                  wire.status == Status(502) && strictBytes(wire.body._2).decodeUtf8 == Right("\"baseline\"")
                 )
               )
           )
@@ -156,8 +167,9 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
               .encode(composed.errors.responses, Failure(category))
               .map(
                 _.exists(wire =>
-                  wire.status == Status(expectedCode) && wire.body
-                    .exists(_._2.decodeUtf8 == Right(s"\"$expectedMessage\""))
+                  wire.status == Status(expectedCode) && strictBytes(wire.body._2).decodeUtf8 == Right(
+                    s"\"$expectedMessage\""
+                  )
                 )
               )
           }

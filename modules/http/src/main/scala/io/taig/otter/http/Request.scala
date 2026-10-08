@@ -40,7 +40,7 @@ object Request:
     type Of[S[-w, +r], -A] = Request.Schema[S, A, Any]
 
   final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Request.Value[S, W, R]]):
-    export self.self.{bodies, headers, method, path, queries, required, streamed}
+    export self.self.{bodies, headers, method, path, queries, required}
 
   object Schema:
     def apply[S[-_, +_], W, R](self: Request.Value[S, W, R]): Request.Schema[S, W, R] =
@@ -114,8 +114,6 @@ object Request:
       */
     def required: Boolean
 
-    def streamed: Option[Reference[Body.Streamed.Node, ?, ?]]
-
   object Value:
     final case class Root[-W, +R](override val method: Method, override val path: Reference[Path.Node, W, R])
         extends Request.Value[Nothing, W, R]:
@@ -127,13 +125,11 @@ object Request:
 
       override def bodies: Option[Reference[Bodies.Schema[Nothing, *, *], ?, ?]] = None
 
-      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = None
-
     final case class Queries[+S[-_, +_], W1, R1, W2, R2](
         self: Request.Value[S, W1, R1],
         values: Reference[io.taig.otter.http.Queries.Node, W2, R2]
     ) extends Request.Value[S, (W1, W2), (R1, R2)]:
-      export self.{bodies, headers, method, path, required, streamed}
+      export self.{bodies, headers, method, path, required}
 
       override def queries: Option[Reference[io.taig.otter.http.Queries.Node, ?, ?]] = Some(values)
 
@@ -141,7 +137,7 @@ object Request:
         self: Request.Value[S, W1, R1],
         values: Reference[io.taig.otter.http.Headers.Node, W2, R2]
     ) extends Request.Value[S, (W1, W2), (R1, R2)]:
-      export self.{bodies, method, path, queries, required, streamed}
+      export self.{bodies, method, path, queries, required}
 
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = Some(values)
 
@@ -149,7 +145,7 @@ object Request:
         self: Request.Value[S, W1, R1],
         values: Reference[Bodies.Schema[S, *, *], W2, R2]
     ) extends Request.Value[S, (W1, W2), (R1, R2)]:
-      export self.{headers, method, path, queries, streamed}
+      export self.{headers, method, path, queries}
 
       override def required: Boolean = true
 
@@ -173,28 +169,15 @@ object Request:
         self: Request.Value[S, W1, R1],
         values: Reference[Bodies.Schema[S, *, *], W2, R2]
     ) extends Request.Value[S, (W1, Option[W2]), (R1, Option[R2])]:
-      export self.{headers, method, path, queries, streamed}
+      export self.{headers, method, path, queries}
 
       override def required: Boolean = false
 
       override def bodies: Option[Reference[Bodies.Schema[S, *, *], ?, ?]] = Some(values)
-
-    /** A streamed body added to a request, which changes what the request describes without changing what it holds.
-      *
-      * `W1` and `R1` pass through untouched. That is the whole of the streaming decision made visible: the stream is
-      * described, and what a sequence of its elements is stays with whoever has an effect type to say it in.
-      */
-    final case class Streamed[+S[-_, +_], W1, R1, W2, R2](
-        self: Request.Value[Body.Streamed.Requirement[S], W1, R1],
-        value: Reference[Body.Streamed.Schema[S, *, *], W2, R2]
-    ) extends Request.Value[Body.Streamed.Requirement[S], W1, R1]:
-      export self.{bodies, headers, method, path, queries, required}
-
-      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = Some(value)
 
     final case class Modify[+S[-_, +_], W0, R0, -W, +R](
         self: Request.Value[S, W0, R0],
         f: R0 => R,
         g: W => W0
     ) extends Request.Value[S, W, R]:
-      export self.{bodies, headers, method, path, queries, required, streamed}
+      export self.{bodies, headers, method, path, queries, required}

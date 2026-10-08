@@ -1,7 +1,6 @@
 package io.taig.otter.http.component
 
 import io.taig.otter as Self
-import io.taig.otter.Annotation
 import io.taig.otter.Reference
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
@@ -37,21 +36,7 @@ trait BodyComponent:
   /** Bytes as `application/octet-stream`, which is what they are when nothing more is known. */
   val binary: Body.Of[Body.Opaque, ByteVector] = binary(MediaTypeComponent.octetStream)
 
-  /** A sequence of documents, arriving one at a time.
-    *
-    * The result carries the element type so that a backend can pin it; `.body` is the same body as the request holds
-    * it, which is as something contributing nothing to what the request reads.
-    */
-  def streamed[S[-_, +_], W, R](
-      mediaType: MediaType,
-      frame: Frame,
-      element: => S[W, R]
-  ): Body.Streamed.Schema[S, W, R] =
-    new Body.Streamed.Schema(Annotation(Body.Value.Streamed(mediaType, frame, Reference.later(element))))
-
-  /** Newline delimited JSON, which is what a streamed sequence of documents is written as by default. */
-  def streamed[S[-_, +_], W, R](element: => S[W, R]): Body.Streamed.Schema[S, W, R] =
-    streamed(MediaTypeComponent.ndJson, Frame.Lines, element)
+  def streamed[C[+_]]: BodyComponent.Streamed[C] = new BodyComponent.Streamed[C]
 
   /** A body whose content is a set of parts.
     *
@@ -73,3 +58,20 @@ trait BodyComponent:
   @targetName("bodies")
   def optional[S[-_, +_], W, R](values: => Bodies.Schema[S, W, R]): Bodies.Optional[S, W, R] =
     Bodies.Optional(Reference.later(values))
+
+object BodyComponent:
+  final class Streamed[C[+_]]:
+    def apply[S[-_, +_], W, R](
+        mediaType: MediaType,
+        frame: Frame,
+        element: => S[W, R]
+    ): Body.Schema[Body.Streamed.Requirement[C, S], C[W], C[R]] =
+      Body.Schema(Body.Value.Streamed[C, S, W, R](mediaType, frame, Reference.later(element)))
+
+    def apply[S[-_, +_], W, R](element: => S[W, R]): Body.Schema[Body.Streamed.Requirement[C, S], C[W], C[R]] =
+      apply(MediaTypeComponent.ndJson, Frame.Lines, element)
+
+    def raw(
+        mediaType: MediaType = MediaTypeComponent.octetStream
+    ): Body.Of[Body.Streamed.Requirement[C, Body.Raw], C[Byte]] =
+      Body.Schema(Body.Value.Raw[C](mediaType))

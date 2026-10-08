@@ -223,33 +223,21 @@ object books:
     ).attr(openapi.operationId, "uploadCover")
       .attr(openapi.tags, "books")
 
-  /** `GET /books/export`, a sequence of books one JSON document per line.
-    *
-    * The element type rides on the body, so a backend handed it knows what its stream yields, and the body itself
-    * contributes nothing to what the endpoint holds -- what a sequence of elements *is* belongs to whoever has an
-    * effect type to say it in, and nothing in this module does. Described here and served nowhere: see
-    * [[api.unserved]].
-    */
-  val exported: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Json.Node], Unit, Unit] = endpoint(
-    request(method.get, books.all / "export"),
-    response(status.ok)(body.ndjson(schema.book))
-  ).attr(openapi.operationId, "exportBooks")
-    .attr(openapi.tags, "books")
+  /** Stream declarations can be instantiated by any backend's covariant carrier. */
+  final class Streaming[C[+_]]:
+    val exported = endpoint(
+      request(method.get, books.all / "export"),
+      response(status.ok)(body.ndjson[C](schema.book))
+    ).attr(openapi.operationId, "exportBooks").attr(openapi.tags, "books")
 
-  /** `GET /books/report`, a stream of CSV rows.
-    *
-    * The media type and the framing are spelled out where `body.ndjson` defaults them, and the payload is written in an
-    * alphabet no interpreter in this repository recognises. Both halves of that are deliberate: a body's payload is any
-    * schema at all, and what cannot be carried is reported rather than quietly dropped.
-    */
-  val report: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Csv.Record.Node], Unit, Unit] = endpoint(
-    request(method.get, books.all / "report"),
-    response(status.ok)(body.streamed(mediaType.csv, Frame.Lines, schema.row))
-  ).attr(openapi.operationId, "reportBooks")
-    .attr(openapi.tags, "books")
+    /** CSV row streaming remains an unregistered payload alphabet in the sample. */
+    val report = endpoint(
+      request(method.get, books.all / "report"),
+      response(status.ok)(body.streamed[C](mediaType.csv, Frame.Lines, schema.row))
+    ).attr(openapi.operationId, "reportBooks").attr(openapi.tags, "books")
 
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
-  val catalogue: Endpoint.WithErrors[dsl.Payload, Unit, Unit, Category, Category, Problem] = endpoint(
+  val catalogue: Endpoint.WithErrors[dsl.Payload, dsl.Payload, Unit, Unit, Category, Category, Problem] = endpoint(
     request(method.get, __ / "catalogue"),
     response(status.ok)(body.json(schema.category))
   ).attr(openapi.operationId, "catalogue")

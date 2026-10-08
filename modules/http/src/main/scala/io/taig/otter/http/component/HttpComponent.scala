@@ -85,8 +85,8 @@ trait HttpComponent
   def endpoint[S1[-_, +_], S2[-_, +_], AW, AR, BW, BR](
       request: Request.Schema[S1, AW, AR],
       responses: Responses.Schema[S2, BW, BR]
-  ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
-    Endpoint.Schema(Endpoint.Value[Body.Or[S1, S2], AW, AR, BW, BR](request, responses))
+  ): Endpoint.Schema[S1, S2, AW, AR, BW, BR] =
+    Endpoint.Schema(Endpoint.Value[S1, S2, AW, AR, BW, BR](request, responses))
 
   /** An endpoint that answers in exactly one way, which is most of them.
     *
@@ -96,7 +96,7 @@ trait HttpComponent
   def endpoint[S1[-_, +_], S2[-_, +_], AW, AR, BW, BR](
       request: Request.Schema[S1, AW, AR],
       response: Response.Schema[S2, BW, BR]
-  ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
+  ): Endpoint.Schema[S1, S2, AW, AR, BW, BR] =
     endpoint[S1, S2, AW, AR, BW, BR](request, response.toUnion)
 
   object errorPolicy extends ErrorPolicyComponent

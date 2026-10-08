@@ -345,7 +345,7 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
       val record = CsvDocument.Record(Reference.now(emptyRecord))
       val tupleRows = CsvDocument.Rows(Reference.now(CsvDocument.Tuple(Reference.now(emptyTuple))))
       val body = mixedDsl.body.csv(emptyRecord)
-      val requestIssue = Http4sBodyEncoder[IO, CsvDocument](Http4sFs2Data.Payload).encode(body, ())
+      val requestIssue = Http4sBodyEncoder[IO, CsvDocument, Nothing](Http4sFs2Data.Payload).encode(body, ())
 
       ZIO
         .fromFuture(_ => requestIssue.unsafeToFuture())

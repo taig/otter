@@ -53,20 +53,20 @@ object BodyDescriptionTest extends ZIOSpecDefault:
     ),
     suite("streamed")(
       test("says how its elements are framed and what they are written as"):
-        assertTrue(api.reports.frame == Frame.Lines) && assertTrue(api.reports.mediaType == dsl.mediaType.ndJson)
+        assertTrue((api.reports.self.self match {
+          case Body.Value.Streamed(_, frame, _) => frame == Frame.Lines; case _ => false
+        })) && assertTrue(api.reports.mediaType == dsl.mediaType.ndJson)
       ,
       test("reaches the schema of one element, which is what a renderer documents"):
         val element = api.reports.self.self match
           case Body.Value.Streamed(_, _, element) => Some(element.value)
+          case _                                  => None
 
         assertTrue(element.isDefined)
       ,
-      /** The ascription is the assertion: as a request holds it, a streamed body round trips `Unit`. What a sequence of
-        * its elements is stays the interpreter's word, so nothing here can name one.
-        */
-      test("contributes nothing to what the request that holds it reads"):
-        val held: Body.Of[Body.Streamed.Requirement[Json.Node], Unit] = api.reports.body
-
+      test("retains the chosen carrier and element type"):
+        val held: Body.Of[Body.Streamed.Requirement[Vector, Json.Node], Vector[io.taig.otter.http.fixture.Report]] =
+          api.reports
         assertTrue(held.mediaType == dsl.mediaType.ndJson)
     )
   )

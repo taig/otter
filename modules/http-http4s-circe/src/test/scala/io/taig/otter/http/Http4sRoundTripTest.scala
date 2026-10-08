@@ -87,8 +87,11 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
     )
 
   /** `GET /reports`, whose answer this interpreter cannot yet carry. */
-  val streaming: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Json.Node], Unit, Unit] =
-    endpoint(request(method.get, __ :* segment("reports")), response(status.ok)(api.reports).toUnion)
+  val streaming =
+    endpoint(
+      request(method.get, __ :* segment("reports")),
+      response(status.ok)(body.ndjson[fs2.Stream[IO, +*]](api.report)).toUnion
+    )
 
   private def routes[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], handler: A => IO[B]): Http4sClient[IO] =
     Http4sClient.fromHttpApp(Http4s.routes[IO](Route(endpoint, handler))(Http4sCirce.Payload).orNotFound)
@@ -248,11 +251,11 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         received(negotiated, ())(Right(bytes)).map(seen => assertTrue(seen == Right(bytes)))
     ),
     suite("shortfalls")(
-      test("a streamed answer cannot be served"):
+      test("a streamed answer requires explicit stream registration"):
         assertTrue(!scala.compiletime.testing.typeChecks("""
           import cats.effect.IO
           import io.taig.otter.http.*
-          Http4s.routes[IO](Route(Http4sRoundTripTest.streaming, (_: Unit) => IO.unit))(Http4sCirce.Payload)
+          Http4s.routes[IO](Route(Http4sRoundTripTest.streaming, (_: Unit) => IO.pure(fs2.Stream.empty[IO])))(Http4sCirce.Payload)
         """))
       ,
       test("a payload alphabet without an interpreter cannot be served"):
@@ -264,8 +267,12 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         """))
       ,
       test("a response under a status no branch names says which it expected"):
-        val report = Http4sResponseDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
-          .decode(fetch.responses, Http4sWire.Response(Status(500), Chain.empty, None))
+        val report = Http4sResponseDecoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
+          .decode(
+            fetch.responses,
+            Http4sWire
+              .Response[cats.effect.IO](Status(500), Chain.empty, (None, org.http4s.Entity.empty[cats.effect.IO]))
+          )
           .map(_.swap.toOption.map(Http4s.report))
 
         ZIO
@@ -274,10 +281,15 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
     ),
     suite("reporting")(
       test("a malformed parameter is reported at the position it was found"):
-        val report = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+        val report = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
           .decode(
             ping.request,
-            Http4sWire.Request(Vector("reports", "nope"), Chain.empty, Chain.empty, (None, ByteVector.empty))
+            Http4sWire.Request(
+              Vector("reports", "nope"),
+              Chain.empty,
+              Chain.empty,
+              (None, org.http4s.Entity.empty[cats.effect.IO])
+            )
           )
           .map(_.swap.toOption.map(Http4s.report))
 

@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.Order
 import cats.Show
 
+import java.util.Locale
 import scala.collection.immutable.ListMap
 
 /** What a body is written as.
@@ -16,7 +17,7 @@ import scala.collection.immutable.ListMap
   */
 final case class MediaType(primary: String, secondary: String, parameters: ListMap[String, String]):
   /** The type without its parameters, which is what two media types are the same one by. */
-  def essence: MediaType = MediaType(primary, secondary)
+  def essence: MediaType = MediaType(primary.toLowerCase(Locale.ROOT), secondary.toLowerCase(Locale.ROOT))
 
   def parameter(name: String): Option[String] = parameters.get(name)
 

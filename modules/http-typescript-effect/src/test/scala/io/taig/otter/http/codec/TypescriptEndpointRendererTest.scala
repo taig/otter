@@ -272,7 +272,7 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
 
         assertTrue(
           module.issues == List(TypescriptIssue.Streamed("GET /reports", "application/x-ndjson")),
-          module.render.contains("""  "responses": { "200": {} }""")
+          module.render.contains("""  "responses": { "200": { "application/x-ndjson": undefined } }""")
         )
       ,
       /** A payload alphabet nothing recognises is reported and the body still listed, so a document always comes back.

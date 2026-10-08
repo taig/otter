@@ -58,9 +58,9 @@ object LibraryFilterContractTest extends ZIOSpecDefault:
 
   private val tracing = Tracing(requestId = "abc-123", languages = Some(List("en", "de")))
 
-  private val encoder = new Http4sRequestEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+  private val encoder = new Http4sRequestEncoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
 
-  private val decoder = new Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+  private val decoder = new Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
 
   private val before = Chain.one[Endpoint.Declaration.Node](structural)
 
@@ -86,7 +86,12 @@ object LibraryFilterContractTest extends ZIOSpecDefault:
     ,
     test("an absent query parameter reaches the named input as its default"):
       val wire = Http4sWire
-        .Request(Vector("books"), Chain.empty, Chain.one("X-Request-Id" -> "abc-123"), (None, ByteVector.empty))
+        .Request(
+          Vector("books"),
+          Chain.empty,
+          Chain.one("X-Request-Id" -> "abc-123"),
+          (None, org.http4s.Entity.empty[cats.effect.IO])
+        )
       assertTrue(
         decoder.decode(books.list.self.self.request, wire).unsafeRunSync() ==
           Validated.valid(
@@ -95,7 +100,8 @@ object LibraryFilterContractTest extends ZIOSpecDefault:
       )
     ,
     test("a missing required header is still refused"):
-      val wire = Http4sWire.Request(Vector("books"), Chain.empty, Chain.empty, (None, ByteVector.empty))
+      val wire =
+        Http4sWire.Request(Vector("books"), Chain.empty, Chain.empty, (None, org.http4s.Entity.empty[cats.effect.IO]))
       assertTrue(decoder.decode(books.list.self.self.request, wire).unsafeRunSync().isInvalid)
     ,
     test("naming the input preserves both OpenAPI contracts"):

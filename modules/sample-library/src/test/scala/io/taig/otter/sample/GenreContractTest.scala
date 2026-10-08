@@ -14,7 +14,6 @@ import io.taig.otter.sample.api.BookFilter
 import io.taig.otter.sample.api.Tracing
 import io.taig.otter.sample.api.books
 import io.taig.otter.sample.api.schema
-import scodec.bits.ByteVector
 import zio.Scope
 import zio.test.*
 
@@ -29,16 +28,18 @@ object GenreContractTest extends ZIOSpecDefault:
     Genre.Thriller -> "thriller"
   )
 
-  private val requestDecoder = new Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+  private val requestDecoder =
+    new Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
 
-  private val requestEncoder = new Http4sRequestEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+  private val requestEncoder =
+    new Http4sRequestEncoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
 
-  private def query(value: List[String]): Http4sWire.Request =
+  private def query(value: List[String]): Http4sWire.Request[cats.effect.IO] =
     Http4sWire.Request(
       Vector("books"),
       Chain.fromSeq(value.map("genre" -> Some(_))),
       Chain.one("X-Request-Id" -> "contract-test"),
-      (None, ByteVector.empty)
+      (None, org.http4s.Entity.empty[cats.effect.IO])
     )
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("GenreContractTest")(

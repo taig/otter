@@ -1,6 +1,5 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.Annotation
 import io.taig.otter.Json
 import io.taig.otter.Reference
 import io.taig.otter.http.Body
@@ -24,16 +23,14 @@ trait HttpJsonSyntax:
   ): Body.Schema[Body.Whole[Json.Schema[S, *, *]], W, R] =
     Body.Schema(Body.Value.Whole(MediaTypeComponent.json, Reference.later(schema)))
 
-  /** A body carrying JSON documents one per line, which is what `application/x-ndjson` is.
-    *
-    * The result carries the element type, so a backend handed this body knows what its stream yields; `.body` is the
-    * same body as a request holds it, which is as something contributing nothing to what the request reads.
-    */
-  def ndjson[S[-w, +r] <: Json.Node[w, r], W, R](
-      schema: => Json.Schema[S, W, R]
-  ): Body.Streamed.Schema[Json.Schema[S, *, *], W, R] =
-    new Body.Streamed.Schema(
-      Annotation(Body.Value.Streamed(MediaTypeComponent.ndJson, Frame.Lines, Reference.later(schema)))
-    )
+  def ndjson[C[+_]]: HttpJsonSyntax.Ndjson[C] = new HttpJsonSyntax.Ndjson[C]
 
-object HttpJsonSyntax extends HttpJsonSyntax
+object HttpJsonSyntax extends HttpJsonSyntax:
+  final class Ndjson[C[+_]]:
+    def apply[S[-w, +r] <: Json.Node[w, r], W, R](
+        schema: => Json.Schema[S, W, R]
+    ): Body.Schema[Body.Streamed.Requirement[C, Json.Schema[S, *, *]], C[W], C[R]] =
+      Body.Schema(
+        Body.Value
+          .Streamed[C, Json.Schema[S, *, *], W, R](MediaTypeComponent.ndJson, Frame.Lines, Reference.later(schema))
+      )

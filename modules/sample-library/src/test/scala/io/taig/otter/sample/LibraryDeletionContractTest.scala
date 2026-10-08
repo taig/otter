@@ -38,8 +38,8 @@ object LibraryDeletionContractTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryDeletionContractTest")(
     test("every case of an all-bodyless sum writes its status and reads back without an entity"):
-      val encoder = new Http4sResponseEncoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
-      val decoder = new Http4sResponseDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+      val encoder = new Http4sResponseEncoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
+      val decoder = new Http4sResponseDecoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
       val cases = List(
         LibraryDeletionContractTest.Empty.Removed -> status.noContent,
         LibraryDeletionContractTest.Empty.Missing -> status.notFound,
@@ -50,7 +50,7 @@ object LibraryDeletionContractTest extends ZIOSpecDefault:
           .encode(empty, value)
           .unsafeRunSync()
           .exists: wire =>
-            wire.status == status && wire.body.isEmpty && decoder
+            wire.status == status && (wire.body._1.isEmpty && wire.body._2.length.contains(0L)) && decoder
               .decode(empty, wire)
               .unsafeRunSync()
               .toOption

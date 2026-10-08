@@ -60,7 +60,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     test("request failures retain categories, parser causes, and accumulated violations"):
       val schema = request(method.post, __ / segment("id", int))
         .queries(query("page", int).toRecord)(body.json(payload.int))
-      val decoder = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload)
+      val decoder = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload)
       def decode(content: String, media: MediaType, page: String = "1") =
         decoder
           .decodeDetailed(
@@ -69,7 +69,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
               Vector("1"),
               Chain.one("page" -> Some(page)),
               Chain.empty,
-              (Some(media), ByteVector.encodeUtf8(content).getOrElse(ByteVector.empty))
+              (Some(media), org.http4s.Entity.strict(ByteVector.encodeUtf8(content).getOrElse(ByteVector.empty)))
             )
           )
           .map(_.swap.toOption)
@@ -91,15 +91,19 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
     ,
     test("an eligible payload failure takes priority over a different alternative's content type"):
       val schema = request(method.post, __)(body.json(payload.int) :+ body.binary(dsl.mediaType.pdf))
-      val result = Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node](Http4sCirce.Payload).decodeDetailed(
-        schema,
-        Http4sWire.Request(
-          Vector.empty,
-          Chain.empty,
-          Chain.empty,
-          (Some(dsl.mediaType.json), ByteVector.encodeUtf8("not json").getOrElse(ByteVector.empty))
+      val result =
+        Http4sRequestDecoder[cats.effect.IO, io.taig.otter.Json.Node, Nothing](Http4sCirce.Payload).decodeDetailed(
+          schema,
+          Http4sWire.Request(
+            Vector.empty,
+            Chain.empty,
+            Chain.empty,
+            (
+              Some(dsl.mediaType.json),
+              org.http4s.Entity.strict(ByteVector.encodeUtf8("not json").getOrElse(ByteVector.empty))
+            )
+          )
         )
-      )
       run(result).map(result => assertTrue(result.swap.toOption.exists(_.category == Failure.Category.Syntax)))
     ,
     test("unexpected effect failures use a bodyless 500 and retain their cause"):
@@ -139,7 +143,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         .map(value => assertTrue(value == Right(())))
     ,
     test("overlapping wire responses retain domain priority"):
-      val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
+      val value: ComposedEndpoint[[w, r] =>> Nothing, [w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
         errorPolicy.default(endpoint(request(method.get, __), response(Status(500))))
       val client =
         Client.fromHttpApp(
@@ -199,7 +203,7 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
       )
     ,
     test("an invalid domain status uses the declared status-error response"):
-      val value: ComposedEndpoint[[w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
+      val value: ComposedEndpoint[[w, r] =>> Nothing, [w, r] =>> Nothing, Unit, Unit, Unit, Unit, Status] =
         errorPolicy.default(endpoint(request(method.get, __), response(Status(-1))))
       run(
         Http4s

@@ -235,23 +235,15 @@ final class TypescriptEndpointRenderer(
       .map(reference => bodies(operation, hint, response, reference.value))
       .getOrElse(State.pure((Nil, Chain.empty)))
 
-    val streamed = Chain.fromOption(
-      schema.streamed.map(reference => TypescriptIssue.Streamed(operation, reference.value.mediaType.render))
-    )
-
-    whole.map((bodies, issues) => (TypescriptEndpointRenderer.Answer(status, bodies), issues ++ streamed))
+    whole.map((bodies, issues) => (TypescriptEndpointRenderer.Answer(status, bodies), issues))
 
   private def body(
       operation: String,
       declared: String,
       schema: Request.Schema[?, ?, ?]
   ): Step[Option[(Typescript.Expression, Typescript.Type)]] =
-    val streamed = Chain.fromOption(
-      schema.streamed.map(reference => TypescriptIssue.Streamed(operation, reference.value.mediaType.render))
-    )
-
     schema.bodies match
-      case None            => State.pure((None, streamed))
+      case None            => State.pure((None, Chain.empty))
       case Some(reference) =>
         bodies(operation, declared ++ "Request", request, reference.value).map: (bodies, issues) =>
           val shaped =
@@ -259,7 +251,7 @@ final class TypescriptEndpointRenderer(
 
           (
             shaped.map(tpe => (TypescriptEndpointRenderer.entries(bodies), tpe)),
-            issues ++ streamed
+            issues
           )
 
   /** Every alternative a body offers, each keyed by the media type it arrives as. */
@@ -286,7 +278,7 @@ final class TypescriptEndpointRenderer(
     TypescriptEndpointRenderer.value(schema.self.self) match
       case Body.Value.Binary(_) =>
         State.pure((TypescriptEndpointRenderer.Alternative(media, None, TypescriptEndpointRenderer.Blob), Chain.empty))
-      case Body.Value.Streamed(_, _, _) =>
+      case Body.Value.Streamed(_, _, _) | Body.Value.Raw(_) =>
         State.pure(
           (
             TypescriptEndpointRenderer.Alternative(media, None, TypescriptEndpointRenderer.Unknown),

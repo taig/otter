@@ -32,8 +32,8 @@ import java.nio.file.Paths
   * is required when it is not.
   *
   * Every renderer here returns a document *and* a list of issues. None of them throws, and none half emits: the
-  * multipart, streamed and CSV endpoints of [[api.unserved]] are reported by name and the rest of the document still
-  * comes back. That is why the issues are printed rather than silently dropped.
+  * unsupported multipart and streamed declarations are reported by name and the rest of the document still comes back.
+  * That is why the issues are printed rather than silently dropped.
   */
 object Documents extends IOApp:
   private val Target: Path = Paths.get("target", "sample-library")

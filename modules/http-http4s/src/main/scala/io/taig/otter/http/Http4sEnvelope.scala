@@ -118,14 +118,14 @@ object Http4sEnvelope:
     * header. [[MediaType.render]] is already the wire form, and going through a second model only adds a way for the
     * two spellings to disagree.
     */
-  def toHttp4sResponse[F[_]](response: Http4sWire.Response): ParseResult[Http4sResponse[F]] =
+  def toHttp4sResponse[F[_]](response: Http4sWire.Response[F]): ParseResult[Http4sResponse[F]] =
     Http4sStatus.fromInt(response.status.value).map { status =>
       val headers =
-        response.headers ++ Chain.fromOption(response.body.map((mediaType, _) => ("Content-Type", mediaType.render)))
+        response.headers ++ Chain.fromOption(response.body._1.map(mediaType => ("Content-Type", mediaType.render)))
 
       Http4sResponse[F](
         status = status,
         headers = Http4sEnvelope.toHttp4sHeaders(headers),
-        entity = response.body.fold(Entity.empty)((_, bytes) => Entity.strict(bytes))
+        entity = response.body._2
       )
     }

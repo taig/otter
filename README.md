@@ -313,9 +313,57 @@ interpreter inside the outer one.
 Bodies remain buffered; requests and responses share the same support, and filenames are write-time hints, not
 constraints on incoming uploads. Streaming parts remain unsupported.
 
-Two further endpoints — `GET /books/export` (ndjson stream) and `GET /books/report` (CSV stream) — are described and
-documented but deliberately **not** served. `LibraryShortfallTest` records the remaining streaming limitations and the
-need to register multipart support explicitly.
+`GET /books/export` serves the catalogue as NDJSON, in ISBN order, through the same endpoint used by the in-memory
+client. It is registered before `/books/{isbn}`. `GET /books/report` remains documented but unserved because no CSV
+row-stream interpreter is registered. `LibraryShortfallTest` checks missing stream and multipart registrations.
+
+### Streaming bodies
+
+A streamed body contributes a typed carrier to the endpoint. Core schemas do not depend on fs2; a declaration can be
+generic in `C[+A]`, while http4s uses `fs2.Stream[F, A]`:
+
+```scala
+type Flow[+A] = fs2.Stream[cats.effect.IO, A]
+val rows = body.ndjson[Flow](bookSchema)
+val exportBooks = endpoint(request(method.get, __ / "books" / "export"), response(status.ok)(rows))
+val payload = Http4sCirce.Payload.withStreams(Http4sCirce.Streams)
+val app = Http4s.app[cats.effect.IO](Route(exportBooks, (_: Unit) => loadBooksStream))(payload)
+val client = Http4s.client(payload, baseUri, transport)
+client.resource(exportBooks)(()).use(books => books.evalMap(processBook).compile.drain)
+```
+
+`client.resource(endpoint)` returns `A => Resource[F, B]`; consume response streams inside `use`. Acquisition checks
+the response status, headers and content type, while element parsing and validation occur as elements are pulled.
+Buffered responses retain `client(endpoint): A => F[B]`, including endpoints that upload streams. API-bound clients
+and declared errors follow the same lifetime rules. Client configuration and function selection send no requests.
+Request and response requirements remain separate through endpoint composition. Let endpoint types be inferred, or
+use `Endpoint.Schema[RequestRequirement, ResponseRequirement, AW, AR, BW, BR]` when the two requirements differ.
+
+`body.streamed[Flow](mediaType, frame, elementSchema)` supports `Frame.Lines`, `Frame.Events`, and
+`Frame.Delimited(separator)`. Lines follow the [NDJSON specification](https://github.com/ndjson/ndjson-spec): they emit
+LF, accept CRLF, and reject blank records. The decoder additionally tolerates a final nonempty unterminated record.
+SSE follows the [event-stream parsing rules](https://html.spec.whatwg.org/multipage/server-sent-events.html#event-stream-interpretation),
+exposes data blocks, joins multiple data fields, ignores comments and event metadata, and discards incomplete
+blocks at EOF; it does not implement reconnect behavior. Delimited streams preserve interior empty frames, accept a
+final unterminated record, and reject output whose contents collide with a boundary. Delimiters must be nonempty.
+`body.streamed[Flow].raw()` carries bytes unchanged and requires `Http4sStreams.Raw` registration:
+
+```scala
+val payload = Http4sCirce.Payload.withStreams(Http4sCirce.Streams.orElse(Http4sStreams.Raw))
+```
+
+Framed JSON uses a 1 MiB per-frame limit, enforced incrementally even without a terminating delimiter. Configure it
+with `Http4sCirce.streams(maxFrameBytes = ...)`. SSE bounds the entire event, including ignored fields. Raw streams
+have no frame accumulator. Stream memory does not grow with the number of elements; whole-document bodies and
+multipart bodies remain buffered.
+
+A stream codec is an explicit registration, independent of the buffered payload codec. Ambiguous streamed alternatives
+with overlapping status/media types fail when constructing routes or client functions. Missing content type cannot
+select between multiple eligible alternatives involving streams. No decoder retries a stream after consuming elements.
+`Http4sFailure.Streaming` retains the endpoint, direction, element index when known, failure category, cause, and
+validation paths beneath `body[index]`. Input failures observed before a response use the endpoint's error policy;
+a failure after a streaming response has started terminates its body and notifies the observer. Cancellation propagates
+and releases resources. Streaming multipart parts remain unsupported.
 
 ### Generate the documents
 
@@ -339,7 +387,7 @@ without `metadata` because it fills in a default, while a generated client alway
 them would misstate requiredness to half your audience. The `paths` are identical; every difference is inside
 `components/schemas`.
 
-Expect a handful of issues in the output. The two streaming endpoints are reported by name. TypeScript additionally
+Expect a handful of issues in the output. The renderers still report the two streaming endpoints by name; backend support does not add a streaming descriptor or OpenAPI framing vocabulary. TypeScript additionally
 reports the multipart cover upload, which the backend now serves but the descriptor generator does not support.
 Renderers still return the rest of each document.
 
