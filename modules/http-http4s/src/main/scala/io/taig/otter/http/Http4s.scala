@@ -155,6 +155,7 @@ object Http4s:
     * `(health <+> Http4s.routes[F](api, served*)(payload) <+> Http4s.fallback[F](api, served*)(payload)).orNotFound`.
     * It asks only the routes it is given, so it has to be given the same ones that were tried ahead of it: a path only
     * a foreign route serves is a `404` here whatever its method, and a foreign route's methods never reach `Allow`.
+    * With an API, answers come from `api.unrouted`; endpoint handlers and their error policies are never executed.
     */
   def fallback[F[_]: Concurrent]: Http4s.FallbackBuilder[F] = new Http4s.FallbackBuilder[F]
 
@@ -214,7 +215,12 @@ object Http4s:
       val headers = response.headers.filterNot((name, _) => name.toLowerCase(Locale.ROOT) == "allow")
       response.copy(headers = headers :+ ("Allow", allowed.mkString(", ")))
 
-  /** Each route under the API's global policy, which its own overrides are applied on top of. */
+  /** Apply the serving API's defaults beneath each declaration's local overrides.
+    *
+    * This replaces the initial defaults of `Route(otherApi, endpoint, handler)`. A [[Route.composed]] declaration
+    * overrides every category, so its complete policy survives. Documentation membership remains the caller's choice:
+    * include these routes' declarations in the API to render the same contracts that are served.
+    */
   private def composed[F[_], P[-_, +_], Q[-_, +_], S[-w, +r] <: Http4sInterpreter.Supported[F, P, Q][w, r], E](
       api: Api[S, E],
       routes: Seq[Route[F, Http4sInterpreter.Supported[F, P, Q], ?, ?]]

@@ -239,6 +239,11 @@ to a renderer with only the handlers thrown away; documents can come from the en
 neither direction needs the other. `Route.composed` stores `ComposedEndpoint.declaration`, which overrides every entry
 of its policy, so a composed route answers with its own policy under an `Api` too and a document rendered from it says
 the same.
+`Route(apiA, endpoint, handler)` instead keeps the original declaration: it uses API A's defaults standalone, and
+inherits API B's defaults when served under API B, preserving local overrides. Use `Route.composed` to retain the
+complete policy. Documentation membership is explicit: include `route.declaration` or `routes.declarations` in the
+API being rendered; serving a route does not register it there. `Http4s.fallback` answers through `Api.unrouted` and
+never executes endpoint handlers or their error policies.
 
 `http-csv` is the second payload alphabet, beside `http-json`: a `CsvDocument` is exactly one row or a finite collection
 of rows. `http-http4s-fs2-data` interprets it for http4s, buffered, with fs2-data writing the CSV wire syntax and
