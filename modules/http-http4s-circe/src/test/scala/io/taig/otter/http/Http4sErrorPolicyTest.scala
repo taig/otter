@@ -283,16 +283,59 @@ object Http4sErrorPolicyTest extends ZIOSpecDefault:
         assertTrue(status == 500, category(events).contains(Failure.Category.Encoding))
       }
     ,
-    test("a composed route keeps its own policy under an API's"):
-      val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
-      val value = errorPolicy(unexpected = unavailable)(domain)
-      val api = Api(errorPolicy.default, unroutedPolicy.default)
-      run(
-        Http4s
-          .app[IO](api, Route.composed(value, (_: Unit) => IO.raiseError[Unit](cause)))(Http4sPayload.Empty)
-          .run(Http4sRequest[IO](uri = base))
-      ).map(response => assertTrue(response.status.code == 503))
-    ,
+    suite("policy precedence")(
+      List(false, true).map: terminal =>
+        test(if terminal then "app" else "routes"):
+          def answer(code: Int): Response.Schema[Nothing, Failure, Status] =
+            response(Status(code)).dimap[Failure, Status](_ => ())(_ => Status(code))
+          val first = Api(errorPolicy(envelope = answer(409), unexpected = answer(502)), unroutedPolicy.default)
+          val second = Api(errorPolicy(envelope = answer(410), unexpected = answer(504)), unroutedPolicy.default)
+          val declaration = endpoint(
+            request(method.get, __).queries(query("n", int).toRecord),
+            response(status.noContent)
+          )
+          val overridden = declaration.withErrors(errorOverrides(unexpected = Some(answer(503))))
+          val handler = (_: Int) => IO.raiseError[Unit](cause)
+          val plain = Route(declaration, handler)
+          val local = Route(overridden, handler)
+          val initial = Route(first, declaration, handler)
+          val initialLocal = Route(first, overridden, handler)
+          val settled = Route.composed(declaration.compose(first.errors), handler)
+          val settledLocal = Route.composed(overridden.compose(first.errors), handler)
+          def statuses(route: Route[IO, [w, r] =>> Nothing, Int, Unit], underApi: Boolean): IO[(Int, Int)] =
+            val app =
+              if underApi then
+                if terminal then Http4s.app[IO](second, route)(Http4sPayload.Empty)
+                else Http4s.routes[IO](second, route)(Http4sPayload.Empty).orNotFound
+              else if terminal then Http4s.app[IO](route)(Http4sPayload.Empty)
+              else Http4s.routes[IO](route)(Http4sPayload.Empty).orNotFound
+            (
+              app.run(Http4sRequest[IO](uri = base.withQueryParam("n", "invalid"))),
+              app.run(Http4sRequest[IO](uri = base.withQueryParam("n", "1")))
+            )
+              .mapN((envelope, unexpected) => (envelope.status.code, unexpected.status.code))
+          run(
+            for
+              inherited <- statuses(plain, true)
+              overridden <- statuses(local, true)
+              standalone <- statuses(initial, false)
+              rebased <- statuses(initial, true)
+              standaloneLocal <- statuses(initialLocal, false)
+              rebasedLocal <- statuses(initialLocal, true)
+              composed <- statuses(settled, true)
+              composedLocal <- statuses(settledLocal, true)
+            yield assertTrue(
+              inherited == (410, 504),
+              overridden == (410, 503),
+              standalone == (409, 502),
+              rebased == (410, 504),
+              standaloneLocal == (409, 503),
+              rebasedLocal == (410, 503),
+              composed == (409, 502),
+              composedLocal == (409, 503)
+            )
+          )
+    ),
     test("a route's declaration is the one it was built from"):
       val unavailable = response(Status(503)).dimap[Failure, Status](_ => ())(_ => Status(503))
       val overridden = domain.withErrors(errorOverrides(unexpected = Some(unavailable)))

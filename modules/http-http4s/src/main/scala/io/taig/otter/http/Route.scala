@@ -31,7 +31,12 @@ import org.http4s.Response as Http4sResponse
   * A route keeps the [[Endpoint.Declaration]] it was built from, so what is served can be rendered as a document by
   * handing [[declaration]] to a renderer, and the handler is all that is thrown away. A composed endpoint is kept as
   * [[ComposedEndpoint.declaration]], which overrides every entry of its policy: it answers with that policy under an
-  * API too, and a document rendered from it says so.
+  * API too, and a document rendered from it says so. Ordinary declarations instead inherit the serving API's policy,
+  * with their local overrides applied on top. The API passed to `Route(api, endpoint, handler)` supplies the initial
+  * defaults for standalone serving; serving that route under another API replaces those defaults.
+  *
+  * Documentation membership is explicit: include `route.declaration` or `routes.declarations` in the documented API to
+  * describe the declarations being served. Constructing or serving a route does not add it to an API.
   */
 final case class Route[F[_], +S[-_, +_], A, B] private (
     declaration: Endpoint.Declaration[S, S, Nothing, A, B, Any, Any],
@@ -65,6 +70,12 @@ final case class Route[F[_], +S[-_, +_], A, B] private (
     Route.addresses(PathTemplate(endpoint.request.path.value), segments)
 
 object Route:
+  /** Build a route with this API's initial defaults and the declaration's local overrides.
+    *
+    * Standalone serving uses this policy. Serving under another API replaces the inherited defaults while keeping the
+    * declaration's overrides. Use [[Route.composed]] with `endpoint.compose(api.errors)` to retain the complete policy
+    * under any later API. The route keeps the original declaration, and does not register it in either API's documents.
+    */
   def apply[F[_], Q[-_, +_], S[-_, +_], T[-_, +_], A, B, E, D](
       api: Api[T, E],
       endpoint: Endpoint.Declaration[Q, S, Nothing, A, B, Any, D],
@@ -78,6 +89,7 @@ object Route:
   ): Route[F, Body.Or[Q, S], A, B] =
     new Route(endpoint, handler, endpoint.compose(ErrorPolicyComponent.default).errors)
 
+  /** Retain every category of an already-composed policy, including when served under another API. */
   def composed[F[_], Q[-_, +_], S[-_, +_], A, B, E](
       endpoint: ComposedEndpoint[Q, S, Nothing, A, B, Any, E],
       handler: A => F[B]

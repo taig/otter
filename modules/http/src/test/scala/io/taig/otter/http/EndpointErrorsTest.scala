@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.syntax.all.*
 import io.taig.otter.Keys
 import io.taig.otter.http.component.HttpComponent.*
 import zio.Scope
@@ -17,6 +18,28 @@ object EndpointErrorsTest extends ZIOSpecDefault:
         declared.compose(errorPolicy.default).effective.self.metadata == expected.self.metadata,
         declared.compose(errorPolicy.default).errors == errorPolicy.default,
         domain.effective == domain
+      )
+    ,
+    test("a composed declaration retains every error category under different defaults"):
+      def answer(code: Int): Response.Schema[Nothing, Failure, Status] =
+        response(Status(code)).dimap[Failure, Status](_ => ())(_ => Status(code))
+      val policy = ErrorPolicy(
+        envelope = answer(400),
+        syntax = answer(401),
+        contentType = answer(402),
+        validation = answer(403),
+        entityRead = answer(404),
+        encoding = answer(405),
+        status = answer(406),
+        unexpected = answer(407)
+      )
+      val domain = endpoint(request(method.get, __), response(status.noContent))
+      val declaration = policy(domain).declaration
+      val recomposed = declaration.compose(errorPolicy.from(answer(503)).default)
+      assertTrue(
+        recomposed.domain == domain,
+        recomposed.errors == policy,
+        Responses.branches(recomposed.errors.responses).map(_.status).toList == (400 to 407).map(Status(_)).toList
       )
     ,
     test("the default unrouted answers are a not found and a method not allowed, and nothing else"):
