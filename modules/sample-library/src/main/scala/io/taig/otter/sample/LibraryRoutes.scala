@@ -46,7 +46,7 @@ object LibraryRoutes:
   def routes(library: Library[IO]): Routes[IO, Http4sInterpreter.Supported[IO, LibraryRoutes.Payload, Json.Node]] =
     routes(library, api.default)
 
-  def routes[F[_]: Concurrent](
+  def routes[F[_]](
       library: Library[F],
       definitions: api.Definitions[Stream[F, +*]]
   ): Routes[F, Http4sInterpreter.Supported[F, LibraryRoutes.Payload, Json.Node]] = Routes(
