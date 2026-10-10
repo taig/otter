@@ -31,8 +31,8 @@ trait ErrorPolicySyntax:
   extension (endpoint: Endpoint.Declaration.Node)
     /** Resolve an existential declaration for standalone documentation. */
     def effective: Endpoint.Node = endpoint match
-      case endpoint: Endpoint.Schema[q, s, ?, ?, ?, ?]        => endpoint
-      case endpoint: Endpoint.WithErrors[q, s, ?, ?, ?, ?, ?] =>
+      case endpoint: Endpoint.Schema[?, ?, ?, ?, ?, ?]        => endpoint
+      case endpoint: Endpoint.WithErrors[?, ?, ?, ?, ?, ?, ?] =>
         endpoint.compose(ErrorPolicyComponent.default).effective
 
 object ErrorPolicySyntax extends ErrorPolicySyntax
