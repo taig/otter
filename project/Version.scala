@@ -2,7 +2,7 @@ object Version:
   val Cats = "2.13.0"
   val Borer = "1.18.0"
   val CatsParse = "1.1.0"
-  val Circe = "0.14.16"
+  val Circe = "0.14.17"
   val Data = "0.0.4"
   val EnumerationExt = "0.6.0"
   val Fs2Data = "1.14.1"
