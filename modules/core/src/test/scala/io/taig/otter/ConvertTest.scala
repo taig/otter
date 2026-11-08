@@ -17,6 +17,54 @@ object ConvertTest extends ZIOSpecDefault:
     case C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, C12, C13, C14, C15, C16, C17, C18, C19, C20, C21, C22,
       C23, C24, C25
 
+  /** A sum whose members carry fields, the shape of an API's error enum. Resolving a conversion for it doubled in cost
+    * with every member until [[Convert.Members]]: twenty took twenty seconds to compile, and thirty would take hours.
+    * So these two tests fail by not compiling in time.
+    */
+  enum Carrying:
+    case C01(value: Int)
+    case C02(value: Int)
+    case C03(value: Int)
+    case C04(value: Int)
+    case C05(value: Int)
+    case C06(value: Int)
+    case C07(value: Int)
+    case C08(value: Int)
+    case C09(value: Int)
+    case C10(value: Int)
+    case C11(value: Int)
+    case C12(value: Int)
+    case C13(value: Int)
+    case C14(value: Int)
+    case C15(value: Int)
+    case C16(value: Int)
+    case C17(value: Int)
+    case C18(value: Int)
+    case C19(value: Int)
+    case C20(value: Int)
+    case C21(value: Int)
+    case C22(value: Int)
+    case C23(value: Int)
+    case C24(value: Int)
+    case C25(value: Int)
+    case C26(value: Int)
+    case C27(value: Int)
+    case C28(value: Int)
+    case C29(value: Int)
+    case C30(value: Int)
+
+  /** A case holding no members reads as the enum itself, so these branches read a member, the enum, and a member. */
+  enum Widening:
+    case Active(value: Int)
+    case Deleted
+    case Invited(value: Int)
+
+  final case class Box[+A](value: A)
+
+  /** Asks for a reader the way `mapTo` does: the target is left to inference, within what the result has to be. */
+  final class Reading[R](value: R):
+    def mapTo[B](using reader: Convert.Reader[R, B]): Box[B] = Box(reader.to(value))
+
   enum Ten:
     case C01, C02, C03, C04, C05, C06, C07, C08, C09, C10
 
@@ -234,6 +282,32 @@ object ConvertTest extends ZIOSpecDefault:
         Wide.values.forall(value => sumConvert.to(sumConvert.from(value)) == value)
       )
     },
+    test("a sum of 30 members that carry fields round trips"):
+      val mirror = summon[Mirror.SumOf[Carrying]]
+      val convert = Convert[Convert.Coproduct[mirror.MirroredElemTypes], Carrying]
+      val values = List(Carrying.C01(1), Carrying.C15(15), Carrying.C30(30))
+
+      assertTrue(values.forall(value => convert.to(convert.from(value)) == value))
+    ,
+    test("a union of 30 members that carry fields round trips"):
+      val mirror = summon[Mirror.SumOf[Carrying]]
+      type Nesting = Convert.Coproduct[mirror.MirroredElemTypes]
+      val convert = Convert[Nesting, Convert.Members[Nesting]]
+      val values = List[Convert.Members[Nesting]](Carrying.C01(1), Carrying.C15(15), Carrying.C30(30))
+
+      assertTrue(values.forall(value => convert.to(convert.from(value)) == value))
+    ,
+    test("a reader infers an enum from a branch that reads the enum itself"):
+      val value: Either[Either[Widening.Active, Widening], Widening.Invited] = Left(Right(Widening.Deleted))
+      val result: Box[Widening] = Reading(value).mapTo
+
+      assertTrue(result == Box(Widening.Deleted))
+    ,
+    test("branches that all hold the enum are read"):
+      val reader = summon[Convert.Reader[Either[Three, Three], Three]]
+
+      assertTrue(reader.to(Right(Three.B)) == Three.B)
+    ,
     test("every member of a 25 member sum lands at its own depth"):
       val mirror = summon[Mirror.SumOf[Big]]
       val convert = Convert[Convert.Coproduct[mirror.MirroredElemTypes], Big]

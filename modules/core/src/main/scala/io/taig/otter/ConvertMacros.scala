@@ -3,6 +3,22 @@ package io.taig.otter
 import scala.quoted.*
 
 private[otter] object ConvertMacros:
+  def scalaUnion[L: Type, R: Type, B: Type](using Quotes): Expr[Convert[Either[L, R], B]] =
+    import quotes.reflect.*
+
+    val either = TypeRepr.of[Either[Any, Any]].typeSymbol
+
+    def shape(tpe: TypeRepr): Expr[Convert.ScalaUnion.Shape] = tpe.dealias match
+      case AppliedType(constructor, List(left, right)) if constructor.typeSymbol == either =>
+        '{ Convert.ScalaUnion.Shape.Nest(${ shape(left) }, ${ shape(right) }) }
+      case member =>
+        (member.asType: @unchecked) match
+          case '[a] =>
+            val test = Expr.summon[Convert.UnionTest[a]].getOrElse(unionTest[a])
+            '{ Convert.ScalaUnion.Shape.Member($test) }
+
+    '{ new Convert.ScalaUnion[Either[L, R], B](${ shape(TypeRepr.of[Either[L, R]]) }) }
+
   def unionTest[A: Type](using Quotes): Expr[Convert.UnionTest[A]] =
     import quotes.reflect.*
 

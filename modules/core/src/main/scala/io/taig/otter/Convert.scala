@@ -35,51 +35,55 @@ object Convert:
 
     inline given derived: [A] => Convert.UnionTest[A] = ${ ConvertMacros.unionTest[A] }
 
-  /** Shape evidence for nested `Either`s. Its output type is the Scala union of the leaf members. */
-  sealed abstract class UnionShape[A]:
-    type Out
+  /** The members of a nesting of `Either`s as a Scala union, from the left: `Either[Either[A, B], C]` is `A | B | C`.
+    */
+  type Members[E] = E match
+    case Either[l, r] => Convert.Members[l] | Convert.Members[r]
+    case _            => E
 
-    def encode(value: A): Out
+  /** Converts a nested `Either` to the Scala union of its members, checking branches in declaration order when writing.
+    *
+    * The union is reduced from the nesting by [[Convert.Members]], once, rather than built up by a ladder of givens.
+    * Each rung of that ladder named its union through the rungs beneath it, `left.Out | right.Out`, and the compiler
+    * expanded the whole chain again at every rung: the cost doubled with every member that carries fields, twenty of
+    * them taking twenty seconds to compile. Every conversion to an enum paid for the ladder too, because this is a
+    * candidate for each of them. Here the evidence is one comparison: the target has to be the members' union, and a
+    * target still to be inferred becomes it, as a reader widening its branches needs. The macro only gathers each
+    * member's test.
+    */
+  inline given scalaUnion: [L, R, B] => (Convert.Members[Either[L, R]] =:= B) => Convert[Either[L, R], B] =
+    ${ ConvertMacros.scalaUnion[L, R, B] }
 
-    def decode(value: Any): Option[A]
+  /** What [[Convert.scalaUnion]] builds: the nesting, with each member's test where it sits. Public because the macro
+    * expands at the caller's site.
+    */
+  final class ScalaUnion[A, B](shape: Convert.ScalaUnion.Shape) extends Convert[A, B]:
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+    override def to(value: A): B = Convert.ScalaUnion.encode(shape, value).asInstanceOf[B]
 
-  object UnionShape extends UnionLeaf:
-    type Aux[A, B] = Convert.UnionShape[A] { type Out = B }
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf", "scalafix:DisableSyntax.throw"))
+    override def from(value: B): A =
+      Convert.ScalaUnion.decode(shape, value).getOrElse(throw new MatchError(value)).asInstanceOf[A]
 
-    given either: [L, R] => (
-        left: Convert.UnionShape[L],
-        right: Convert.UnionShape[R]
-    ) => Convert.UnionShape.Aux[Either[L, R], left.Out | right.Out] =
-      new Convert.UnionShape[Either[L, R]]:
-        override type Out = left.Out | right.Out
+  object ScalaUnion:
+    enum Shape:
+      case Member(test: Convert.UnionTest[?])
+      case Nest(left: Convert.ScalaUnion.Shape, right: Convert.ScalaUnion.Shape)
 
-        override def encode(value: Either[L, R]): Out = value.fold(left.encode, right.encode)
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+    @tailrec
+    private def encode(shape: Convert.ScalaUnion.Shape, value: Any): Any = shape match
+      case Convert.ScalaUnion.Shape.Member(_)         => value
+      case Convert.ScalaUnion.Shape.Nest(left, right) =>
+        value.asInstanceOf[Either[Any, Any]] match
+          case Left(inner)  => encode(left, inner)
+          case Right(inner) => encode(right, inner)
 
-        override def decode(value: Any): Option[Either[L, R]] =
-          left.decode(value).map(Left(_)).orElse(right.decode(value).map(Right(_)))
-
-  private[otter] trait UnionLeaf:
-    given leaf: [A] => (
-        notEither: NotGiven[A <:< Either[?, ?]],
-        test: Convert.UnionTest[A]
-    ) => Convert.UnionShape.Aux[A, A] =
-      new Convert.UnionShape[A]:
-        override type Out = A
-
-        override def encode(value: A): A = value
-
-        override def decode(value: Any): Option[A] = test.unapply(value)
-
-  /** Converts a nested `Either` to a Scala union, checking branches in declaration order when writing. */
-  given scalaUnion: [L, R, B] => (
-      shape: Convert.UnionShape.Aux[Either[L, R], B],
-      notSum: NotGiven[Mirror.SumOf[B]]
-  ) => Convert[Either[L, R], B]:
-    override def to(value: Either[L, R]): B = shape.encode(value)
-
-    @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
-    override def from(value: B): Either[L, R] =
-      shape.decode(value).getOrElse(throw new MatchError(value))
+    /** The first member from the left that holds the value wins, which is what a branch order means for overlaps. */
+    private def decode(shape: Convert.ScalaUnion.Shape, value: Any): Option[Any] = shape match
+      case Convert.ScalaUnion.Shape.Member(test)      => test.unapply(value)
+      case Convert.ScalaUnion.Shape.Nest(left, right) =>
+        decode(left, value).map(Left(_)).orElse(decode(right, value).map(Right(_)))
 
   /** The read half, which is all a schema that only reads can ask for.
     *
