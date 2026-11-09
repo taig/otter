@@ -43,6 +43,9 @@ object Convert:
 
   /** Converts a nested `Either` to the Scala union of its members, checking branches in declaration order when writing.
     *
+    * Branches of one type therefore always write the first of them, which lets a schema write its current format and
+    * still read an older one. Where the choice carries meaning, such as two statuses, give each branch its own case.
+    *
     * The union is reduced from the nesting by [[Convert.Members]], once, rather than built up by a ladder of givens.
     * Each rung of that ladder named its union through the rungs beneath it, `left.Out | right.Out`, and the compiler
     * expanded the whole chain again at every rung: the cost doubled with every member that carries fields, twenty of

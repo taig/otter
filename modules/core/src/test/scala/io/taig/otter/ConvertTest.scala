@@ -180,6 +180,15 @@ object ConvertTest extends ZIOSpecDefault:
 
       assertTrue(first.from(value) == Left(value), reversed.from(value) == Left(value))
     ,
+    test("branches of one type write the first and read both"):
+      val convert = Convert[Either[Three, Three], Three]
+
+      assertTrue(
+        Three.values.toList.map(convert.from) == List(Left(Three.A), Left(Three.B), Left(Three.C)),
+        convert.to(Left(Three.A)) == Three.A,
+        convert.to(Right(Three.B)) == Three.B
+      )
+    ,
     test("an explicit TypeTest supports an erased generic member"):
       given intListUnionTest: Convert.UnionTest[List[Int]] = Convert.UnionTest.fromTypeTest(
         new TypeTest[Any, List[Int]]:
