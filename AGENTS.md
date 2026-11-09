@@ -82,6 +82,17 @@ A compile probe with 100 case classes in an enum, one record per branch and `.to
 form in 2 seconds of sbt task time (Scala 3.9.0, Java 21); it uses the existing implicit ladders with no new inline
 search. This is a capacity check, not a runtime benchmark.
 
+`Convert.scalaUnion` takes part in every conversion of a union, an enum target included, so its cost is everyone's. It
+reduces the union with the `Convert.Members` match type rather than building it through a ladder of givens: each rung
+of that ladder named its union through the rungs beneath it, and the compiler expanded the whole chain at every rung,
+doubling with each member that carries fields (20 members took 20 seconds, 30 would take hours). Compile a probe of
+case classes before adding evidence to it, and read `-Yprofile-trace` rather than guessing: ordering its using
+parameters or lowering its priority changes nothing, because the target is only constrained when they are searched.
+
+Its macro emits one `val` per node of the union, because the compiler recurses into an expression as deep as it is
+nested. A hundred nested members overflow CI's 1 MB stack and still pass on an Apple Silicon Mac, whose default is 2 MB:
+run `sbt -J-Xss1m` to reproduce what CI sees.
+
 `core-json`/`core-json-circe`, `core-json`/`core-json-borer` and `core-csv`/`core-csv-fs2-data` are the same pair
 three times: a module defining a format's alphabet, and a module interpreting it into a library's data model.
 
