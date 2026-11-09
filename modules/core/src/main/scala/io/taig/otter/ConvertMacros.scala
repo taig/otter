@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import scala.collection.mutable.ListBuffer
 import scala.quoted.*
 
 private[otter] object ConvertMacros:
@@ -7,17 +8,36 @@ private[otter] object ConvertMacros:
     import quotes.reflect.*
 
     val either = TypeRepr.of[Either[Any, Any]].typeSymbol
+    val definitions = ListBuffer.empty[ValDef]
+
+    // One val per node rather than one nested expression: the compiler recurses into an expression as deep as it is
+    // nested, and a hundred members overflow a 1 MB stack.
+    def define(shape: Expr[Convert.ScalaUnion.Shape]): Expr[Convert.ScalaUnion.Shape] =
+      val symbol = Symbol.newVal(
+        parent = Symbol.spliceOwner,
+        name = s"shape${definitions.length}",
+        tpe = TypeRepr.of[Convert.ScalaUnion.Shape],
+        flags = Flags.EmptyFlags,
+        privateWithin = Symbol.noSymbol
+      )
+      definitions += ValDef(symbol, Some(shape.asTerm.changeOwner(symbol)))
+      Ref(symbol).asExprOf[Convert.ScalaUnion.Shape]
 
     def shape(tpe: TypeRepr): Expr[Convert.ScalaUnion.Shape] = tpe.dealias match
       case AppliedType(constructor, List(left, right)) if constructor.typeSymbol == either =>
-        '{ Convert.ScalaUnion.Shape.Nest(${ shape(left) }, ${ shape(right) }) }
+        val leftShape = shape(left)
+        val rightShape = shape(right)
+        define('{ Convert.ScalaUnion.Shape.Nest($leftShape, $rightShape) })
       case member =>
         (member.asType: @unchecked) match
           case '[a] =>
             val test = Expr.summon[Convert.UnionTest[a]].getOrElse(unionTest[a])
-            '{ Convert.ScalaUnion.Shape.Member($test) }
+            define('{ Convert.ScalaUnion.Shape.Member($test) })
 
-    '{ new Convert.ScalaUnion[Either[L, R], B](${ shape(TypeRepr.of[Either[L, R]]) }) }
+    val root = shape(TypeRepr.of[Either[L, R]])
+    val result = '{ new Convert.ScalaUnion[Either[L, R], B]($root) }
+
+    Block(definitions.toList, result.asTerm).asExprOf[Convert[Either[L, R], B]]
 
   def unionTest[A: Type](using Quotes): Expr[Convert.UnionTest[A]] =
     import quotes.reflect.*
