@@ -18,7 +18,15 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
       name := "otter" + identifier.fold("")("-" + _)
     )
 
-  if (jvmOnly) project else project.jsSettings(scalaJSLinkerConfig ~= { _.withBatchMode(ci) })
+  if (jvmOnly) project
+  else
+    project.jsSettings(
+      scalaJSLinkerConfig ~= { _.withBatchMode(ci) },
+      // sbt 2.1.0 computes `definedTestDigests` whenever `Test / compile` runs, and on Scala.js discovering a test means
+      // linking it, so `scalafixCheckAll` linked every module and CI ran out of memory. The same task without the
+      // trigger still runs before a test does. Remove once sbt ships sbt/sbt#10110, after 2.1.1.
+      inConfig(Test)(definedTestDigests := Def.uncached(sbt.internal.IncrementalTest.definedTestDigestTask.value))
+    )
 }
 
 // A linker holds the IR of its entire classpath, and there are thirteen of them. Two at once is what a runner with two
