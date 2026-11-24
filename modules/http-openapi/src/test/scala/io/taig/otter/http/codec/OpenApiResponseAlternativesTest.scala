@@ -50,7 +50,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
         document.value.hcursor.downField("paths").downField("/alternatives").downField("get").downField("responses")
       assertTrue(
         document.issues.isEmpty,
-        responses.keys.map(_.toSet).contains(Set("204", "400", "415", "422", "500", "503")),
+        responses.keys.map(_.toSet).contains(Set("204", "400", "413", "415", "422", "500", "503")),
         responses
           .downField("503")
           .downField("content")

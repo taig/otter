@@ -130,7 +130,7 @@ object Route:
       segments,
       Http4sEnvelope.toQueries(request.uri.query),
       Http4sEnvelope.toHeaders(request.headers),
-      (Http4sEnvelope.toMediaType(request.headers), request.entity)
+      (Http4sEnvelope.toMediaType(request.headers), Http4sEnvelope.toEntity(request))
     )
     val decoded = decoder
       .contextual(route.endpoint)

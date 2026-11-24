@@ -18,6 +18,7 @@ trait ErrorPolicyComponent extends ErrorPolicyComponent.Builder[Nothing, Status]
         syntax = response,
         contentType = response,
         validation = response,
+        contentTooLarge = response,
         entityRead = response,
         encoding = response,
         status = response,
@@ -33,6 +34,7 @@ object ErrorPolicyComponent extends ErrorPolicyComponent:
       syntax = response(400),
       contentType = response(415),
       validation = response(422),
+      contentTooLarge = response(413),
       entityRead = response(500),
       encoding = response(500),
       status = response(500),
@@ -64,24 +66,29 @@ object ErrorPolicyComponent extends ErrorPolicyComponent:
         S7[-_, +_],
         E7,
         S8[-_, +_],
-        E8
+        E8,
+        S9[-_, +_],
+        E9
     ](
         envelope: Response.Schema[S1, Failure, E1] | None.type = None,
         syntax: Response.Schema[S2, Failure, E2] | None.type = None,
         contentType: Response.Schema[S3, Failure, E3] | None.type = None,
         validation: Response.Schema[S4, Failure, E4] | None.type = None,
-        entityRead: Response.Schema[S5, Failure, E5] | None.type = None,
-        encoding: Response.Schema[S6, Failure, E6] | None.type = None,
-        status: Response.Schema[S7, Failure, E7] | None.type = None,
-        unexpected: Response.Schema[S8, Failure, E8] | None.type = None
+        contentTooLarge: Response.Schema[S5, Failure, E5] | None.type = None,
+        entityRead: Response.Schema[S6, Failure, E6] | None.type = None,
+        encoding: Response.Schema[S7, Failure, E7] | None.type = None,
+        status: Response.Schema[S8, Failure, E8] | None.type = None,
+        unexpected: Response.Schema[S9, Failure, E9] | None.type = None
     ): ErrorPolicy[
-      [w, r] =>> S[w, r] | S1[w, r] | S2[w, r] | S3[w, r] | S4[w, r] | S5[w, r] | S6[w, r] | S7[w, r] | S8[w, r],
-      E | E1 | E2 | E3 | E4 | E5 | E6 | E7 | E8
+      [w, r] =>> S[w, r] | S1[w, r] | S2[w, r] | S3[w, r] | S4[w, r] | S5[w, r] | S6[w, r] | S7[w, r] | S8[w, r] |
+        S9[w, r],
+      E | E1 | E2 | E3 | E4 | E5 | E6 | E7 | E8 | E9
     ] = ErrorPolicy(
       envelope = resolve(envelope, default.envelope),
       syntax = resolve(syntax, default.syntax),
       contentType = resolve(contentType, default.contentType),
       validation = resolve(validation, default.validation),
+      contentTooLarge = resolve(contentTooLarge, default.contentTooLarge),
       entityRead = resolve(entityRead, default.entityRead),
       encoding = resolve(encoding, default.encoding),
       status = resolve(status, default.status),
