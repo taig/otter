@@ -232,7 +232,7 @@ final class TypescriptEndpointRenderer(
     val hint = declared ++ "Response" ++ status.value.toString
 
     val whole = schema.bodies
-      .map(reference => bodies(operation, hint, response, reference.value))
+      .map(reference => bodies(operation, hint, TypescriptEndpointRenderer.Message.Response, reference.value))
       .getOrElse(State.pure((Nil, Chain.empty)))
 
     whole.map((bodies, issues) => (TypescriptEndpointRenderer.Answer(status, bodies), issues))
@@ -245,47 +245,53 @@ final class TypescriptEndpointRenderer(
     schema.bodies match
       case None            => State.pure((None, Chain.empty))
       case Some(reference) =>
-        bodies(operation, declared ++ "Request", request, reference.value).map: (bodies, issues) =>
-          val shaped =
-            TypescriptEndpointRenderer.union(bodies.map(TypescriptEndpointRenderer.shaped(TypescriptEffect.inferred)))
+        bodies(operation, declared ++ "Request", TypescriptEndpointRenderer.Message.Request, reference.value).map:
+          (bodies, issues) =>
+            val shaped =
+              TypescriptEndpointRenderer.union(bodies.map(TypescriptEndpointRenderer.shaped(TypescriptEffect.inferred)))
 
-          (
-            shaped.map(tpe => (TypescriptEndpointRenderer.entries(bodies), tpe)),
-            issues
-          )
+            (
+              shaped.map(tpe => (TypescriptEndpointRenderer.entries(bodies), tpe)),
+              issues
+            )
 
   /** Every alternative a body offers, each keyed by the media type it arrives as. */
   private def bodies(
       operation: String,
       hint: String,
-      side: Side,
+      message: TypescriptEndpointRenderer.Message,
       schema: Bodies.Node[?, ?]
   ): Step[List[TypescriptEndpointRenderer.Alternative]] =
     Bodies
       .branches(schema)
       .toList
-      .traverse(body => this.alternative(operation, hint, side, body))
+      .traverse(body => this.alternative(operation, hint, message, body))
       .map(alternatives => (alternatives.map(_._1), Chain.fromSeq(alternatives).flatMap(_._2)))
 
   private def alternative(
       operation: String,
       hint: String,
-      side: Side,
+      message: TypescriptEndpointRenderer.Message,
       schema: Body.Schema[?, ?, ?]
   ): State[JsonTypescriptContext, (TypescriptEndpointRenderer.Alternative, Chain[TypescriptIssue])] =
     val media = schema.mediaType
+    val side = message match
+      case TypescriptEndpointRenderer.Message.Request  => request
+      case TypescriptEndpointRenderer.Message.Response => response
 
-    TypescriptEndpointRenderer.value(schema.self.self) match
-      case Body.Value.Binary(_) =>
+    (TypescriptEndpointRenderer.value(schema.self.self), message) match
+      /* A `fetch` streams a `Blob` it is given by itself, so a request the server reads as a stream is sent the way a
+       * buffered one is. A response is not symmetric: a caller handed one would have to read the stream themselves. */
+      case (Body.Value.Binary(_), _) | (Body.Value.Raw(_), TypescriptEndpointRenderer.Message.Request) =>
         State.pure((TypescriptEndpointRenderer.Alternative(media, None, TypescriptEndpointRenderer.Blob), Chain.empty))
-      case Body.Value.Streamed(_, _, _) | Body.Value.Raw(_) =>
+      case (Body.Value.Streamed(_, _, _) | Body.Value.Raw(_), _) =>
         State.pure(
           (
             TypescriptEndpointRenderer.Alternative(media, None, TypescriptEndpointRenderer.Unknown),
             Chain.one(TypescriptIssue.Streamed(operation, media.render))
           )
         )
-      case Body.Value.Whole(_, content) =>
+      case (Body.Value.Whole(_, content), _) =>
         content.value.asMatchable match
           case _: Multipart.Node[?, ?] @unchecked =>
             State.pure(
@@ -295,7 +301,7 @@ final class TypescriptEndpointRenderer(
               )
             )
           case document => this.document(operation, hint, side, media, document)
-      case Body.Value.Modify(_, _, _) =>
+      case (Body.Value.Modify(_, _, _), _) =>
         State.pure(
           (TypescriptEndpointRenderer.Alternative(media, None, TypescriptEndpointRenderer.Unknown), Chain.empty)
         )
@@ -342,6 +348,10 @@ object TypescriptEndpointRenderer:
   /** The same endpoints as the side answering them sees, which is what a generated server stub would want. */
   def server(payload: TypescriptPayload): TypescriptEndpointRenderer =
     new TypescriptEndpointRenderer(payload, Side.Read, Side.Write, HttpTypescriptEffect.Namespaces)
+
+  /** Which message of the exchange a body belongs to. */
+  private enum Message:
+    case Request, Response
 
   private val Blob: Typescript.Type = Typescript.Type.Symbol("Blob", parameters = Nil)
 

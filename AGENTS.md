@@ -276,7 +276,8 @@ request out of an input, the `Schema` for each body keyed by media type, and *bo
 encoded type of every answer: a caller names their cache at the encoded type and decodes past it, and when
 to decode is theirs. Nothing generated calls `fetch`, and `TypescriptEndpointRendererTest` asserts that
 outright rather than leaving it to be noticed. A streamed body and a `Multipart` payload are reported
-rather than half emitted. The http4s backend supports registered multipart bodies; the TypeScript generator does not.
+rather than half emitted, except a raw byte stream request: `fetch` streams a `Blob` by itself, so it is a `Blob` as a
+binary body is. The http4s backend supports registered multipart bodies; the TypeScript generator does not.
 
 Response headers are deliberately not in a generated answer type. A descriptor decodes no headers -- they
 are text the caller reads off the `Response` -- and a type claiming a header is a `number` would be

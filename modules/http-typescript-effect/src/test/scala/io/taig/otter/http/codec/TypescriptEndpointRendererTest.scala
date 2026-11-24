@@ -56,6 +56,12 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
   private val answerReport: Endpoint.Server[Body.Payload, Unit, Report] =
     endpoint(request(method.get, __ :* segment("reports")), response(status.ok)(body.json(api.named)).toUnion)
 
+  private val upload: Endpoint.Server[Body.Streamed.Requirement[Vector, Body.Raw], Vector[Byte], Unit] =
+    endpoint(
+      request(method.put, __ / "attachments")(body.streamed[Vector].raw(mediaType.pdf)),
+      response(status.noContent).toUnion
+    )
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TypescriptEndpointRendererTest")(
     suite("directional names")(
       test("a schema whose two sides differ gets separate definitions"):
@@ -195,6 +201,28 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
           source(api.configure).contains("""export type PutSettingsInput = { "body": """)
         )
       ,
+      /** A browser's `fetch` streams a `Blob` by itself, so a server that streams an upload needs nothing more of its
+        * caller than a server that buffers one.
+        */
+      test("a raw byte stream sent as a request is a Blob, as a binary body is"):
+        val module = render(upload)
+
+        assertTrue(
+          module.issues.isEmpty,
+          module.render.contains("""  "body": { "application/pdf": undefined },"""),
+          module.render.contains("""export type PutAttachmentsInput = { "body": Blob };""")
+        )
+      ,
+      /** Which message a body travels in decides it, not which side reads it: the server's stub receives the same Blob.
+        */
+      test("a raw byte stream request is a Blob to the server as well"):
+        val module = TypescriptEndpointRenderer.server(TypescriptEffectPayload.json).render(Chain.one(upload))
+
+        assertTrue(
+          module.issues.isEmpty,
+          module.render.contains("""export type PutAttachmentsInput = { "body": Blob };""")
+        )
+      ,
       test("the responses name a schema per status code"):
         assertTrue(source(api.fetch).contains("""  "responses": {
                                                 |    "200": { "application/json": GetReportsIdResponse200 },
@@ -273,6 +301,28 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
         assertTrue(
           module.issues == List(TypescriptIssue.Streamed("GET /reports", "application/x-ndjson")),
           module.render.contains("""  "responses": { "200": { "application/x-ndjson": undefined } }""")
+        )
+      ,
+      /** Only a request is spared: a caller handed a raw stream would have to read it themselves. */
+      test("a raw byte stream answer is reported"):
+        val download = endpoint(
+          request(method.get, __ / "attachments"),
+          response(status.ok)(body.streamed[Vector].raw(mediaType.pdf)).toUnion
+        )
+        val module = render(download)
+
+        assertTrue(
+          module.issues == List(TypescriptIssue.Streamed("GET /attachments", "application/pdf")),
+          module.render.contains("""  "responses": { "200": { "application/pdf": undefined } }""")
+        )
+      ,
+      test("a framed stream sent as a request is reported"):
+        val module =
+          render(endpoint(request(method.put, __ / "reports")(api.reports), response(status.noContent).toUnion))
+
+        assertTrue(
+          module.issues == List(TypescriptIssue.Streamed("PUT /reports", "application/x-ndjson")),
+          module.render.contains("""export type PutReportsInput = { "body": unknown };""")
         )
       ,
       /** A payload alphabet nothing recognises is reported and the body still listed, so a document always comes back.
