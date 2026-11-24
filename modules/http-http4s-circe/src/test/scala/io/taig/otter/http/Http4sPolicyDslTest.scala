@@ -41,6 +41,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     envelope = answer(400, "envelope"),
     encoding = answer(503, "encoding"),
     entityRead = answer(502, "entityRead"),
+    contentTooLarge = answer(507, "contentTooLarge"),
     contentType = answer(415, "contentType")
   )
 
@@ -49,6 +50,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     (Failure.Category.Syntax, 401, "syntax"),
     (Failure.Category.ContentType, 415, "contentType"),
     (Failure.Category.Validation, 422, "validation"),
+    (Failure.Category.ContentTooLarge, 507, "contentTooLarge"),
     (Failure.Category.EntityRead, 502, "entityRead"),
     (Failure.Category.Encoding, 503, "encoding"),
     (Failure.Category.Status, 504, "status"),
@@ -60,6 +62,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     Failure.Category.Syntax -> 400,
     Failure.Category.ContentType -> 415,
     Failure.Category.Validation -> 422,
+    Failure.Category.ContentTooLarge -> 413,
     Failure.Category.EntityRead -> 500,
     Failure.Category.Encoding -> 500,
     Failure.Category.Status -> 500,
@@ -177,7 +180,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
           .unsafeToFuture()
       )
     ,
-    test("actual interpreter failures select all eight named responses"):
+    test("actual interpreter failures select every named response"):
       val plain = endpoint(request(method.get, __), response(status.noContent))
       val json = endpoint(request(method.post, __)(body.json(payload.int)), response(status.noContent))
       val readJson = app(Route(json, (_: Int) => IO.unit))
@@ -199,6 +202,14 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
           ),
           502,
           "entityRead"
+        ),
+        (
+          Http4s.app[IO](Api(policy, unroutedPolicy.default), Route(binary, (_: ByteVector) => IO.unit))(
+            Http4sCirce.Payload.withMaxBufferedBytes(1)
+          ),
+          post("12", "application/octet-stream"),
+          507,
+          "contentTooLarge"
         ),
         (app(Route(broken, (_: Unit) => IO.unit)), get, 503, "encoding"),
         (app(Route(invalid, (_: Unit) => IO.unit)), get, 504, "status"),

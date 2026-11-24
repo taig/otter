@@ -16,8 +16,10 @@ import io.taig.otter.http.Http4sEnvelope
 import io.taig.otter.http.Http4sFailure
 import io.taig.otter.http.Http4sStreaming
 import io.taig.otter.http.MediaType
+import io.taig.validation.Comparison
 import io.taig.validation.Violation
 import org.http4s.Entity
+import scodec.bits.ByteVector
 
 /** Reads a body out of the bytes that arrived, and the media type they arrived under.
   *
@@ -36,7 +38,8 @@ import org.http4s.Entity
   */
 final class Http4sBodyDecoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](
     payload: Http4sInterpreter.Of[P, Q],
-    context: Option[(Endpoint.Node, Http4sFailure.Direction)] = None
+    context: Option[(Endpoint.Node, Http4sFailure.Direction)] = None,
+    limit: Long = Long.MaxValue
 ):
   private def contextual[A](stream: fs2.Stream[F, A]): fs2.Stream[F, A] =
     context.fold(stream)((endpoint, direction) => Http4sStreaming.context(endpoint, direction)(stream))
@@ -65,7 +68,9 @@ final class Http4sBodyDecoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](
       ).invalid[R].pure[F]
     else if eligible.isEmpty || eligible.exists(body => Http4sStreaming.isStream(body.self.self)) then
       alternatives(schema, value)
-    else Http4sEnvelope.toBytes(value._2).flatMap(bytes => alternatives(schema, (value._1, Entity.strict(bytes))))
+    else
+      whole(value._2): bytes =>
+        alternatives(schema, (value._1, Entity.strict(bytes)))
 
   private def alternatives[R](
       schema: Union[Body.Schema[Http4sInterpreter.Supported[F, P, Q], *, *], Nothing, R],
@@ -78,6 +83,14 @@ final class Http4sBodyDecoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](
         case Validated.Valid(result)    => Validated.valid(Left(result)).pure[F]
         case Validated.Invalid(failure) => alternatives(right, value).map(_.map(Right(_)).leftMap(failure |+| _))
 
+  /** The bytes of a body read whole, or a refusal once there are more than [[limit]] of them. */
+  private def whole[R](entity: Entity[F])(
+      f: ByteVector => F[Validated[DecodingFailure, R]]
+  ): F[Validated[DecodingFailure, R]] =
+    Http4sEnvelope
+      .toBytes(entity, limit)
+      .flatMap(_.fold(size => Http4sBodyDecoder.tooLarge(limit, size).invalid[R].pure[F], f))
+
   private def decode[R](
       body: Body.Value[Http4sInterpreter.Supported[F, P, Q], Nothing, R],
       value: (Option[MediaType], Entity[F])
@@ -89,11 +102,11 @@ final class Http4sBodyDecoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](
       case Body.Value.Whole(declared, reference) =>
         Http4sBodyDecoder.matches(declared, mediaType) match
           case Validated.Valid(_) =>
-            Http4sEnvelope.toBytes(entity).flatMap(payload.buffered.decode(reference.value, mediaType, _))
+            whole(entity)(payload.buffered.decode(reference.value, mediaType, _))
           case Validated.Invalid(failure) => Validated.invalid[DecodingFailure, R](failure).pure[F]
       case Body.Value.Binary(declared) =>
         Http4sBodyDecoder.matches(declared, mediaType) match
-          case Validated.Valid(_)         => Http4sEnvelope.toBytes(entity).map(_.valid)
+          case Validated.Valid(_)         => whole(entity)(_.valid[DecodingFailure].pure[F])
           case Validated.Invalid(failure) => failure.invalid[R].pure[F]
       case Body.Value.Streamed(declared, frame, reference) =>
         Http4sBodyDecoder
@@ -104,6 +117,15 @@ final class Http4sBodyDecoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](
         Http4sBodyDecoder.matches(declared, mediaType).map(_ => contextual(entity.body)).pure[F]
 
 private[http] object Http4sBodyDecoder:
+  /** A body of `size` bytes, refused for holding more than `limit`. */
+  private[http] def tooLarge(limit: Long, size: Long): DecodingFailure =
+    DecodingFailure(
+      Failure.Category.ContentTooLarge,
+      Violations(
+        Violation(Constraint.Collection.Maximum(Comparison(limit, exclusive = false)), size.asData, hint = none)
+      )
+    )
+
   /** Whether bytes announced as `actual` may be read as `declared`.
     *
     * On `essence`, so that `application/json; charset=utf-8` is `application/json`. The parameters a media type keeps

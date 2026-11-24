@@ -10,5 +10,11 @@ final case class Failure(
 )
 
 object Failure:
+  /** What went wrong, which is what an [[ErrorPolicy]] chooses its answer by.
+    *
+    * `ContentTooLarge` is a body larger than a backend will read whole. It is apart from `EntityRead` because the
+    * request caused it, not the transport, and so it is answered with a client error where a failed read is a server
+    * one.
+    */
   enum Category:
-    case Envelope, Syntax, ContentType, Validation, EntityRead, Encoding, Status, Unexpected
+    case Envelope, Syntax, ContentType, Validation, ContentTooLarge, EntityRead, Encoding, Status, Unexpected

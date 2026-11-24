@@ -31,7 +31,11 @@ final class Http4sRequestDecoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](
     payload: Http4sInterpreter.Of[P, Q],
     endpoint: Option[Endpoint.Node] = None
 ):
-  private val body = Http4sBodyDecoder[F, P, Q](payload, endpoint.map((_, Http4sFailure.Direction.Request)))
+  private val body = Http4sBodyDecoder[F, P, Q](
+    payload,
+    endpoint.map((_, Http4sFailure.Direction.Request)),
+    payload.maxBufferedBytes
+  )
 
   def contextual(endpoint: Endpoint.Node): Http4sRequestDecoder[F, P, Q] =
     new Http4sRequestDecoder(payload, Some(endpoint))

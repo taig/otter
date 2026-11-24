@@ -112,6 +112,33 @@ object Http4sEnvelope:
     case Entity.Empty             => ByteVector.empty.pure
     case Entity.Streamed(body, _) => body.compile.to(Array).map(ByteVector.view)
 
+  /** The bytes of an entity, unless there are more than `limit` of them.
+    *
+    * A streamed entity whose length already says it is too large is not read at all, and one that only turns out to be
+    * is read no further than the chunk holding the first byte past `limit`. `Left` carries what is known of its size
+    * when it is refused: the length it declared, or how much arrived before reading stopped.
+    */
+  def toBytes[F[_]: Concurrent](entity: Entity[F], limit: Long): F[Either[Long, ByteVector]] = entity match
+    case Entity.Strict(bytes)                               => Either.cond(bytes.size <= limit, bytes, bytes.size).pure
+    case Entity.Empty                                       => ByteVector.empty.asRight[Long].pure
+    case Entity.Streamed(_, Some(length)) if length > limit => length.asLeft[ByteVector].pure
+    case Entity.Streamed(body, _)                           =>
+      body
+        .take(if limit == Long.MaxValue then limit else limit + 1)
+        .compile
+        .to(Array)
+        .map(bytes => Either.cond(bytes.length <= limit, ByteVector.view(bytes), bytes.length.toLong))
+
+  /** The `Content-Length` a request declared, attached to an entity that does not know its own.
+    *
+    * http4s keeps the header and the entity's length apart, and a backend may hand over a streamed entity with the
+    * header set and no length. Joining them here is what lets a body too large to read be refused before any of it is.
+    * A chunked request's `Content-Length` is ignored, as RFC 9112 requires where `Transfer-Encoding` is present.
+    */
+  def toEntity[F[_]](request: org.http4s.Request[F]): Entity[F] = request.entity match
+    case Entity.Streamed(body, None) if !request.isChunked => Entity.Streamed(body, request.contentLength)
+    case entity                                            => entity
+
   /** A response as http4s sends it.
     *
     * The `Content-Type` is written as a raw line from what the body says it is, rather than through http4s's parsed

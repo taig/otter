@@ -177,6 +177,13 @@ The client keeps request and response requirements separate. `client.resource(en
 responses, including streamed uploads. API configuration captures its actual requirement before checking interpreter
 coverage, so a bodyless policy does not widen to the interpreter's streaming capability.
 
+Bodies a server reads whole -- `Body.Whole`, `Body.Binary`, and so multipart -- stop at
+`Http4sInterpreter.Of.maxBufferedBytes` (8 MiB, `withMaxBufferedBytes` after `withStreams`). A larger one is
+`Failure.Category.ContentTooLarge`, a bodyless `413` by default, and a too-large `Content-Length` is refused before a
+byte is pulled; `Route.run` joins that header to the entity's length, because http4s keeps them apart, except on a
+chunked request. Streams are exempt, and a client is never bounded by it. The limit sits on the interpreter, not the
+endpoint, because it bounds what the process holds.
+
 Framing has a configurable 1 MiB limit, backpressure and sequential element decoding. Lines, data-only SSE,
 custom delimiters and raw byte streams are supported. Ambiguous streamed status/media alternatives fail at construction;
 missing media type cannot select between multiple eligible streaming alternatives. Stream failures carry endpoint,
