@@ -6,6 +6,7 @@ import io.taig.otter.Keys
 import io.taig.otter.http.Body
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.HttpTypescriptKeys
+import io.taig.otter.http.Sized
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
 import io.taig.otter.http.fixture.Report
@@ -215,6 +216,21 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
       ,
       /** Which message a body travels in decides it, not which side reads it: the server's stub receives the same Blob.
         */
+      /** Its length is what `fetch` writes as `Content-Length` for a `Blob`, so the caller has nothing more to say. */
+      test("a sized raw byte stream sent as a request is a Blob, as a raw one is"):
+        val sized: Endpoint.Server[Body.Streamed.Requirement[Vector, Body.Raw], Sized[Vector], Unit] =
+          endpoint(
+            request(method.put, __ / "attachments")(body.streamed[Vector].sized(mediaType.pdf)),
+            response(status.noContent).toUnion
+          )
+        val module = render(sized)
+
+        assertTrue(
+          module.issues.isEmpty,
+          module.render == render(upload).render,
+          module.render.contains("""export type PutAttachmentsInput = { "body": Blob };""")
+        )
+      ,
       test("a raw byte stream request is a Blob to the server as well"):
         val module = TypescriptEndpointRenderer.server(TypescriptEffectPayload.json).render(Chain.one(upload))
 
@@ -308,6 +324,18 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
         val download = endpoint(
           request(method.get, __ / "attachments"),
           response(status.ok)(body.streamed[Vector].raw(mediaType.pdf)).toUnion
+        )
+        val module = render(download)
+
+        assertTrue(
+          module.issues == List(TypescriptIssue.Streamed("GET /attachments", "application/pdf")),
+          module.render.contains("""  "responses": { "200": { "application/pdf": undefined } }""")
+        )
+      ,
+      test("a sized raw byte stream answer is reported, as a raw one is"):
+        val download = endpoint(
+          request(method.get, __ / "attachments"),
+          response(status.ok)(body.streamed[Vector].sized(mediaType.pdf)).toUnion
         )
         val module = render(download)
 

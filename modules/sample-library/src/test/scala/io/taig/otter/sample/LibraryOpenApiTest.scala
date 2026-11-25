@@ -45,7 +45,7 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
     test("catalogue overrides unexpected failures and inherits the other global errors"):
       assertTrue(
         keys(server.value, "paths", "/catalogue", "get", "responses") ==
-          List("200", "400", "415", "422", "413", "500", "503"),
+          List("200", "400", "415", "422", "411", "413", "500", "503"),
         keys(server.value, "paths", "/catalogue", "get", "responses").contains("500"),
         keys(client.value, "paths", "/catalogue", "get", "responses").contains("503"),
         !keys(server.value, "paths", "/books", "get", "responses").contains("503")
@@ -85,7 +85,7 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
       test("a converted domain answer retains its statuses alongside the declared execution errors"):
         assertTrue(
           keys(server.value, "paths", "/books/{isbn}", "get", "responses") ==
-            List("200", "404", "400", "415", "422", "413", "500")
+            List("200", "404", "400", "415", "422", "411", "413", "500")
         )
     ),
     suite("parameters")(

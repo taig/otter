@@ -352,6 +352,12 @@ final unterminated record, and reject output whose contents collide with a bound
 val payload = Http4sCirce.Payload.withStreams(Http4sCirce.Streams.orElse(Http4sStreams.Raw))
 ```
 
+`body.streamed[Flow].sized()` is the same stream handed over as `Sized(length, bytes)`, with the length the request
+declared, so a handler learns how large an upload says it is before reading it. A request with no `Content-Length`,
+or a chunked one, is answered by `errorPolicy`'s `lengthRequired` (a bodyless `411` by default) before its body is
+read. The client sends the length as `Content-Length`. Whether the stream yields as many bytes as it declared is left
+to the handler.
+
 Framed JSON uses a 1 MiB per-frame limit, enforced incrementally even without a terminating delimiter. Configure it
 with `Http4sCirce.streams(maxFrameBytes = ...)`. SSE bounds the entire event, including ignored fields. Raw streams
 have no frame accumulator. Stream memory does not grow with the number of elements; whole-document bodies and

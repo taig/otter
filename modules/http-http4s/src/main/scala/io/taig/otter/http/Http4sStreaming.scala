@@ -6,9 +6,9 @@ import io.taig.otter.http.codec.Http4sStreamFailure
 
 private[http] object Http4sStreaming:
   def isStream(value: Body.Value[?, ?, ?]): Boolean = value match
-    case Body.Value.Modify(self, _, _)                    => isStream(self)
-    case Body.Value.Streamed(_, _, _) | Body.Value.Raw(_) => true
-    case _                                                => false
+    case Body.Value.Modify(self, _, _)                                          => isStream(self)
+    case Body.Value.Streamed(_, _, _) | Body.Value.Raw(_) | Body.Value.Sized(_) => true
+    case _                                                                      => false
 
   def validate(endpoint: Endpoint.Node): Unit =
     endpoint.request.bodies.foreach(reference => validateBodies(Bodies.branches(reference.value).toList))

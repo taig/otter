@@ -119,7 +119,8 @@ object Body:
     * A [[Body.Value.Whole]] is one document. A [[Body.Value.Binary]] is bytes with no document in them at all -- an
     * image, a PDF -- carried as a `ByteVector` so that comparing two of them means comparing their contents. A
     * [[Body.Value.Streamed]] is a sequence of documents arriving one at a time. [[Body.Value.Raw]] carries typed bytes
-    * directly, without a document codec or framing.
+    * directly, without a document codec or framing, and [[Body.Value.Sized]] does too, together with the length the
+    * message declared for them.
     */
   sealed abstract class Value[+S[-_, +_], -W, +R]:
     def mediaType: MediaType
@@ -151,6 +152,15 @@ object Body:
 
     final case class Raw[C[+_]](override val mediaType: MediaType)
         extends Body.Value[Body.Streamed.Requirement[C, Body.Raw], C[Byte], C[Byte]]
+
+    /** A raw byte stream whose length is declared before it is sent, as `Content-Length` declares it.
+      *
+      * It asks for the capability a [[Body.Value.Raw]] does, because it is read and written the same way: the length is
+      * envelope, not content. A message whose length is not known before its content is read is refused rather than
+      * read to find out, because finding out would buffer what this body exists to stream.
+      */
+    final case class Sized[C[+_]](override val mediaType: MediaType)
+        extends Body.Value[Body.Streamed.Requirement[C, Body.Raw], Self.http.Sized[C], Self.http.Sized[C]]
 
     final case class Modify[+S[-_, +_], W0, R0, -W, +R](
         self: Body.Value[S, W0, R0],

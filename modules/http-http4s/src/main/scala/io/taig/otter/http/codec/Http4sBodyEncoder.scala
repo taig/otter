@@ -40,7 +40,8 @@ final class Http4sBodyEncoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](payload: H
     case Body.Value.Binary(mediaType)                     => Right((mediaType, Entity.strict(w))).pure[F]
     case Body.Value.Streamed(mediaType, frame, reference) =>
       Right((mediaType, Entity.stream(stream(reference.value, frame, w)))).pure[F]
-    case Body.Value.Raw(mediaType) => Right((mediaType, Entity.stream[F](w))).pure[F]
+    case Body.Value.Raw(mediaType)   => Right((mediaType, Entity.stream[F](w))).pure[F]
+    case Body.Value.Sized(mediaType) => Right((mediaType, Entity.Streamed[F](w.bytes, Some(w.length)))).pure[F]
 
   private def stream[W](
       schema: Q[W, Any],

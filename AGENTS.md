@@ -184,6 +184,15 @@ byte is pulled; `Route.run` joins that header to the entity's length, because ht
 chunked request. Streams are exempt, and a client is never bounded by it. The limit sits on the interpreter, not the
 endpoint, because it bounds what the process holds.
 
+`body.streamed[C].sized()` is a raw byte stream handed over as a `Sized(length, bytes)`, with the length the message
+declared, under the same `Http4sStreams.Raw` registration. Its length is whatever the entity knows once
+`Http4sEnvelope.toEntity` has joined `Content-Length` to it (for responses as well as requests), and an entity that
+knows none -- no `Content-Length`, or a chunked message -- is `Failure.Category.LengthRequired`, a bodyless `411` by
+default, before a byte is pulled. An empty entity knows its length is zero: HTTP/1.1 framing has already said so, and
+ember hands one over for a request with no `Content-Length` at all. Whether the bytes match the length is the
+handler's business, as the size of a raw stream is. Both sides write `Content-Length` for a streamed entity that knows
+its length, because a backend frames anything else as chunked.
+
 Framing has a configurable 1 MiB limit, backpressure and sequential element decoding. Lines, data-only SSE,
 custom delimiters and raw byte streams are supported. Ambiguous streamed status/media alternatives fail at construction;
 missing media type cannot select between multiple eligible streaming alternatives. Stream failures carry endpoint,
@@ -283,7 +292,7 @@ request out of an input, the `Schema` for each body keyed by media type, and *bo
 encoded type of every answer: a caller names their cache at the encoded type and decodes past it, and when
 to decode is theirs. Nothing generated calls `fetch`, and `TypescriptEndpointRendererTest` asserts that
 outright rather than leaving it to be noticed. A streamed body and a `Multipart` payload are reported
-rather than half emitted, except a raw byte stream request: `fetch` streams a `Blob` by itself, so it is a `Blob` as a
+rather than half emitted, except a raw byte stream request, sized or not: `fetch` streams a `Blob` by itself, so it is a `Blob` as a
 binary body is. The http4s backend supports registered multipart bodies; the TypeScript generator does not.
 
 Response headers are deliberately not in a generated answer type. A descriptor decodes no headers -- they

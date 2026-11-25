@@ -372,9 +372,12 @@ final class OpenApiRenderer(
 
   private def value(operation: String, side: Side, schema: Body.Value[?, ?, ?]): (OpenApi.Content, Collected) =
     schema match
-      case Body.Value.Modify(self, _, _) => this.value(operation, side, self)
-      case Body.Value.Raw(media)         =>
-        (OpenApi.Content(JsonSchema.typed("string")), Collected.issue(OpenApiIssue.Framed(operation, media.render)))
+      case Body.Value.Modify(self, _, _)                   => this.value(operation, side, self)
+      case raw @ (Body.Value.Raw(_) | Body.Value.Sized(_)) =>
+        (
+          OpenApi.Content(JsonSchema.typed("string")),
+          Collected.issue(OpenApiIssue.Framed(operation, raw.mediaType.render))
+        )
       case Body.Value.Binary(media) =>
         /* OpenAPI 3.1 dropped `format: binary` in favour of saying what the bytes are, which is what the body already
          * carries: a string whose content is this media type. */

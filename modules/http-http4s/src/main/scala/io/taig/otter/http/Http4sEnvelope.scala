@@ -129,15 +129,26 @@ object Http4sEnvelope:
         .to(Array)
         .map(bytes => Either.cond(bytes.length <= limit, ByteVector.view(bytes), bytes.length.toLong))
 
-  /** The `Content-Length` a request declared, attached to an entity that does not know its own.
+  /** The `Content-Length` a message declared, attached to an entity that does not know its own.
     *
     * http4s keeps the header and the entity's length apart, and a backend may hand over a streamed entity with the
-    * header set and no length. Joining them here is what lets a body too large to read be refused before any of it is.
-    * A chunked request's `Content-Length` is ignored, as RFC 9112 requires where `Transfer-Encoding` is present.
+    * header set and no length. Joining them here is what lets a body too large to read be refused before any of it is,
+    * and what hands a sized body its length. A chunked message's `Content-Length` is ignored, as RFC 9112 requires
+    * where `Transfer-Encoding` is present, so its entity is left not knowing its length.
     */
-  def toEntity[F[_]](request: org.http4s.Request[F]): Entity[F] = request.entity match
-    case Entity.Streamed(body, None) if !request.isChunked => Entity.Streamed(body, request.contentLength)
+  def toEntity[F[_]](message: org.http4s.Message[F]): Entity[F] = message.entity match
+    case Entity.Streamed(body, None) if !message.isChunked => Entity.Streamed(body, message.contentLength)
     case entity                                            => entity
+
+  /** The `Content-Length` a streamed entity that knows its length is sent under.
+    *
+    * A backend writes the header only when it is set, and frames anything else as chunked, so a length that is not
+    * written here is a length the receiving side never learns. Strict and empty entities are left to the backend, which
+    * frames those itself.
+    */
+  def toContentLength[F[_]](entity: Entity[F]): Chain[(String, String)] = entity match
+    case Entity.Streamed(_, Some(length)) => Chain.one(("Content-Length", length.toString))
+    case _                                => Chain.empty
 
   /** A response as http4s sends it.
     *
@@ -148,7 +159,8 @@ object Http4sEnvelope:
   def toHttp4sResponse[F[_]](response: Http4sWire.Response[F]): ParseResult[Http4sResponse[F]] =
     Http4sStatus.fromInt(response.status.value).map { status =>
       val headers =
-        response.headers ++ Chain.fromOption(response.body._1.map(mediaType => ("Content-Type", mediaType.render)))
+        response.headers ++ Chain.fromOption(response.body._1.map(mediaType => ("Content-Type", mediaType.render))) ++
+          Http4sEnvelope.toContentLength(response.body._2)
 
       Http4sResponse[F](
         status = status,
