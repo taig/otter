@@ -24,7 +24,7 @@ object contract:
     response(Status(status))(body.json(schema.problem)).dimap[Failure, Problem](failure =>
       failure.category match
         case Failure.Category.Envelope | Failure.Category.Syntax | Failure.Category.ContentType |
-            Failure.Category.Validation | Failure.Category.ContentTooLarge =>
+            Failure.Category.Validation | Failure.Category.LengthRequired | Failure.Category.ContentTooLarge =>
           Problem.malformed(failure.violations.fold(List.empty[String])(Http4s.report(_).linesIterator.toList))
         case Failure.Category.EntityRead | Failure.Category.Encoding | Failure.Category.Status |
             Failure.Category.Unexpected =>
@@ -36,6 +36,7 @@ object contract:
     syntax = answer(400),
     contentType = answer(415),
     validation = answer(422),
+    lengthRequired = answer(411),
     contentTooLarge = answer(413)
   )
 

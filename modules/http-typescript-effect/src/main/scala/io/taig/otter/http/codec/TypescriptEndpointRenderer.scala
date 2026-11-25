@@ -282,9 +282,10 @@ final class TypescriptEndpointRenderer(
     (TypescriptEndpointRenderer.value(schema.self.self), message) match
       /* A `fetch` streams a `Blob` it is given by itself, so a request the server reads as a stream is sent the way a
        * buffered one is. A response is not symmetric: a caller handed one would have to read the stream themselves. */
-      case (Body.Value.Binary(_), _) | (Body.Value.Raw(_), TypescriptEndpointRenderer.Message.Request) =>
+      case (Body.Value.Binary(_), _) |
+          (Body.Value.Raw(_) | Body.Value.Sized(_), TypescriptEndpointRenderer.Message.Request) =>
         State.pure((TypescriptEndpointRenderer.Alternative(media, None, TypescriptEndpointRenderer.Blob), Chain.empty))
-      case (Body.Value.Streamed(_, _, _) | Body.Value.Raw(_), _) =>
+      case (Body.Value.Streamed(_, _, _) | Body.Value.Raw(_) | Body.Value.Sized(_), _) =>
         State.pure(
           (
             TypescriptEndpointRenderer.Alternative(media, None, TypescriptEndpointRenderer.Unknown),

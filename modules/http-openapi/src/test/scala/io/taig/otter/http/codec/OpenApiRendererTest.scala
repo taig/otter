@@ -3,6 +3,7 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import io.circe.ACursor
 import io.circe.Json as CirceJson
+import io.taig.otter.http.Body
 import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
@@ -191,6 +192,24 @@ object OpenApiRendererTest extends ZIOSpecDefault:
       /** The framing is the one thing OpenAPI has no vocabulary for, so it is reported rather than implied. */
       test("says that the framing went unsaid"):
         assertTrue(document.issues == List(OpenApiIssue.Framed("GET /reports", mediaType.ndJson.render)))
+      ,
+      /** Its length is envelope, a `Content-Length` a document already implies, so it reads exactly as a raw one does.
+        */
+      test("a sized raw byte stream is rendered as a raw one is"):
+        def upload(value: Body.Node[?, ?]) =
+          endpoint(request(method.put, __ / "attachments")(value), response(status.noContent))
+        def rendered(value: Body.Node[?, ?]) =
+          val document = server.render(info, Chain(upload(value)))
+          (document.at("paths", "/attachments", "put", "requestBody"), document.issues)
+
+        val sized = rendered(body.streamed[Vector].sized(mediaType.pdf))
+        assertTrue(
+          sized == rendered(body.streamed[Vector].raw(mediaType.pdf)),
+          sized._1.flatMap(
+            _.hcursor.downField("content").downField("application/pdf").downField("schema").downField("type").focus
+          ) == Some(CirceJson.fromString("string")),
+          sized._2 == List(OpenApiIssue.Framed("PUT /attachments", mediaType.pdf.render))
+        )
     ),
     suite("sides")(
       /** The claim the two `Side`s exist for. A field holding a default is absent when read and always written, so a

@@ -7,6 +7,7 @@ import io.taig.otter.http.Body
 import io.taig.otter.http.Frame
 import io.taig.otter.http.MediaType
 import io.taig.otter.http.Multipart
+import io.taig.otter.http.Sized
 import scodec.bits.ByteVector
 
 import scala.annotation.targetName
@@ -75,3 +76,9 @@ object BodyComponent:
         mediaType: MediaType = MediaTypeComponent.octetStream
     ): Body.Of[Body.Streamed.Requirement[C, Body.Raw], C[Byte]] =
       Body.Schema(Body.Value.Raw[C](mediaType))
+
+    /** A raw byte stream handed over with the length it declared, which a server learns before reading a byte of it. */
+    def sized(
+        mediaType: MediaType = MediaTypeComponent.octetStream
+    ): Body.Of[Body.Streamed.Requirement[C, Body.Raw], Sized[C]] =
+      Body.Schema(Body.Value.Sized[C](mediaType))

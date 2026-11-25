@@ -16,6 +16,7 @@ import io.taig.otter.http.Http4sEnvelope
 import io.taig.otter.http.Http4sFailure
 import io.taig.otter.http.Http4sStreaming
 import io.taig.otter.http.MediaType
+import io.taig.otter.http.Sized
 import io.taig.validation.Comparison
 import io.taig.validation.Violation
 import org.http4s.Entity
@@ -115,6 +116,13 @@ final class Http4sBodyDecoder[F[_]: Concurrent, P[-_, +_], Q[-_, +_]](
           .pure[F]
       case Body.Value.Raw(declared) =>
         Http4sBodyDecoder.matches(declared, mediaType).map(_ => contextual(entity.body)).pure[F]
+      case Body.Value.Sized(declared) =>
+        Http4sBodyDecoder
+          .matches(declared, mediaType)
+          .andThen: _ =>
+            entity.length.fold(Http4sBodyDecoder.lengthRequired.invalid[R]): length =>
+              Sized(length, contextual(entity.body)).valid
+          .pure[F]
 
 private[http] object Http4sBodyDecoder:
   /** A body of `size` bytes, refused for holding more than `limit`. */
@@ -124,6 +132,17 @@ private[http] object Http4sBodyDecoder:
       Violations(
         Violation(Constraint.Collection.Maximum(Comparison(limit, exclusive = false)), size.asData, hint = none)
       )
+    )
+
+  /** A body that had to declare its length before it was read, and did not.
+    *
+    * What [[Http4sEnvelope.toEntity]] left without a length had none to give: no `Content-Length`, or one beside
+    * `Transfer-Encoding` and so ignored.
+    */
+  private[http] val lengthRequired: DecodingFailure =
+    DecodingFailure(
+      Failure.Category.LengthRequired,
+      "Content-Length" /: Violations(Violation(Constraint.Generic.Required, Data.Null, hint = none))
     )
 
   /** Whether bytes announced as `actual` may be read as `declared`.

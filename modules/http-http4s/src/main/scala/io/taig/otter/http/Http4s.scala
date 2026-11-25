@@ -359,7 +359,8 @@ object Http4s:
       wire: Http4sWire.Request[F]
   ): Http4sRequest[F] =
     val path = wire.path.foldLeft(base.path.toAbsolute)(_.addSegment(_))
-    val headers = wire.headers ++ Chain.fromOption(wire.body._1.map(mediaType => ("Content-Type", mediaType.render)))
+    val headers = wire.headers ++ Chain.fromOption(wire.body._1.map(mediaType => ("Content-Type", mediaType.render))) ++
+      Http4sEnvelope.toContentLength(wire.body._2)
 
     Http4sRequest[F](
       method = method,
@@ -372,5 +373,5 @@ object Http4s:
     Http4sWire.Response(
       Status(response.status.code),
       Http4sEnvelope.toHeaders(response.headers),
-      (Http4sEnvelope.toMediaType(response.headers), response.entity)
+      (Http4sEnvelope.toMediaType(response.headers), Http4sEnvelope.toEntity(response))
     )

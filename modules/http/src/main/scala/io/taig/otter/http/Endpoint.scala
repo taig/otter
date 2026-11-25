@@ -68,6 +68,7 @@ object Endpoint:
       syntax = None,
       contentType = None,
       validation = None,
+      lengthRequired = None,
       contentTooLarge = None,
       entityRead = None,
       encoding = None,

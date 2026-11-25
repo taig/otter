@@ -5,8 +5,10 @@ import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
 import fs2.Stream
 import io.taig.otter.Json
+import io.taig.otter.http.Sized
 import io.taig.otter.http.codec.Http4sPayload
 import io.taig.otter.http.codec.Http4sResponseEncoder
+import io.taig.otter.http.codec.Http4sStreams
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.fixture.payload
 import org.http4s.Entity
@@ -24,6 +26,8 @@ import zio.test.*
 import scala.compiletime.testing.typeCheckErrors
 
 object Http4sPolicyDslTest extends ZIOSpecDefault:
+  type Flow[+A] = Stream[IO, A]
+
   /** Fail the test if a buffered schema starts producing a streamed entity. */
   @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
   private def strictBytes(entity: org.http4s.Entity[cats.effect.IO]): scodec.bits.ByteVector = entity match
@@ -42,6 +46,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     encoding = answer(503, "encoding"),
     entityRead = answer(502, "entityRead"),
     contentTooLarge = answer(507, "contentTooLarge"),
+    lengthRequired = answer(508, "lengthRequired"),
     contentType = answer(415, "contentType")
   )
 
@@ -50,6 +55,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     (Failure.Category.Syntax, 401, "syntax"),
     (Failure.Category.ContentType, 415, "contentType"),
     (Failure.Category.Validation, 422, "validation"),
+    (Failure.Category.LengthRequired, 508, "lengthRequired"),
     (Failure.Category.ContentTooLarge, 507, "contentTooLarge"),
     (Failure.Category.EntityRead, 502, "entityRead"),
     (Failure.Category.Encoding, 503, "encoding"),
@@ -62,6 +68,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
     Failure.Category.Syntax -> 400,
     Failure.Category.ContentType -> 415,
     Failure.Category.Validation -> 422,
+    Failure.Category.LengthRequired -> 411,
     Failure.Category.ContentTooLarge -> 413,
     Failure.Category.EntityRead -> 500,
     Failure.Category.Encoding -> 500,
@@ -186,6 +193,7 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
       val readJson = app(Route(json, (_: Int) => IO.unit))
       val path = endpoint(request(method.get, __ / segment("id", int)), response(status.noContent))
       val binary = endpoint(request(method.post, __)(body.binary), response(status.noContent))
+      val sized = endpoint(request(method.post, __)(body.streamed[Flow].sized()), response(status.noContent))
       val invalid = endpoint(request(method.get, __), response(Status(-1)))
       val broken = endpoint(request(method.get, __), response(status.noContent).dimap[Unit, Unit](_ => crash)(identity))
       val cases = List(
@@ -210,6 +218,14 @@ object Http4sPolicyDslTest extends ZIOSpecDefault:
           post("12", "application/octet-stream"),
           507,
           "contentTooLarge"
+        ),
+        (
+          Http4s.app[IO](Api(policy, unroutedPolicy.default), Route(sized, (_: Sized[Flow]) => IO.unit))(
+            Http4sCirce.Payload.withStreams(Http4sStreams.Raw)
+          ),
+          post("12", "application/octet-stream").withEntity(Entity.stream(Stream.emits("12".getBytes).covary[IO])),
+          508,
+          "lengthRequired"
         ),
         (app(Route(broken, (_: Unit) => IO.unit)), get, 503, "encoding"),
         (app(Route(invalid, (_: Unit) => IO.unit)), get, 504, "status"),
